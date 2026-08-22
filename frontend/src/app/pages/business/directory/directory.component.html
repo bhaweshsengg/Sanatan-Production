@@ -1,0 +1,150 @@
+<div class="min-h-screen bg-gray-100 font-sans text-gray-800">
+  <!-- Header -->
+  <header class="bg-blue-900 text-white py-2 px-6 shadow-md">
+    <div class="container mx-auto flex justify-between items-center">
+      <h1 class="text-xl font-semibold">Sanatan Business Directory</h1>
+      <nav>
+        <ul class="flex space-x-4">
+          <li><a routerLink="/" class="hover:text-blue-200">Home</a></li>
+          <li><a routerLink="/about" class="hover:text-blue-200">About</a></li>
+          <li><a routerLink="/help" class="hover:text-blue-200">Help</a></li>
+          <!-- <li>
+            <a routerLink="/business/admin/business-submissions" class="hover:text-blue-200">Admin</a>
+          </li> -->
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="container mx-auto px-4 py-8">
+    <!-- Title -->
+    <section class="text-center mb-8">
+      <h2 class="text-4xl font-bold text-gray-900 mb-2">
+        Sanatan Business Directory
+      </h2>
+      <p class="text-lg text-gray-700 max-w-3xl mx-auto">
+        Discover and support Sanatan-owned businesses across New Zealand.
+      </p>
+    </section>
+
+    <!-- Business List -->
+    <section>
+      <p class="text-sm text-black-700 mb-4">
+        Showing {{ businesses.length }} businesses
+      </p>
+
+      <!-- Loading -->
+      <div *ngIf="loading" class="text-center text-gray-500">Loading...</div>
+
+      <!-- Dynamic Cards -->
+      <div *ngIf="!loading && businesses.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div *ngFor="let biz of businesses" class="bg-white rounded-xl shadow-lg overflow-hidden flex flex-col">
+          <!-- Banner / Logo -->
+          <div class="relative">
+            <img [src]="biz.images?.[0]?.file || 'https://placehold.co/600x200/CCCCCC/000000?text=No+Image'"
+              alt="{{ biz.businessName }}" class="w-full h-40 object-cover" />
+            <span class="absolute top-2 right-2 bg-yellow-400 text-white text-xs px-2 py-1 rounded-full">{{ biz.status
+              }}</span>
+          </div>
+
+          <!-- Business Info -->
+          <div class="p-6 flex-grow">
+            <h3 class="text-xl font-semibold text-gray-900 mb-1">
+              {{ biz.businessName }}
+            </h3>
+            <p class="text-sm text-gray-500 mb-2">{{ biz.category }}</p>
+            <p class="text-sm text-gray-700 mb-4">
+              {{ biz.description }}
+            </p>
+
+            <!-- Contact Info -->
+            <ul class="text-sm text-gray-700 space-y-1 mb-4">
+              <!-- <li><strong>Address:</strong> {{ biz.address }}</li>
+              <li><strong>City:</strong> {{ biz.city }}</li>
+              <li *ngIf="biz.phone"><strong>Phone:</strong> {{ biz.phone }}</li>
+              <li *ngIf="biz.email"><strong>Email:</strong> {{ biz.email }}</li>
+              <li *ngIf="biz.website"> -->
+              <strong>Website:</strong>
+              <a [href]="biz.website" target="_blank" class="text-blue-500 hover:underline">{{ biz.website }}</a>
+              <!-- </li> -->
+            </ul>
+
+            <!-- Services / Hours / Offers -->
+            <!-- <div class="text-sm text-gray-700 space-y-1 mb-4">
+              <p *ngIf="biz.services">
+                <strong>Services:</strong> {{ biz.services }}
+              </p>
+              <p *ngIf="biz.operatingHours">
+                <strong>Hours:</strong> {{ biz.operatingHours }}
+              </p>
+              <p *ngIf="biz.specialOffers">
+                <strong>Offers:</strong> {{ biz.specialOffers }}
+              </p>
+            </div> -->
+
+            <!-- Owner Info -->
+            <!-- <div class="text-sm text-gray-700 space-y-1 mb-4">
+              <p><strong>Owner:</strong> {{ biz.ownerName }}</p>
+              <p><strong>Owner Email:</strong> {{ biz.ownerEmail }}</p>
+              <p><strong>Owner Phone:</strong> {{ biz.ownerPhone }}</p>
+            </div> -->
+
+            <!-- Social Media -->
+            <div class="flex space-x-4 text-xl">
+              <a *ngIf="biz.linkedInUrl" [href]="biz.linkedInUrl" target="_blank"
+                class="text-blue-700 hover:text-blue-900">
+                <i class="fab fa-linkedin"></i>
+              </a>
+
+              <a *ngIf="biz.facebookUrl" [href]="biz.facebookUrl" target="_blank"
+                class="text-blue-600 hover:text-blue-800">
+                <i class="fab fa-facebook"></i>
+              </a>
+
+              <a *ngIf="biz.instagramUrl" [href]="biz.instagramUrl" target="_blank"
+                class="text-pink-600 hover:text-pink-800">
+                <i class="fab fa-instagram"></i>
+              </a>
+
+              <a *ngIf="biz.twitterUrl" [href]="biz.twitterUrl" target="_blank" class="text-sky-600 hover:text-sky-800">
+                <i class="fab fa-twitter"></i>
+              </a>
+            </div>
+
+          </div>
+
+          <!-- Actions -->
+          <div class="flex justify-between p-6 pt-5 border-t border-gray-200 mt-auto">
+            <button
+              class="bg-blue-500 hover:bg-blue-600 text-white text-sm font-bold py-2 px-4 rounded-lg shadow-md transition duration-300 ease-in-out">
+              Contact
+            </button>
+            <button [routerLink]="['/business/register', biz.id]"
+              class="bg-gray-200 hover:bg-gray-300 text-gray-800 text-sm font-bold py-2 px-4 rounded-lg shadow-md transition duration-300 ease-in-out">
+              View Details
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Empty State -->
+      <div *ngIf="!loading && businesses.length === 0" class="text-center text-gray-500">
+        No businesses found.
+      </div>
+    </section>
+
+    <!-- Call to Action -->
+    <div class="p-8 bg-orange-600 mt-4 text-center rounded-xl">
+      <h2 class="text-2xl font-bold text-white mb-4">Own a Sanatan Business?</h2>
+      <p class="text-lg mb-6 text-white opacity-90">
+        Join our directory and connect with the Sanatan community across New
+        Zealand
+      </p>
+      <a class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 h-11 px-8 bg-white text-black hover:bg-white"
+        routerLink="/business/register">
+        Register Your Business
+      </a>
+    </div>
+  </main>
+</div>
