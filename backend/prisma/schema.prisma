@@ -17,7 +17,7 @@ enum TempleStatus {
   Pending
   Approved
   Delist
-  Reject
+  Rejected
 }
 
 model User {
