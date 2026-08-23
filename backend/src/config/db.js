@@ -26,3 +26,18 @@ export const prisma = new PrismaClient({
     },
   },
 });
+
+let templeStatusRepair;
+
+export const repairTempleStatuses = () => {
+  if (!templeStatusRepair) {
+    templeStatusRepair = prisma.$executeRawUnsafe(
+      "UPDATE temple_temple SET status = 'Pending' WHERE status IS NULL OR status = '' OR status = 'Reject'"
+    ).catch((error) => {
+      templeStatusRepair = undefined;
+      throw error;
+    });
+  }
+
+  return templeStatusRepair;
+};

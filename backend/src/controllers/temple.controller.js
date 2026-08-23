@@ -1,6 +1,6 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { prisma } from '../config/db.js';
+import { prisma, repairTempleStatuses } from '../config/db.js';
 import { env } from '../config/env.js';
 import { sendSuccess, sendError } from '../utils/response.js';
 
@@ -28,6 +28,7 @@ const normalizeTempleRecord = (temple) => ({
 
 export const listTemples = async (req, res) => {
   try {
+    await repairTempleStatuses();
     const { city, deity, temple } = req.query;
 
     const where = {};
@@ -111,6 +112,7 @@ export const createTemple = async (req, res) => {
 
 export const getTemple = async (req, res) => {
   try {
+    await repairTempleStatuses();
     const temple = await prisma.temple.findUnique({
       where: { id: Number(req.params.id) },
       include: { city: true, mainDeity: true, images: true },
@@ -209,6 +211,7 @@ export const deleteTemple = async (req, res) => {
 
 export const updateTempleStatus = async (req, res) => {
   try {
+    await repairTempleStatuses();
     const temple = await prisma.temple.update({
       where: { id: Number(req.params.id) },
       data: { status: req.body.status === 'Reject' ? 'Rejected' : req.body.status },
