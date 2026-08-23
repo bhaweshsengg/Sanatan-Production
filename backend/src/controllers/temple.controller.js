@@ -53,16 +53,19 @@ export const listTemples = async (req, res) => {
 
 export const createTemple = async (req, res) => {
   try {
+    const parsedYear = Number(req.body.year_established);
     const payload = {
       mandir_name: req.body.mandir_name,
       full_address: req.body.full_address,
       cityId: Number(req.body.city_id),
-      year_established: Number(req.body.year_established),
+      year_established: Number.isInteger(parsedYear) && parsedYear > 0
+        ? parsedYear
+        : new Date().getFullYear(),
       mainDeityId: Number(req.body.main_deity_id),
       description: req.body.description,
       phone_no: req.body.phone_no,
       email: req.body.email,
-      website: req.body.website,
+      website: req.body.website || '',
       opening_hours: req.body.opening_hours,
       service_offered: JSON.stringify(parseListField(req.body.service_offered || [])),
       facilities_offered: JSON.stringify(parseListField(req.body.facilities_offered || [])),

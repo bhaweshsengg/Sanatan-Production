@@ -20,6 +20,7 @@ import { LoginRegisterationComponent } from './Auth/login-registeration/login-re
 import { ViewTempleComponent } from './pages/temples/view-temple/view-temple.component';
 import { AddbuisnessComponent } from './pages/business/addbuisness/addbuisness.component';
 import { ViewdirectoryComponent } from './pages/business/viewdirectory/viewdirectory.component';
+import { adminGuard } from './Auth/admin.guard';
 
 export const routes: Routes = [
   { path: '', component: HomeComponent },
@@ -42,6 +43,7 @@ export const routes: Routes = [
   {
     path: 'business/admin/business-submissions',
     component: BusinessSubmissionComponent,
+    canActivate: [adminGuard],
   },
   {
     path: 'business/register',

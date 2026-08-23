@@ -952,6 +952,13 @@ async onSubmit() {
   formData.append('mandir_name', this.temple.mandir_name);
   formData.append('full_address', this.temple.full_address);
   formData.append('city_id', this.temple.city_id.toString());
+  const yearEstablished = Number(this.temple.year_established);
+  formData.append(
+    'year_established',
+    Number.isInteger(yearEstablished) && yearEstablished > 0
+      ? yearEstablished.toString()
+      : new Date().getFullYear().toString()
+  );
   formData.append('main_deity_id', this.temple.main_deity_id.toString());
   formData.append('phone_no', this.temple.phone_no);
   formData.append('opening_hours', this.temple.opening_hours);
@@ -961,15 +968,10 @@ async onSubmit() {
   formData.append('location', this.temple.location);
 
   // Add optional fields if they exist
-if (this.temple.year_established && !isNaN(Number(this.temple.year_established))) {
-  formData.append('year_established', this.temple.year_established.toString());
-}
   if (this.temple.email) {
     formData.append('email', this.temple.email);
   }
-  if (this.temple.website) {
-    formData.append('website', this.temple.website);
-  }
+  formData.append('website', this.temple.website || '');
   if (this.temple.rating) {
     formData.append('rating', this.temple.rating.toString());
   }

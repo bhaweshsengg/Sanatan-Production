@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 export const templeStatusSchema = z.object({
-  status: z.enum(['Pending', 'Approved', 'Delist', 'Reject']),
+  status: z.enum(['Pending', 'Approved', 'Delist', 'Rejected']),
 });
 
 export const templeCreateSchema = z.object({
@@ -21,7 +21,7 @@ export const templeCreateSchema = z.object({
   your_email: z.string().email(),
   rating: z.coerce.number().min(0).max(5).optional(),
   location: z.string().min(1),
-  status: z.enum(['Pending', 'Approved', 'Delist', 'Reject']).optional(),
+  status: z.enum(['Pending', 'Approved', 'Delist', 'Rejected']).optional(),
 });
 
 export const templeUpdateSchema = templeCreateSchema.partial();

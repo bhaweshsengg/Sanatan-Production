@@ -1,4 +1,4 @@
 export const environment = {
   production: false,
-  apiBaseUrl: 'https://sanatanbackend.vercel.app/api',
+  apiBaseUrl: 'https://sanatan-production-1sdy.vercel.app/api',
 };
