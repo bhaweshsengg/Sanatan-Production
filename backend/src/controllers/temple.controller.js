@@ -211,7 +211,7 @@ export const updateTempleStatus = async (req, res) => {
   try {
     const temple = await prisma.temple.update({
       where: { id: Number(req.params.id) },
-      data: { status: req.body.status },
+      data: { status: req.body.status === 'Reject' ? 'Rejected' : req.body.status },
       include: { city: true, mainDeity: true, images: true },
     });
 

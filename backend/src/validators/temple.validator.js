@@ -1,7 +1,8 @@
 import { z } from 'zod';
 
 export const templeStatusSchema = z.object({
-  status: z.enum(['Pending', 'Approved', 'Delist', 'Rejected']),
+  status: z.enum(['Pending', 'Approved', 'Delist', 'Reject', 'Rejected'])
+    .transform(status => status === 'Reject' ? 'Rejected' : status),
 });
 
 export const templeCreateSchema = z.object({
