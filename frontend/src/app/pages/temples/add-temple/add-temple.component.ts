@@ -967,10 +967,8 @@ async onSubmit() {
   formData.append('description', this.temple.description);
   formData.append('location', this.temple.location);
 
-  // Add optional fields if they exist
-  if (this.temple.email) {
-    formData.append('email', this.temple.email);
-  }
+  // Use the submitter email when the temple does not have a separate email.
+  formData.append('email', this.temple.email || this.temple.your_email);
   formData.append('website', this.temple.website || '');
   if (this.temple.rating) {
     formData.append('rating', this.temple.rating.toString());

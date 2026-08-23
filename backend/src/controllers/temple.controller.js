@@ -64,7 +64,7 @@ export const createTemple = async (req, res) => {
       mainDeityId: Number(req.body.main_deity_id),
       description: req.body.description,
       phone_no: req.body.phone_no,
-      email: req.body.email,
+      email: req.body.email || req.body.your_email,
       website: req.body.website || '',
       opening_hours: req.body.opening_hours,
       service_offered: JSON.stringify(parseListField(req.body.service_offered || [])),
