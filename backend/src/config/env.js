@@ -28,9 +28,12 @@ export const env = {
   uploadDir: process.env.VERCEL
     ? '/tmp/uploads'
     : process.env.UPLOAD_DIR || (process.env.NODE_ENV === 'production' ? '/tmp/uploads' : './uploads'),
-  corsOrigin: (process.env.CORS_ORIGIN || 'http://localhost:4200,http://localhost:5173')
-    .split(',')
-    .map(origin => origin.trim())
-    .filter(Boolean),
+  corsOrigin: [
+    ...(process.env.CORS_ORIGIN || 'http://localhost:4200,http://localhost:5173')
+      .split(',')
+      .map(origin => origin.trim())
+      .filter(Boolean),
+    'https://sanatan-production-frontend.vercel.app',
+  ],
   maxUploadFiles: Number(process.env.MAX_UPLOAD_FILES || 5),
 };
