@@ -15,6 +15,7 @@ status: string;
   rating: number;
   reviews: number;
   image: string;
+  images: string[];
   description: string;
   category: string;
   established: string;
@@ -155,12 +156,15 @@ interface Deity {
               class="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:scale-105"
             >
               <div class="relative">
-                <img
-                  [src]="temple.image"
-                  [alt]="temple.name"
-                  class="w-full h-48 object-cover"
-                  (error)="onImageError($event)"
-                />
+                <div class="grid grid-cols-2 gap-2 p-2">
+                  <img
+                    *ngFor="let image of temple.images; let i = index"
+                    [src]="image"
+                    [alt]="temple.name + ' image ' + (i + 1)"
+                    class="w-full h-40 object-cover rounded-lg"
+                    (error)="onImageError($event)"
+                  />
+                </div>
                 <div
                   class="absolute top-4 right-4 bg-white rounded-full px-3 py-1 flex items-center shadow-lg"
                 >
@@ -263,8 +267,7 @@ export class TemplesComponent implements OnInit {
   errorMessage = '';
 
   // Fallback image used whenever a temple has no image, or the image fails to load
-  private readonly defaultImage =
-    'https://images.unsplash.com/photo-1582510003544-4d00b7f74220?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80';
+  private readonly defaultImage = '/assets/temple_images/temple1.jpg';
 
   private apiUrl = environment.apiBaseUrl;
 
@@ -364,7 +367,7 @@ export class TemplesComponent implements OnInit {
    */
   private resolveImageUrl(file: string | undefined | null): string {
     if (!file) {
-      return this.defaultImage;
+      return '';
     }
     if (/^https?:\/\//i.test(file)) {
       return file;
@@ -377,18 +380,21 @@ export class TemplesComponent implements OnInit {
    * Called from the template when an <img> fails to load (broken link, 404, etc.)
    * Swaps it to the default placeholder so the UI never shows a broken image icon.
    */
-  onImageError(event: Event) {
+  onImageError(event: Event): void {
     const img = event.target as HTMLImageElement;
-    if (img.src !== this.defaultImage) {
-      img.src = this.defaultImage;
+    if (img.dataset['fallback'] === 'true') {
+      return;
     }
+
+    img.dataset['fallback'] = 'true';
+    img.src = this.defaultImage;
   }
 
-private transformFromAPIResponse(apiTemple: ApiTemple): Temple {
-  const rawImage = apiTemple.images && apiTemple.images.length > 0
-    ? apiTemple.images[0].file
-    : null;
-  const image = this.resolveImageUrl(rawImage);
+  private transformFromAPIResponse(apiTemple: ApiTemple): Temple {
+  const images = (apiTemple.images ?? [])
+    .map((image) => this.resolveImageUrl(image.file))
+    .filter(Boolean);
+  const resolvedImages = images.length > 0 ? images : [this.defaultImage];
 
   return {
     id: apiTemple.id,
@@ -397,7 +403,8 @@ private transformFromAPIResponse(apiTemple: ApiTemple): Temple {
     location: apiTemple.city.name,
     rating: apiTemple.rating,
     reviews: 0,
-    image: image,
+    image: resolvedImages[0],
+    images: resolvedImages,
     description: apiTemple.description,
     category: apiTemple.main_deity.name,
     established: apiTemple.year_established.toString(),
