@@ -15,7 +15,6 @@ status: string;
   rating: number;
   reviews: number;
   image: string;
-  images: string[];
   description: string;
   category: string;
   established: string;
@@ -156,15 +155,12 @@ interface Deity {
               class="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:scale-105"
             >
               <div class="relative">
-                <div class="grid grid-cols-2 gap-2 p-2">
-                  <img
-                    *ngFor="let image of temple.images; let i = index"
-                    [src]="image"
-                    [alt]="temple.name + ' image ' + (i + 1)"
-                    class="w-full h-40 object-cover rounded-lg"
-                    (error)="onImageError($event)"
-                  />
-                </div>
+                <img
+                  [src]="temple.image"
+                  [alt]="temple.name"
+                  class="w-full h-48 object-cover"
+                  (error)="onImageError($event)"
+                />
                 <div
                   class="absolute top-4 right-4 bg-white rounded-full px-3 py-1 flex items-center shadow-lg"
                 >
@@ -193,14 +189,14 @@ interface Deity {
                   {{ temple.description }}
                 </p>
 
-                <div class="flex items-center justify-between mb-4">
+               <div class="flex items-center justify-between mb-4">
                   <div class="text-sm text-gray-500">
                     <span class="mr-4">📅 Est. {{ temple.established }}</span>
                   </div>
-                  <div class="flex items-center text-sm !text-gray-500">
+                  <!--  <div class="flex items-center text-sm !text-gray-500">
                     <span class="mr-1">❤️</span>
                     <span>{{ temple.reviews }} reviews</span>
-                  </div>
+                  </div> -->
                 </div>
 
                 <div class="flex gap-3">
@@ -267,7 +263,8 @@ export class TemplesComponent implements OnInit {
   errorMessage = '';
 
   // Fallback image used whenever a temple has no image, or the image fails to load
-  private readonly defaultImage = '/assets/temple_images/temple1.jpg';
+  private readonly defaultImage =
+    'https://images.unsplash.com/photo-1582510003544-4d00b7f74220?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80';
 
   private apiUrl = environment.apiBaseUrl;
 
@@ -367,7 +364,8 @@ export class TemplesComponent implements OnInit {
    */
   private resolveImageUrl(file: string | undefined | null): string {
     if (!file) {
-      return '';
+      return this.defaultImage;
+      
     }
     if (/^https?:\/\//i.test(file)) {
       return file;
@@ -380,21 +378,18 @@ export class TemplesComponent implements OnInit {
    * Called from the template when an <img> fails to load (broken link, 404, etc.)
    * Swaps it to the default placeholder so the UI never shows a broken image icon.
    */
-  onImageError(event: Event): void {
+  onImageError(event: Event) {
     const img = event.target as HTMLImageElement;
-    if (img.dataset['fallback'] === 'true') {
-      return;
+    if (img.src !== this.defaultImage) {
+      img.src = this.defaultImage;
     }
-
-    img.dataset['fallback'] = 'true';
-    img.src = this.defaultImage;
   }
 
-  private transformFromAPIResponse(apiTemple: ApiTemple): Temple {
-  const images = (apiTemple.images ?? [])
-    .map((image) => this.resolveImageUrl(image.file))
-    .filter(Boolean);
-  const resolvedImages = images.length > 0 ? images : [this.defaultImage];
+private transformFromAPIResponse(apiTemple: ApiTemple): Temple {
+  const rawImage = apiTemple.images && apiTemple.images.length > 0
+    ? apiTemple.images[0].file
+    : null;
+  const image = this.resolveImageUrl(rawImage);
 
   return {
     id: apiTemple.id,
@@ -403,8 +398,7 @@ export class TemplesComponent implements OnInit {
     location: apiTemple.city.name,
     rating: apiTemple.rating,
     reviews: 0,
-    image: resolvedImages[0],
-    images: resolvedImages,
+    image: image,
     description: apiTemple.description,
     category: apiTemple.main_deity.name,
     established: apiTemple.year_established.toString(),
