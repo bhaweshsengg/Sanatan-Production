@@ -74,15 +74,15 @@ import { RouterModule } from '@angular/router';
             <ul class="space-y-3 mb-6">
               <li class="flex items-center text-gray-400">
                 <span class="mr-3 text-orange-400">📧</span>
-                <span class="text-sm">info&#64;sanatannz.org</span>
+                <span class="text-sm">info&#64;sanatan.nz</span>
               </li>
               <li class="flex items-center text-gray-400">
                 <span class="mr-3 text-orange-400">📞</span>
-                <span class="text-sm">+64 9 123 4567</span>
+                <span class="text-sm">+64 210 220 3440</span>
               </li>
               <li class="flex items-center text-gray-400">
                 <span class="mr-3 text-orange-400">🌐</span>
-                <span class="text-sm">sanatannewzealand.org</span>
+                <span class="text-sm">sanatan.nz</span>
               </li>
             </ul>
             
@@ -105,7 +105,7 @@ import { RouterModule } from '@angular/router';
         <div class="border-t border-gray-700 pt-8">
           <div class="flex flex-col md:flex-row justify-between items-center">
             <div class="text-gray-400 text-sm mb-4 md:mb-0">
-              © 2024 Sanatan New Zealand. Made with ❤️ for the Hindu community. 🕉️
+             © {{ currentYear }} Sanatan New Zealand. Made with ❤️ for the Hindu community. 🕉️
             </div>
             <div class="flex space-x-6 text-sm">
               <a href="#" class="text-gray-400 hover:text-white transition-colors">Privacy Policy</a>
@@ -116,7 +116,7 @@ import { RouterModule } from '@angular/router';
           
           <div class="mt-6 text-center">
             <p class="text-xs text-gray-500">
-              Serving the Sanatan community since 2020 • Registered Charity in New Zealand
+              Serving the Sanatan community since 2020 • Registered Charity in New Zealand • Supported by Devbhoomi Charitable Trust NZ
             </p>
           </div>
         </div>
@@ -124,4 +124,6 @@ import { RouterModule } from '@angular/router';
     </footer>
   `
 })
-export class FooterComponent {}
+export class FooterComponent {
+  currentYear = new Date().getFullYear();
+}
