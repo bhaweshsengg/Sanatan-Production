@@ -3,6 +3,15 @@ import path from 'node:path';
 import { prisma, repairTempleStatuses } from '../config/db.js';
 import { env } from '../config/env.js';
 import { sendSuccess, sendError } from '../utils/response.js';
+import { v2 as cloudinary } from 'cloudinary';
+
+if (env.cloudinary.enabled) {
+  cloudinary.config({
+    cloud_name: env.cloudinary.cloudName,
+    api_key: env.cloudinary.apiKey,
+    api_secret: env.cloudinary.apiSecret,
+  });
+}
 
 const parseListField = (value) => {
   if (Array.isArray(value)) return value;
@@ -17,6 +26,17 @@ const parseListField = (value) => {
   return [];
 };
 
+const normalizeUploadedImagePath = (value) => {
+  if (!value || typeof value !== 'string') return '';
+
+  const normalized = value.replace(/\\/g, '/');
+  const lastSegment = normalized.split('/').filter(Boolean).pop();
+
+  if (!lastSegment) return '';
+
+  return `/uploads/${lastSegment}`;
+};
+
 const normalizeTempleRecord = (temple) => ({
   ...temple,
   city: temple.city,
@@ -25,6 +45,54 @@ const normalizeTempleRecord = (temple) => ({
   service_offered: typeof temple.service_offered === 'string' ? parseListField(temple.service_offered) : temple.service_offered,
   facilities_offered: typeof temple.facilities_offered === 'string' ? parseListField(temple.facilities_offered) : temple.facilities_offered,
 });
+
+const uploadNewImage = (file) => {
+  if (!env.cloudinary.enabled) {
+    return Promise.resolve(file.path);
+  }
+
+  return new Promise((resolve, reject) => {
+    const uploadStream = cloudinary.uploader.upload_stream(
+      {
+        folder: 'sanatan/temples',
+        resource_type: 'image',
+      },
+      (error, result) => {
+        if (error) {
+          reject(error);
+          return;
+        }
+
+        resolve(result.secure_url);
+      }
+    );
+
+    uploadStream.end(file.buffer);
+  });
+};
+
+const saveNewImages = async (templeId, files) => {
+  await Promise.all(files.slice(0, env.maxUploadFiles).map(async (file) => {
+    const imageUrl = await uploadNewImage(file);
+    await prisma.templeImage.create({
+      data: {
+        templeId,
+        file: imageUrl,
+      },
+    });
+  }));
+};
+
+const resolveLocalImagePath = (imagePath) => {
+  const normalized = imagePath.replace(/\\/g, '/').replace(/^\/+/, '');
+  const relativePath = normalized.startsWith('uploads/')
+    ? normalized.slice('uploads/'.length)
+    : normalized;
+  const candidate = path.resolve(env.uploadDir, relativePath);
+  const uploadRoot = path.resolve(env.uploadDir) + path.sep;
+
+  return candidate.startsWith(uploadRoot) ? candidate : null;
+};
 
 export const listTemples = async (req, res) => {
   try {
@@ -89,14 +157,7 @@ export const createTemple = async (req, res) => {
 
     const files = Array.isArray(req.files) ? req.files : [];
     if (files.length) {
-      await Promise.all(files.slice(0, env.maxUploadFiles).map(async (file) => {
-        await prisma.templeImage.create({
-          data: {
-            templeId: temple.id,
-            file: file.path,
-          },
-        });
-      }));
+      await saveNewImages(temple.id, files);
     }
 
     const savedTemple = await prisma.temple.findUnique({
@@ -167,15 +228,7 @@ export const updateTemple = async (req, res) => {
 
     const files = Array.isArray(req.files) ? req.files : [];
     if (files.length) {
-      await prisma.templeImage.deleteMany({ where: { templeId: temple.id } });
-      await Promise.all(files.slice(0, env.maxUploadFiles).map(async (file) => {
-        await prisma.templeImage.create({
-          data: {
-            templeId: temple.id,
-            file: file.path,
-          },
-        });
-      }));
+      await saveNewImages(temple.id, files);
     }
 
     const updated = await prisma.temple.findUnique({
@@ -199,7 +252,11 @@ export const deleteTemple = async (req, res) => {
     if (!temple) return sendError(res, 404, 'Temple not found', {});
 
     for (const image of temple.images) {
-      await fs.rm(image.file, { force: true });
+      const imagePath = image.file || '';
+      if (/^https?:\/\//i.test(imagePath)) continue;
+
+      const absolutePath = resolveLocalImagePath(imagePath);
+      if (absolutePath) await fs.rm(absolutePath, { force: true });
     }
 
     await prisma.temple.delete({ where: { id: Number(req.params.id) } });

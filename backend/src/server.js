@@ -1,8 +1,11 @@
 import 'dotenv/config';
+import fs from 'node:fs';
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
+import path from 'node:path';
+
 
 import { env } from './config/env.js';
 import { prisma } from './config/db.js';
@@ -12,6 +15,7 @@ import cityRoutes from './routes/city.routes.js';
 import deityRoutes from './routes/deity.routes.js';
 import templeRoutes from './routes/temple.routes.js';
 import businessRoutes from './routes/business.routes.js';
+import userRegistrationRoutes from './routes/userRegistration.routes.js';
 import eventRoutes from './routes/event.routes.js';
 
 import { errorHandler } from './middleware/errorHandler.js';
@@ -46,6 +50,31 @@ const corsOptions = {
 
   credentials: false,
 };
+
+/* =========================
+   STATIC FILES (uploaded images)
+========================= */
+const fallbackTempleImage = path.resolve(env.uploadDir, 'temple_images', 'temple1.jpg');
+
+app.use('/uploads', (req, res, next) => {
+  const requestedPath = decodeURIComponent(req.path || '').replace(/^\/+/, '');
+  if (!requestedPath) return next();
+
+  const absolutePath = path.resolve(env.uploadDir, requestedPath);
+  if (fs.existsSync(absolutePath)) {
+    return next();
+  }
+
+  if (fs.existsSync(fallbackTempleImage)) {
+    return res.sendFile(fallbackTempleImage);
+  }
+
+  return next();
+});
+
+app.use('/uploads', express.static(path.resolve(env.uploadDir)));
+app.use('/temple_images', express.static(path.resolve(env.uploadDir, 'temple_images')));
+app.use(express.static(path.resolve(env.uploadDir)));
 
 app.use(cors(corsOptions));
 
@@ -96,8 +125,9 @@ app.use('/api', authRoutes);
 app.use('/api/city', cityRoutes);
 app.use('/api/deity', deityRoutes);
 app.use('/api/temple', templeRoutes);
-app.use('/api/event', eventRoutes);
 app.use('/api/business', businessRoutes);
+app.use('/api/user-registration', userRegistrationRoutes);
+app.use('/api/event', eventRoutes);
 
 /* =========================
    PUBLIC API ROUTES
@@ -107,8 +137,9 @@ app.use('/api/public/users', authRoutes);
 app.use('/api/public/city', cityRoutes);
 app.use('/api/public/deity', deityRoutes);
 app.use('/api/public/temple', templeRoutes);
-app.use('/api/public/event', eventRoutes);
 app.use('/api/public/business', businessRoutes);
+app.use('/api/public/user-registration', userRegistrationRoutes);
+app.use('/api/public/event', eventRoutes);
 
 /* =========================
    ERROR HANDLER
@@ -131,9 +162,9 @@ if (!process.env.VERCEL) {
       console.log('Database connected successfully');
       app.listen(env.port, '0.0.0.0', () => {
         console.log(`Server running on port ${env.port}`);
-        console.log(
-          `Business API: http://localhost:${env.port}/api/public/business`
-        );
+        // console.log(
+        //   `Business API: http://localhost:${env.port}/api/public/business`
+        // );
       });
     })
     .catch((error) => {

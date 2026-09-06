@@ -195,7 +195,7 @@ model Business {
 model TempleImage {
   id       Int    @id @default(autoincrement())
   templeId Int    @map("temple_id")
-  file     String
+  file     String @db.VarChar(2048)
   temple   Temple @relation(fields: [templeId], references: [id], onDelete: Cascade)
 
   @@map("temple_templeimage")

@@ -36,4 +36,14 @@ export const env = {
     'https://sanatan-production-frontend.vercel.app',
   ],
   maxUploadFiles: Number(process.env.MAX_UPLOAD_FILES || 5),
+  cloudinary: {
+    cloudName: process.env.CLOUDINARY_CLOUD_NAME || '',
+    apiKey: process.env.CLOUDINARY_API_KEY || '',
+    apiSecret: process.env.CLOUDINARY_API_SECRET || '',
+    enabled: Boolean(
+      process.env.CLOUDINARY_CLOUD_NAME &&
+      process.env.CLOUDINARY_API_KEY &&
+      process.env.CLOUDINARY_API_SECRET
+    ),
+  },
 };
