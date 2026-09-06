@@ -3,6 +3,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
+import { environment } from '../../../../environments/environment';
 import {
   CommonService,
   Temple,
@@ -842,29 +843,51 @@ export class AddTempleComponent implements OnInit {
     });
   }
 
-  loadTemple(id: number) {
-    this.isLoading = true;
-    this.commonService.getTemplebyId(id).subscribe({
-      next: (temple) => {
-        this.temple = temple;
-        // If there are existing image, populate the uploadedImages array
-        if (temple.uploaded_images && temple.uploaded_images.length > 0) {
-          temple.uploaded_images.forEach((img, index) => {
-            this.uploadedImages.push({
-              file: new File([], `existing-image-${index}`),
-              preview: img.file,
-              name: `Existing Image ${index + 1}`,
-            });
+ loadTemple(id: number) {
+  this.isLoading = true;
+  this.commonService.getTemplebyId(id).subscribe({
+    next: (temple) => {
+      this.temple = temple;
+      if (temple.images && temple.images.length > 0) {
+        temple.images.forEach((img, index) => {
+          this.uploadedImages.push({
+            file: new File([], `existing-image-${index}`),
+            preview: this.resolveImageUrl(img.file),
+            name: `Existing Image ${index + 1}`,
           });
-        }
-        this.isLoading = false;
-      },
-      error: (error) => {
-        console.error('Error loading temple:', error);
-        this.isLoading = false;
-      },
-    });
+        });
+      }
+      this.isLoading = false;
+    },
+    error: (error) => {
+      console.error('Error loading temple:', error);
+      this.isLoading = false;
+    },
+  });
+}
+
+private backendOrigin = environment.apiBaseUrl.replace(/\/api(\/public)?\/?$/, '');
+
+private resolveImageUrl(file: string | undefined | null): string {
+  if (!file) return '';
+  if (/^https?:\/\//i.test(file)) return file;
+
+  const normalized = file.replace(/\\/g, '/').replace(/^\.\//, '').replace(/^\//, '');
+
+  if (!normalized) {
+    return '';
   }
+
+  if (normalized.startsWith('uploads/')) {
+    return `${this.backendOrigin}/${normalized}`;
+  }
+
+  if (normalized.startsWith('temple_images/')) {
+    return `${this.backendOrigin}/uploads/${normalized}`;
+  }
+
+  return `${this.backendOrigin}/uploads/${normalized}`;
+}
 
   onFileSelected(event: any) {
     this.uploadError = '';

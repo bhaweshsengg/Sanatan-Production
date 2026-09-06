@@ -1,7 +1,9 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../Auth/auth.service';
+import { HttpClient } from '@angular/common/http';
+import { environment } from '../../../environments/environment';
 
 interface CommunityEvent {
   id: string;
@@ -37,9 +39,11 @@ interface CommunityEvent {
           </p>
         </div>
 
-        <div class="grid md:grid-cols-3 gap-8 mb-12">
+        <section class="mb-12" aria-labelledby="upcoming-events-heading">
+          <h2 id="upcoming-events-heading" class="mb-6 text-2xl font-bold text-gray-900">Upcoming Events</h2>
+          <div class="grid md:grid-cols-3 gap-8">
           <div
-            *ngFor="let event of events"
+            *ngFor="let event of upcomingEvents"
             class="bg-white border border-gray-200 rounded-xl p-6 shadow-sm hover:shadow-lg transition-shadow"
           >
             <div class="flex items-center justify-between mb-4">
@@ -88,7 +92,21 @@ interface CommunityEvent {
               Remove Event
             </button>
           </div>
-        </div>
+          </div>
+          <p *ngIf="!upcomingEvents.length" class="rounded-lg border border-dashed p-6 text-center text-gray-600">No upcoming events are available.</p>
+        </section>
+
+        <section class="mb-12 border-t border-gray-200 pt-10" aria-labelledby="past-events-heading">
+          <h2 id="past-events-heading" class="mb-6 text-2xl font-bold text-gray-900">Past Events</h2>
+          <div class="grid md:grid-cols-3 gap-8">
+            <div *ngFor="let event of pastEvents" class="bg-gray-50 border border-gray-200 rounded-xl p-6 shadow-sm">
+              <div class="flex items-center justify-between mb-4"><h3 class="text-xl font-bold text-gray-900">{{ event.title }}</h3><span [class]="event.categoryClass">{{ event.category }}</span></div>
+              <p class="text-black-700 mb-4">{{ event.venue }}</p>
+              <div class="space-y-2 text-black-700"><div>📅 {{ event.date }}</div><div>🕐 {{ event.time }}</div><div>👥 {{ event.attendees }} attending</div></div>
+            </div>
+          </div>
+          <p *ngIf="!pastEvents.length" class="rounded-lg border border-dashed p-6 text-center text-gray-600">No past events are available.</p>
+        </section>
 
         <section class="border-t border-gray-200 pt-10 mb-12" aria-labelledby="joined-events-heading">
           <div class="flex items-center justify-between mb-6">
@@ -137,7 +155,6 @@ interface CommunityEvent {
               through shared celebrations and learning.
             </p>
             <button
-              *ngIf="isAdmin"
               routerLink="/events/add-event"
               class="bg-orange-600 text-white px-6 py-3 rounded-md hover:bg-orange-700"
             >
@@ -149,50 +166,78 @@ interface CommunityEvent {
     </section>
   `,
 })
-export class EventsComponent {
+export class EventsComponent implements OnInit {
   private readonly storageKey = 'sanatan-joined-events';
   private readonly joinedEventIds = this.loadJoinedEventIds();
   readonly isAdmin: boolean;
+  private readonly apiUrl = environment.apiBaseUrl;
+  private readonly authService: AuthService;
 
-  constructor(authService: AuthService) {
+  constructor(
+    authService: AuthService,
+    private readonly http: HttpClient,
+    private readonly router: Router,
+    private readonly route: ActivatedRoute,
+  ) {
     const user = authService.getUserData();
+    this.authService = authService;
     this.isAdmin = user?.role === 'Admin' || user?.role === 'Super Admin';
   }
 
+  get upcomingEvents(): CommunityEvent[] {
+    return this.events.filter(event => !this.isPastEvent(event));
+  }
+
+  get pastEvents(): CommunityEvent[] {
+    return this.events.filter(event => this.isPastEvent(event));
+  }
+
+  ngOnInit(): void {
+    this.http.get<any>(`${this.apiUrl}/event`).subscribe({
+      next: response => {
+        const approvedEvents = Array.isArray(response?.data) ? response.data.map((event: any) => this.mapApiEvent(event)) : [];
+        const existingIds = new Set(this.events.map(event => event.id));
+        this.events = [...this.events, ...approvedEvents.filter((event: CommunityEvent) => !existingIds.has(event.id))];
+        this.joinEventFromLogin();
+      },
+      error: () => undefined,
+    });
+  }
+
   events: CommunityEvent[] = [
-    {
-      id: 'janmashtami',
-      title: 'Janmashtami Celebration',
-      venue: 'ISKCON Auckland',
-      category: 'Festival',
-      categoryClass: 'bg-orange-100 text-orange-800 px-2 py-1 rounded text-sm font-medium',
-      date: 'Monday, August 26',
-      time: '18:00',
-      attendees: 250,
-      joined: this.joinedEventIds.has('janmashtami'),
-    },
-    {
-      id: 'ganesha-chaturthi',
-      title: 'Ganesha Chaturthi',
-      venue: 'Ganesh Temple',
-      category: 'Puja',
-      categoryClass: 'bg-pink-100 text-pink-800 px-2 py-1 rounded text-sm font-medium',
-      date: 'Saturday, September 7',
-      time: '10:00',
-      attendees: 180,
-      joined: this.joinedEventIds.has('ganesha-chaturthi'),
-    },
-    {
-      id: 'gita-study',
-      title: 'Bhagavad Gita Study',
-      venue: 'Community Center',
-      category: 'Satsang',
-      categoryClass: 'bg-purple-100 text-purple-800 px-2 py-1 rounded text-sm font-medium',
-      date: 'Tuesday, August 20',
-      time: '19:00',
-      attendees: 45,
-      joined: this.joinedEventIds.has('gita-study'),
-    },
+    // {
+    //   id: 'janmashtami',
+    //   title: 'Janmashtami Celebration',
+    //   venue: 'ISKCON Auckland',
+    //   category: 'Festival',
+    //   categoryClass: 'bg-orange-100 text-orange-800 px-2 py-1 rounded text-sm font-medium',
+    //   date: 'Monday, August 26',
+    //   time: '18:00',
+    //   attendees: 250,
+    //   joined: this.joinedEventIds.has('janmashtami'),
+    // },
+    // {
+    //   id: 'ganesha-chaturthi',
+    //   title: 'Ganesha Chaturthi',
+    //   venue: 'Ganesh Temple',
+    //   category: 'Puja',
+    //   categoryClass: 'bg-pink-100 text-pink-800 px-2 py-1 rounded text-sm font-medium',
+    //   date: 'Saturday, September 7',
+    //   time: '10:00',
+    //   attendees: 180,
+    //   joined: this.joinedEventIds.has('ganesha-chaturthi'),
+    // },
+    // {
+    //   id: 'gita-study',
+    //   title: 'Bhagavad Gita Study',
+    //   venue: 'Community Center',
+    //   category: 'Satsang',
+    //   categoryClass: 'bg-purple-100 text-purple-800 px-2 py-1 rounded text-sm font-medium',
+    //   date: 'Tuesday, August 20',
+    //   time: '19:00',
+    //   attendees: 45,
+    //   joined: this.joinedEventIds.has('gita-study'),
+    // },
     ...this.loadCreatedEvents(),
   ];
 
@@ -202,6 +247,13 @@ export class EventsComponent {
 
   joinEvent(event: CommunityEvent): void {
     if (event.joined) {
+      return;
+    }
+
+    if (!this.authService.isLoggedIn()) {
+      this.router.navigate(['/auth/login-registeration-forget'], {
+        queryParams: { returnUrl: '/events', joinEvent: event.id },
+      });
       return;
     }
 
@@ -288,6 +340,36 @@ export class EventsComponent {
         }));
     } catch {
       return [];
+    }
+  }
+
+  private mapApiEvent(event: any): CommunityEvent {
+    return {
+      id: String(event.id),
+      title: event.title,
+      venue: event.hallName ? `${event.templeName} - ${event.hallName}` : event.templeName,
+      category: event.category,
+      categoryClass: 'bg-orange-100 text-orange-800 px-2 py-1 rounded text-sm font-medium',
+      date: event.multiDay ? `${event.eventDate} - ${event.endDate}` : event.eventDate,
+      time: `${event.startTime} - ${event.endTime}`,
+      attendees: event.attendees ?? 0,
+      joined: this.joinedEventIds.has(String(event.id)),
+    };
+  }
+
+  private isPastEvent(event: CommunityEvent): boolean {
+    const eventDate = new Date(event.date.slice(0, 10));
+    return !Number.isNaN(eventDate.getTime()) && eventDate < new Date(new Date().toDateString());
+  }
+
+  private joinEventFromLogin(): void {
+    const eventId = this.route.snapshot.queryParamMap.get('joinEvent');
+    if (!eventId || !this.authService.isLoggedIn()) return;
+
+    const event = this.events.find(currentEvent => currentEvent.id === eventId);
+    if (event) {
+      this.joinEvent(event);
+      this.router.navigate(['/events'], { replaceUrl: true });
     }
   }
 }

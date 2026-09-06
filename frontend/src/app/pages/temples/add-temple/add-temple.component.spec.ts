@@ -1,4 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { environment } from '../../../../environments/environment';
 
 import { AddTempleComponent } from './add-temple.component';
 

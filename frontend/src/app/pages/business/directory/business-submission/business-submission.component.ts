@@ -37,6 +37,7 @@ interface Submission {
           </li>
           <li>
             <a class="group inline-flex h-10 items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors hover:bg-gray-100 hover:text-gray-900" routerLink="/business/admin/business-submissions">Admin</a>
+            <a class="group inline-flex h-10 items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors hover:bg-gray-100 hover:text-gray-900" routerLink="/admin/events">Events</a>
           </li>
         </ul>
       </nav>
@@ -296,6 +297,7 @@ interface Submission {
                             Delist
                           </button>
                         }
+                          
                       </div>
                     </div>
                     <p class="text-gray-700 text-sm line-clamp-2 mb-3">{{ item.description }}</p>

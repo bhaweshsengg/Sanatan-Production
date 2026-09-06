@@ -47,7 +47,7 @@ import { DateandtimeComponent } from '../dateandtime/dateandtime.component';
         </div>
         
         <h1 [@fadeInUp] class="text-6xl md:text-7xl font-bold mb-8">
-          <span class="bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent block mb-4">नमस्ते!</span>
+          <span class="bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent block mb-4 p-4">नमस्ते!</span>
           <span class="text-gray-900">Sanatan New Zealand</span>
         </h1>
         

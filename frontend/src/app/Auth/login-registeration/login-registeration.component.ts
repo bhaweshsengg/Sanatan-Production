@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { Component } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { HttpClient} from '@angular/common/http';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { AuthService } from '../auth.service';
 import { environment } from '../../../environments/environment';
 
@@ -112,13 +112,18 @@ export class LoginRegisterationComponent {
   forgotForm!: FormGroup;
 
   private apiUrl = `${environment.apiBaseUrl}/public/users/login`;
+  private readonly returnUrl: string;
+  private readonly joinEventId: string | null;
 
   constructor(
     private fb: FormBuilder,
     private http: HttpClient,
     private router: Router,
-    private authService: AuthService
+    private authService: AuthService,
+    private route: ActivatedRoute
   ) {
+    this.returnUrl = this.route.snapshot.queryParamMap.get('returnUrl') || '/dashboard';
+    this.joinEventId = this.route.snapshot.queryParamMap.get('joinEvent');
     // Updated to use username instead of email
     this.loginForm = this.fb.group({
       username: ['', [Validators.required]],
@@ -175,7 +180,9 @@ export class LoginRegisterationComponent {
           
           // Redirect after a short delay
           setTimeout(() => {
-            this.router.navigate(['/business/admin/business-submissions']);
+            this.router.navigate([this.returnUrl], {
+              queryParams: this.joinEventId ? { joinEvent: this.joinEventId } : {},
+            });
           }, 1500);
         },
         error: (error) => {

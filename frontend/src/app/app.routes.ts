@@ -10,6 +10,7 @@ import { AboutComponent } from './pages/about/about.component';
 import { NotFoundComponent } from './pages/not-found/not-found.component';
 import { AdddiscussionComponent } from './pages/community/adddiscussion/adddiscussion.component';
 import { AddEventComponent } from './pages/events/add-event/add-event.component';
+import { EventAdminComponent } from './pages/events/event-admin/event-admin.component';
 import { AddTempleComponent } from './pages/temples/add-temple/add-temple.component';
 import { DashboardComponent } from './pages/dashboard/dashboard.component';
 import { HelppageComponent } from './pages/helppage/helppage.component';
@@ -20,6 +21,8 @@ import { LoginRegisterationComponent } from './Auth/login-registeration/login-re
 import { ViewTempleComponent } from './pages/temples/view-temple/view-temple.component';
 import { AddbuisnessComponent } from './pages/business/addbuisness/addbuisness.component';
 import { ViewdirectoryComponent } from './pages/business/viewdirectory/viewdirectory.component';
+import { MandirUserRegistrationComponent } from './pages/user-registration/mandir-user-registration.component';
+import { UserApprovalAdminComponent } from './pages/user-registration/user-approval-admin.component';
 import { adminGuard } from './Auth/admin.guard';
 
 export const routes: Routes = [
@@ -31,6 +34,8 @@ export const routes: Routes = [
   { path: 'temples/edit-temple/:id', component: AddTempleComponent },
   { path: 'events', component: EventsComponent },
   { path: 'events/add-event', component: AddEventComponent },
+  { path: 'admin/events', component: EventAdminComponent, canActivate: [adminGuard] },
+  { path: 'admin/events/edit/:id', component: AddEventComponent, canActivate: [adminGuard] },
   { path: 'community', component: CommunityComponent },
   { path: 'community/discussion/new', component: AdddiscussionComponent },
   { path: 'panchang', component: PanchangComponent },
@@ -52,6 +57,15 @@ export const routes: Routes = [
   {
     path: 'business/register/:id',
     component: ViewdirectoryComponent,
+  },
+  {
+    path: 'user-registration',
+    component: MandirUserRegistrationComponent,
+  },
+  {
+    path: 'admin/user-approvals',
+    component: UserApprovalAdminComponent,
+    canActivate: [adminGuard],
   },
   {
     path: 'auth/login-registeration-forget',

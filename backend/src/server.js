@@ -12,6 +12,7 @@ import cityRoutes from './routes/city.routes.js';
 import deityRoutes from './routes/deity.routes.js';
 import templeRoutes from './routes/temple.routes.js';
 import businessRoutes from './routes/business.routes.js';
+import eventRoutes from './routes/event.routes.js';
 
 import { errorHandler } from './middleware/errorHandler.js';
 
@@ -95,6 +96,7 @@ app.use('/api', authRoutes);
 app.use('/api/city', cityRoutes);
 app.use('/api/deity', deityRoutes);
 app.use('/api/temple', templeRoutes);
+app.use('/api/event', eventRoutes);
 app.use('/api/business', businessRoutes);
 
 /* =========================
@@ -105,6 +107,7 @@ app.use('/api/public/users', authRoutes);
 app.use('/api/public/city', cityRoutes);
 app.use('/api/public/deity', deityRoutes);
 app.use('/api/public/temple', templeRoutes);
+app.use('/api/public/event', eventRoutes);
 app.use('/api/public/business', businessRoutes);
 
 /* =========================

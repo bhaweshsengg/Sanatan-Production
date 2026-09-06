@@ -2,6 +2,8 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
 import { CommonService, Temple } from 'src/app/shared/common.service';
+import { environment } from '../../../../environments/environment';
+
 interface ApiTemple {
   id: number;
   mandir_name: string;
@@ -63,7 +65,7 @@ interface ApiTemple {
                   loading="lazy"
                   decoding="async"
                   class="object-cover w-full h-full"
-                  [src]="temple?.images?.[0]?.file"
+                  [src]="resolveImageUrl(temple?.images?.[0]?.file)"
                 />
                 <div
                   class="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent text-primary-foreground hover:bg-primary/80 absolute top-4 left-4 bg-orange-600"
@@ -78,7 +80,7 @@ interface ApiTemple {
                     loading="lazy"
                     decoding="async"
                     class="object-cover w-full h-full"
-                    [src]="image.file"
+                    [src]="resolveImageUrl(image.file)"
                   />
                 </div>
               </div>
@@ -596,6 +598,33 @@ export class ViewTempleComponent implements OnInit {
       }
     });
   }
+
+  private readonly defaultImage =
+  'https://images.unsplash.com/photo-1582510003544-4d00b7f74220?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80';
+
+private backendOrigin = environment.apiBaseUrl.replace(/\/api(\/public)?\/?$/, '');
+
+resolveImageUrl(file: string | undefined | null): string {
+  if (!file) {
+    return this.defaultImage;
+  }
+
+  if (/^https?:\/\//i.test(file)) {
+    return file;
+  }
+
+  const normalized = file.replace(/\\/g, '/').replace(/^\.\//, '').replace(/^\//, '');
+
+  if (!normalized) {
+    return this.defaultImage;
+  }
+
+  const normalizedPath = normalized.startsWith('uploads/') || normalized.startsWith('temple_images/')
+    ? normalized
+    : `temple_images/${normalized}`;
+
+  return `${this.backendOrigin}/uploads/${normalizedPath.replace(/^uploads\//, '').replace(/^temple_images\//, 'temple_images/')}`;
+}
 private showToastMessage(message: string, type: 'success' | 'error' = 'error') {
     this.toastMessage.set(message);
     this.toastType.set(type);
