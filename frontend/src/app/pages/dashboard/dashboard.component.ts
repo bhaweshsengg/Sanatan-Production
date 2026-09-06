@@ -1,5 +1,7 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { HttpClient } from '@angular/common/http';
+import { environment } from '../../../environments/environment';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 
@@ -80,21 +82,21 @@ interface Sloka {
               <div class="rounded-lg border bg-card text-card-foreground shadow-sm hover:shadow-md transition-shadow">
                 <div class="p-4 text-center">
                   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-building2 h-8 w-8 text-orange-500 mx-auto mb-2"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"></path><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"></path><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"></path><path d="M10 6h4"></path><path d="M10 10h4"></path><path d="M10 14h4"></path><path d="M10 18h4"></path></svg>
-                  <div class="text-2xl font-bold text-gray-900">50+</div>
+                  <div class="text-2xl font-bold text-gray-900">{{stats.temples}}</div>
                   <div class="text-sm text-black-700">Hindu Temples</div>
                 </div>
               </div>
               <div class="rounded-lg border bg-card text-card-foreground shadow-sm hover:shadow-md transition-shadow">
                 <div class="p-4 text-center">
                   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-calendar h-8 w-8 text-green-500 mx-auto mb-2"><path d="M8 2v4"></path><path d="M16 2v4"></path><rect width="18" height="18" x="3" y="4" rx="2"></rect><path d="M3 10h18"></path></svg>
-                  <div class="text-2xl font-bold text-gray-900">200+</div>
+                  <div class="text-2xl font-bold text-gray-900">{{stats.events}}</div>
                   <div class="text-sm text-black-700">Monthly Events</div>
                 </div>
               </div>
               <div class="rounded-lg border bg-card text-card-foreground shadow-sm hover:shadow-md transition-shadow">
                 <div class="p-4 text-center">
                   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-message-circle h-8 w-8 text-blue-500 mx-auto mb-2"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"></path></svg>
-                  <div class="text-2xl font-bold text-gray-900">5000+</div>
+                  <div class="text-2xl font-bold text-gray-900">{{stats.users}}</div>
                   <div class="text-sm text-black-700">Community Members</div>
                 </div>
               </div>
@@ -129,7 +131,7 @@ interface Sloka {
               </div>
               <div class="p-6 pt-0">
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <a class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&amp;_svg]:pointer-events-none [&amp;_svg]:size-4 [&amp;_svg]:shrink-0 text-primary-foreground px-4 py-2 h-20 flex-col bg-orange-600 hover:bg-orange-700" href="/events/create">
+                  <a class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&amp;_svg]:pointer-events-none [&amp;_svg]:size-4 [&amp;_svg]:shrink-0 text-primary-foreground px-4 py-2 h-20 flex-col bg-orange-600 hover:bg-orange-700" href="/events/add-event">
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-plus h-6 w-6 mb-2"><path d="M5 12h14"></path><path d="M12 5v14"></path></svg>
                     <span class="text-sm">Create Event</span>
                   </a>
@@ -167,7 +169,7 @@ interface Sloka {
                       <div class="inline-flex items-center rounded-full border px-2.5 py-0.5 font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 text-foreground text-xs">Festival</div>
                     </div>
                   </div>
-                  <a class="inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&amp;_svg]:pointer-events-none [&amp;_svg]:size-4 [&amp;_svg]:shrink-0 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 rounded-md px-3" href="/events/1">View</a>
+                  <a class="inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&amp;_svg]:pointer-events-none [&amp;_svg]:size-4 [&amp;_svg]:shrink-0 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 rounded-md px-3" href="/events">View</a>
                 </div>
                 <div class="flex items-center space-x-4 p-3 bg-gray-50 rounded-lg">
                   <img alt="Ganesha Chaturthi Puja" loading="lazy" width="60" height="60" decoding="async" data-nimg="1" class="rounded-lg object-cover" src="https://placehold.co/60x60/FF4500/FFFFFF?text=Ganesha" style="color: transparent;">
@@ -180,7 +182,7 @@ interface Sloka {
                       <div class="inline-flex items-center rounded-full border px-2.5 py-0.5 font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 text-foreground text-xs">Puja</div>
                     </div>
                   </div>
-                  <a class="inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&amp;_svg]:pointer-events-none [&amp;_svg]:size-4 [&amp;_svg]:shrink-0 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 rounded-md px-3" href="/events/2">View</a>
+                  <a class="inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&amp;_svg]:pointer-events-none [&amp;_svg]:size-4 [&amp;_svg]:shrink-0 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 rounded-md px-3" href="/events">View</a>
                 </div>
                 <div class="flex items-center space-x-4 p-3 bg-gray-50 rounded-lg">
                   <img alt="Bhagavad Gita Study Circle" loading="lazy" width="60" height="60" decoding="async" data-nimg="1" class="rounded-lg object-cover" src="https://placehold.co/60x60/8B4513/FFFFFF?text=Gita" style="color: transparent;">
@@ -193,7 +195,7 @@ interface Sloka {
                       <div class="inline-flex items-center rounded-full border px-2.5 py-0.5 font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus-visible:ring-offset-2 text-foreground text-xs">Satsang</div>
                     </div>
                   </div>
-                  <a class="inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&amp;_svg]:pointer-events-none [&amp;_svg]:size-4 [&amp;_svg]:shrink-0 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 rounded-md px-3" href="/events/3">View</a>
+                  <a class="inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&amp;_svg]:pointer-events-none [&amp;_svg]:size-4 [&amp;_svg]:shrink-0 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 rounded-md px-3" href="/events">View</a>
                 </div>
               </div>
             </div>
@@ -378,6 +380,15 @@ interface Sloka {
   styles: []
 })
 export class DashboardComponent implements OnInit, OnDestroy {
+  private http = inject(HttpClient);
+
+  stats = {
+    temples: 0,
+    events: 0,
+    users: 0,
+    businesses: 0
+  };
+
   currentDate: string = '';
   currentTime: string = '';
   timeZone: string = 'Pacific/Auckland';
@@ -444,6 +455,15 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.updateDateTime();
     this.updateDailySloka();
     this.updatePanchangData();
+    
+    this.http.get<any>(`${environment.apiBaseUrl}/stats`).subscribe({
+      next: (res) => {
+        if (res.data) {
+          this.stats = res.data;
+        }
+      },
+      error: (err) => console.error('Failed to load stats', err)
+    });
     
     // Update time every second
     this.timer = setInterval(() => {

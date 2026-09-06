@@ -216,17 +216,55 @@ export class LoginRegisterationComponent {
         this.showToastMessage('Passwords do not match.', 'error');
         return;
       }
-      console.log('Register Data:', this.registerForm.value);
+      this.isLoading = true;
+      const formData = this.registerForm.value;
+      const registerData = {
+        username: formData.name,
+        email: formData.email,
+        password: formData.password
+      };
+      
+      this.http.post<any>(`${environment.apiBaseUrl}/public/users/register`, registerData).subscribe({
+        next: (response) => {
+          this.isLoading = false;
+          this.showToastMessage('Registration successful! Please login.', 'success');
+          this.registerForm.reset();
+          this.activeTab = 'login';
+        },
+        error: (error) => {
+          this.isLoading = false;
+          let errorMessage = 'Registration failed. Please try again.';
+          if (error.error && error.error.message) {
+            errorMessage = error.error.message;
+          }
+          this.showToastMessage(errorMessage, 'error');
+        }
+      });
     } else {
       this.registerForm.markAllAsTouched();
+      this.showToastMessage('Please fill in all required fields.', 'error');
     }
   }
 
   onForgot() {
     if (this.forgotForm.valid) {
-      console.log('Forgot Password Data:', this.forgotForm.value);
+      this.isLoading = true;
+      const email = this.forgotForm.value.email;
+      this.http.post<any>(`${environment.apiBaseUrl}/public/users/forgot-password`, { email }).subscribe({
+        next: (response) => {
+          this.isLoading = false;
+          this.showToastMessage('If an account exists, a reset link has been sent to your email.', 'success');
+          this.forgotForm.reset();
+          this.activeTab = 'login';
+        },
+        error: (error) => {
+          this.isLoading = false;
+          this.showToastMessage('Failed to process request. Please try again.', 'error');
+        }
+      });
     } else {
       this.forgotForm.markAllAsTouched();
+      this.showToastMessage('Please provide a valid email.', 'error');
     }
   }
 

@@ -18,12 +18,15 @@ import { UsermanualComponent } from './pages/helppage/usermanual/usermanual.comp
 import { DirectoryComponent } from './pages/business/directory/directory.component';
 import { BusinessSubmissionComponent } from './pages/business/directory/business-submission/business-submission.component';
 import { LoginRegisterationComponent } from './Auth/login-registeration/login-registeration.component';
+import { ResetPasswordComponent } from './Auth/reset-password/reset-password.component';
 import { ViewTempleComponent } from './pages/temples/view-temple/view-temple.component';
 import { AddbuisnessComponent } from './pages/business/addbuisness/addbuisness.component';
 import { ViewdirectoryComponent } from './pages/business/viewdirectory/viewdirectory.component';
 import { MandirUserRegistrationComponent } from './pages/user-registration/mandir-user-registration.component';
 import { UserApprovalAdminComponent } from './pages/user-registration/user-approval-admin.component';
 import { adminGuard } from './Auth/admin.guard';
+import { AdminCityComponent } from './pages/admin/admin-city/admin-city.component';
+import { AdminDeityComponent } from './pages/admin/admin-deity/admin-deity.component';
 
 export const routes: Routes = [
   { path: '', component: HomeComponent },
@@ -70,6 +73,20 @@ export const routes: Routes = [
   {
     path: 'auth/login-registeration-forget',
     component: LoginRegisterationComponent,
+  },
+  {
+    path: 'auth/reset-password',
+    component: ResetPasswordComponent,
+  },
+  {
+    path: 'admin/cities',
+    component: AdminCityComponent,
+    canActivate: [adminGuard],
+  },
+  {
+    path: 'admin/deities',
+    component: AdminDeityComponent,
+    canActivate: [adminGuard],
   },
   { path: 'not-found', component: NotFoundComponent },
   { path: '**', redirectTo: '/not-found' } // This MUST be the last route
