@@ -1,3 +1,4 @@
+import { logger } from '../utils/logger.js';
 import { prisma } from '../config/db.js';
 
 const businessId = (value) => {
@@ -15,11 +16,21 @@ const isMissingBusinessTable = (error) =>
 
 export const getBusinesses = async (req, res) => {
   try {
-    const businesses = await prisma.business.findMany({
-      orderBy: {
-        id: 'desc',
-      },
-    });
+    const { page = 1, limit = 20 } = req.query;
+    const pageNum = Math.max(1, Number(page));
+    const limitNum = Math.max(1, Number(limit));
+    const skip = (pageNum - 1) * limitNum;
+
+    const [businesses, total] = await Promise.all([
+      prisma.business.findMany({
+        orderBy: {
+          id: 'desc',
+        },
+        skip,
+        take: limitNum,
+      }),
+      prisma.business.count()
+    ]);
 
     res.json({
       success: true,
@@ -28,6 +39,12 @@ export const getBusinesses = async (req, res) => {
         ...business,
         id: business.id.toString(),
       })),
+      pagination: {
+        total,
+        page: pageNum,
+        limit: limitNum,
+        totalPages: Math.ceil(total / limitNum)
+      }
     });
   } catch (error) {
     if (isMissingBusinessTable(error)) {
@@ -39,7 +56,7 @@ export const getBusinesses = async (req, res) => {
       });
     }
 
-    console.error('Could not fetch businesses:', error);
+    logger.error('Could not fetch businesses:', error);
 
     res.status(500).json({
       success: false,
@@ -91,7 +108,7 @@ export const getBusinessById = async (req, res) => {
       });
     }
 
-    console.error('Could not fetch business:', error);
+    logger.error('Could not fetch business:', error);
 
     res.status(500).json({
       success: false,
@@ -140,13 +157,80 @@ export const updateBusinessStatus = async (req, res) => {
     }
 
     const status = error.status || 400;
-    console.error('Could not update business status:', error);
+    logger.error('Could not update business status:', error);
 
     return res.status(status).json({
       success: false,
       status,
       message: 'Could not update business status',
       data: { details: error.message },
+    });
+  }
+};
+
+export const createBusiness = async (req, res) => {
+  try {
+    const {
+      businessName,
+      category,
+      description,
+      address,
+      city,
+      phone,
+      email,
+      website,
+      ownerName,
+      ownerEmail,
+      ownerPhone,
+      services,
+      operatingHours,
+      specialOffers,
+      facebookUrl,
+      instagramUrl,
+      twitterUrl,
+    } = req.body;
+
+    const business = await prisma.business.create({
+      data: {
+        businessName,
+        category,
+        description,
+        address,
+        city,
+        phone,
+        email,
+        website: website || null,
+        ownerName,
+        ownerEmail,
+        ownerPhone,
+        services: services || null,
+        operatingHours: operatingHours || null,
+        specialOffers: specialOffers || null,
+        facebookUrl: facebookUrl || null,
+        instagramUrl: instagramUrl || null,
+        twitterUrl: twitterUrl || null,
+        status: 'Pending',
+        created_at: new Date(),
+      },
+    });
+
+    res.status(201).json({
+      success: true,
+      status: 201,
+      data: {
+        ...business,
+        id: business.id.toString(),
+      },
+    });
+  } catch (error) {
+    logger.error('Could not create business:', error);
+    res.status(500).json({
+      success: false,
+      status: 500,
+      message: 'Could not create business',
+      data: {
+        details: error.message,
+      },
     });
   }
 };

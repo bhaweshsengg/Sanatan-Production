@@ -1,3 +1,4 @@
+import { logger } from '../utils/logger.js';
 import { prisma } from '../config/db.js';
 import { sendError, sendSuccess } from '../utils/response.js';
 
@@ -27,19 +28,64 @@ const eventInclude = {
   reviewer: { select: { id: true, username: true } },
 };
 
-export const listApprovedEvents = async (_req, res) => {
+export const listApprovedEvents = async (req, res) => {
   try {
-    const events = await prisma.event.findMany({ where: { status: 'Approved' }, include: eventInclude, orderBy: { eventDate: 'asc' } });
-    return sendSuccess(res, 200, { data: events });
+    const { page = 1, limit = 20 } = req.query;
+    const pageNum = Math.max(1, Number(page));
+    const limitNum = Math.max(1, Number(limit));
+    const skip = (pageNum - 1) * limitNum;
+
+    const [events, total] = await Promise.all([
+      prisma.event.findMany({ 
+        where: { status: 'Approved' }, 
+        include: eventInclude, 
+        orderBy: { eventDate: 'asc' },
+        skip,
+        take: limitNum
+      }),
+      prisma.event.count({ where: { status: 'Approved' } })
+    ]);
+    
+    return sendSuccess(res, 200, { 
+      data: events,
+      pagination: {
+        total,
+        page: pageNum,
+        limit: limitNum,
+        totalPages: Math.ceil(total / limitNum)
+      }
+    });
   } catch (error) {
     return sendError(res, 500, 'Could not fetch events', { details: error.message });
   }
 };
 
-export const getAdminEvents = async (_req, res) => {
+export const getAdminEvents = async (req, res) => {
   try {
-    const events = await prisma.event.findMany({ include: eventInclude, orderBy: { createdAt: 'desc' } });
-    return sendSuccess(res, 200, { data: events });
+    const { page = 1, limit = 20 } = req.query;
+    const pageNum = Math.max(1, Number(page));
+    const limitNum = Math.max(1, Number(limit));
+    const skip = (pageNum - 1) * limitNum;
+
+    const [events, total] = await Promise.all([
+      prisma.event.findMany({ 
+        include: eventInclude, 
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limitNum 
+      }),
+      prisma.event.count()
+    ]);
+
+    return sendSuccess(res, 200, { 
+      data: events,
+      pagination: {
+        total,
+        page: pageNum,
+        limit: limitNum,
+        totalPages: Math.ceil(total / limitNum)
+      }
+    });
   } catch (error) {
     return sendError(res, 500, 'Could not fetch event submissions', { details: error.message });
   }

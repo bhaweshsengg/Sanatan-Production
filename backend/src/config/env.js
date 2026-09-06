@@ -17,14 +17,29 @@ if (!resolvedDatabaseUrl) {
   throw new Error('DATABASE_URL or MYSQL_URL must be configured before starting the backend.');
 }
 
+if (process.env.NODE_ENV === 'production') {
+  const isDefaultAccess = (process.env.JWT_ACCESS_SECRET || 'dev-access-secret') === 'dev-access-secret';
+  const isDefaultRefresh = (process.env.JWT_REFRESH_SECRET || 'dev-refresh-secret') === 'dev-refresh-secret';
+  
+  if (isDefaultAccess || isDefaultRefresh) {
+    throw new Error('JWT secrets must be explicitly configured in production. Cannot use default dev secrets.');
+  }
+}
+
 export const env = {
   port: Number(process.env.PORT || 4000),
   nodeEnv: process.env.NODE_ENV || 'development',
   databaseUrl: resolvedDatabaseUrl,
   jwtAccessSecret: process.env.JWT_ACCESS_SECRET || 'dev-access-secret',
-  jwtRefreshSecret: process.env.JWT_REFRESH_SECRET || 'dev-refresh-secret',
   jwtAccessExpiresIn: process.env.JWT_ACCESS_EXPIRES_IN || '15m',
+  jwtRefreshSecret: process.env.JWT_REFRESH_SECRET || 'dev-refresh-secret',
   jwtRefreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '7d',
+  jwtResetSecret: process.env.JWT_RESET_SECRET || 'dev-reset-secret',
+  jwtResetExpiresIn: process.env.JWT_RESET_EXPIRES_IN || '15m',
+  smtpHost: process.env.SMTP_HOST,
+  smtpPort: parseInt(process.env.SMTP_PORT || '587', 10),
+  smtpUser: process.env.SMTP_USER,
+  smtpPass: process.env.SMTP_PASS,
   uploadDir: process.env.VERCEL
     ? '/tmp/uploads'
     : process.env.UPLOAD_DIR || (process.env.NODE_ENV === 'production' ? '/tmp/uploads' : './uploads'),

@@ -1,3 +1,4 @@
+import { logger } from '../utils/logger.js';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { prisma, repairTempleStatuses } from '../config/db.js';
@@ -97,24 +98,41 @@ const resolveLocalImagePath = (imagePath) => {
 export const listTemples = async (req, res) => {
   try {
     await repairTempleStatuses();
-    const { city, deity, temple } = req.query;
+    const { city, deity, temple, page = 1, limit = 20 } = req.query;
 
     const where = {};
     if (city) where.cityId = Number(city);
     if (deity) where.mainDeityId = Number(deity);
     if (temple) where.id = Number(temple);
 
-    const temples = await prisma.temple.findMany({
-      where,
-      include: {
-        city: true,
-        mainDeity: true,
-        images: true,
-      },
-      orderBy: { id: 'asc' },
-    });
+    const pageNum = Math.max(1, Number(page));
+    const limitNum = Math.max(1, Number(limit));
+    const skip = (pageNum - 1) * limitNum;
 
-    return sendSuccess(res, 200, { data: temples.map(normalizeTempleRecord) });
+    const [temples, total] = await Promise.all([
+      prisma.temple.findMany({
+        where,
+        include: {
+          city: true,
+          mainDeity: true,
+          images: true,
+        },
+        orderBy: { id: 'asc' },
+        skip,
+        take: limitNum,
+      }),
+      prisma.temple.count({ where })
+    ]);
+
+    return sendSuccess(res, 200, { 
+      data: temples.map(normalizeTempleRecord),
+      pagination: {
+        total,
+        page: pageNum,
+        limit: limitNum,
+        totalPages: Math.ceil(total / limitNum)
+      }
+    });
   } catch (error) {
     return sendError(res, 500, 'Could not fetch temples', { details: error.message });
   }

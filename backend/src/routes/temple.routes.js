@@ -75,7 +75,7 @@ router.put(
   updateTemple
 );
 
-router.delete('/:id', deleteTemple);
+router.delete('/:id', authorize('Admin', 'TempleManager'), deleteTemple);
 
 router.patch(
   '/:id/status',

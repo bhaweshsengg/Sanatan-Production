@@ -43,6 +43,8 @@ model User {
   isActive      Boolean  @default(true)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+  discussions   Discussion[]
+  comments      Comment[]
 
   reviewedMandirRegistrations UserMandirRegistration[] @relation("ReviewedMandirUser")
   events Event[] @relation("EventOrganizer")
@@ -53,16 +55,36 @@ model City {
   id   Int    @id @default(autoincrement())
   name String @unique
   temples Temple[]
+  discussions Discussion[]
 
   @@map("temple_city")
 }
 
-model Deity {
-  id   Int    @id @default(autoincrement())
-  name String @unique
-  temples Temple[]
+model Discussion {
+  id        Int      @id @default(autoincrement())
+  title     String
+  category  String
+  tags      String?  @db.Text
+  content   String   @db.Text
+  authorId  Int
+  cityId    Int?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  author    User     @relation(fields: [authorId], references: [id])
+  city      City?    @relation(fields: [cityId], references: [id])
+  comments  Comment[]
+}
 
-  @@map("temple_deity")
+model Comment {
+  id           Int      @id @default(autoincrement())
+  content      String   @db.Text
+  authorId     Int
+  discussionId Int
+  createdAt    DateTime @default(now())
+
+  author       User       @relation(fields: [authorId], references: [id])
+  discussion   Discussion @relation(fields: [discussionId], references: [id])
 }
 
 model Temple {
@@ -78,8 +100,8 @@ model Temple {
   email              String       @unique
   website            String
   opening_hours      String
-  service_offered    String
-  facilities_offered String
+  service_offered    Json
+  facilities_offered Json
   your_name          String
   your_email         String
   rating             Float        @default(0)
@@ -94,6 +116,14 @@ model Temple {
   @@map("temple_temple")
 }
 
+model Deity {
+  id   Int    @id @default(autoincrement())
+  name String @unique
+  temples Temple[]
+
+  @@map("temple_deity")
+}
+
 model Event {
   id                  Int         @id @default(autoincrement())
   title               String
@@ -101,11 +131,11 @@ model Event {
   description         String       @db.Text
   imageUrl            String?      @db.VarChar(2048)
   status              EventStatus  @default(Pending)
-  eventDate           String
+  eventDate           DateTime
   startTime           String
   endTime             String
   multiDay            Boolean      @default(false)
-  endDate             String?
+  endDate             DateTime?
   recurring           Boolean      @default(false)
   frequency           String?
   registrationOpens   String?
