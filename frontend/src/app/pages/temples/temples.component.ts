@@ -7,7 +7,7 @@ import { Observable, catchError, map, of } from 'rxjs';
 import { environment } from '../../../environments/environment';
 
 interface Temple {
-status: string;
+  status: string;
   id: number;
   name: string;
   deity: string;
@@ -34,7 +34,7 @@ status: string;
 }
 
 interface ApiTemple {
-status:string;
+  status: string;
   id: number;
   mandir_name: string;
   full_address: string;
@@ -271,8 +271,8 @@ export class TemplesComponent implements OnInit {
   errorMessage = '';
 
   // Fallback image used whenever a temple has no image, or the image fails to load
-   private readonly defaultImage =
-   'https://images.unsplash.com/photo-1582510003544-4d00b7f74220?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80';
+  private readonly defaultImage =
+    'https://images.unsplash.com/photo-1582510003544-4d00b7f74220?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80';
 
   private apiUrl = environment.apiBaseUrl;
 
@@ -280,7 +280,7 @@ export class TemplesComponent implements OnInit {
   // resolve relative image paths like "/temple_images/xxx.jpg" returned by the API.
   private backendOrigin = environment.apiBaseUrl.replace(/\/api(\/v\d+)?(\/public)?\/?$/, '');
 
-  constructor(private router: Router, private http: HttpClient) {}
+  constructor(private router: Router, private http: HttpClient) { }
 
   ngOnInit() {
     this.loadCities();
@@ -395,9 +395,9 @@ export class TemplesComponent implements OnInit {
     // In production, use the full backend URL for images
     // In development, use relative paths (Angular proxy handles forwarding)
     if (environment.production) {
-      return `${this.backendOrigin}/uploads/${withoutUploads}`;
+      return `${this.backendOrigin}/temple_images/${withoutUploads}`;
     }
-    return `/uploads/${withoutUploads}`;
+    return `/temple_images/${withoutUploads}`;
   }
 
   /**
@@ -411,39 +411,39 @@ export class TemplesComponent implements OnInit {
     }
   }
 
-private transformFromAPIResponse(apiTemple: ApiTemple): Temple {
-  const rawImage = apiTemple.images && apiTemple.images.length > 0
-    ? apiTemple.images[0].file
-    : null;
-  const image = this.resolveImageUrl(rawImage);
+  private transformFromAPIResponse(apiTemple: ApiTemple): Temple {
+    const rawImage = apiTemple.images && apiTemple.images.length > 0
+      ? apiTemple.images[0].file
+      : null;
+    const image = this.resolveImageUrl(rawImage);
 
-  return {
-    id: apiTemple.id,
-    name: apiTemple.mandir_name,
-    deity: apiTemple.main_deity.name,
-    location: apiTemple.city.name,
-    rating: apiTemple.rating,
-    reviews: 0,
-    image: image,
-    description: apiTemple.description,
-    category: apiTemple.main_deity.name,
-    established: apiTemple.year_established.toString(),
-    contact: apiTemple.phone_no,
-    address: apiTemple.full_address,
-    city: apiTemple.city.name,
-    mainDeity: apiTemple.main_deity.name,
-    phone: apiTemple.phone_no,
-    email: apiTemple.email,
-    website: apiTemple.website,
-    timings: apiTemple.opening_hours,
-    services: apiTemple.service_offered,
-    facilities: apiTemple.facilities_offered,
-    contactPerson: apiTemple.your_name,
-    contactRole: 'Contact',
-    contactEmail: apiTemple.your_email,
-    status: apiTemple.status // Add this line
-  };
-}
+    return {
+      id: apiTemple.id,
+      name: apiTemple.mandir_name,
+      deity: apiTemple.main_deity.name,
+      location: apiTemple.city.name,
+      rating: apiTemple.rating,
+      reviews: 0,
+      image: image,
+      description: apiTemple.description,
+      category: apiTemple.main_deity.name,
+      established: apiTemple.year_established.toString(),
+      contact: apiTemple.phone_no,
+      address: apiTemple.full_address,
+      city: apiTemple.city.name,
+      mainDeity: apiTemple.main_deity.name,
+      phone: apiTemple.phone_no,
+      email: apiTemple.email,
+      website: apiTemple.website,
+      timings: apiTemple.opening_hours,
+      services: apiTemple.service_offered,
+      facilities: apiTemple.facilities_offered,
+      contactPerson: apiTemple.your_name,
+      contactRole: 'Contact',
+      contactEmail: apiTemple.your_email,
+      status: apiTemple.status // Add this line
+    };
+  }
 
   filterTemples() {
     this.filteredTemples = this.temples.filter((temple) => {
@@ -454,13 +454,13 @@ private transformFromAPIResponse(apiTemple: ApiTemple): Temple {
         temple.city.toLowerCase().includes(this.searchTerm.toLowerCase());
 
       const matchesLocation =
-        !this.selectedLocation || 
-        temple.location === this.selectedLocation || 
+        !this.selectedLocation ||
+        temple.location === this.selectedLocation ||
         temple.city === this.selectedLocation;
-        
+
       const matchesCategory =
-        !this.selectedCategory || 
-        temple.category === this.selectedCategory || 
+        !this.selectedCategory ||
+        temple.category === this.selectedCategory ||
         temple.deity === this.selectedCategory;
 
       return matchesSearch && matchesLocation && matchesCategory;
