@@ -28,6 +28,28 @@ import { environment } from '../../../environments/environment';
           >
             Login
           </button>
+          <button
+            class="w-1/3 py-2 text-center font-medium transition rounded-t-lg"
+            [ngClass]="
+              activeTab === 'register'
+                ? 'border-b-2 border-orange-500 text-orange-600'
+                : 'text-gray-500'
+            "
+            (click)="setTab('register')"
+          >
+            Register
+          </button>
+          <button
+            class="w-1/3 py-2 text-center font-medium transition rounded-t-lg"
+            [ngClass]="
+              activeTab === 'forgot'
+                ? 'border-b-2 border-orange-500 text-orange-600'
+                : 'text-gray-500'
+            "
+            (click)="setTab('forgot')"
+          >
+            Forgot Password
+          </button>
         </div>
 
         <!-- Login Form -->
@@ -81,6 +103,101 @@ import { environment } from '../../../environments/environment';
               </svg>
             </span>
             {{ isLoading ? 'Logging in...' : 'Login' }}
+          </button>
+        </form>
+
+        <!-- Register Form -->
+        <form
+          *ngIf="activeTab === 'register'"
+          [formGroup]="registerForm"
+          (ngSubmit)="onRegister()"
+          class="space-y-4"
+        >
+          <div>
+            <input
+              type="text"
+              formControlName="name"
+              placeholder="Username"
+              class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-400 outline-none"
+            />
+            <div *ngIf="registerForm.get('name')?.invalid && (registerForm.get('name')?.dirty || registerForm.get('name')?.touched)" class="text-red-500 text-sm mt-1">
+              Username is required.
+            </div>
+          </div>
+          <div>
+            <input
+              type="email"
+              formControlName="email"
+              placeholder="Email"
+              class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-400 outline-none"
+            />
+            <div *ngIf="registerForm.get('email')?.invalid && (registerForm.get('email')?.dirty || registerForm.get('email')?.touched)" class="text-red-500 text-sm mt-1">
+              Valid email is required.
+            </div>
+          </div>
+          <div>
+            <input
+              type="password"
+              formControlName="password"
+              placeholder="Password"
+              class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-400 outline-none"
+            />
+            <div *ngIf="registerForm.get('password')?.invalid && (registerForm.get('password')?.dirty || registerForm.get('password')?.touched)" class="text-red-500 text-sm mt-1">
+              Password is required (min 6 chars).
+            </div>
+          </div>
+          <div>
+            <input
+              type="password"
+              formControlName="confirmPassword"
+              placeholder="Confirm Password"
+              class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-400 outline-none"
+            />
+          </div>
+          <div>
+            <select formControlName="role" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-400 outline-none bg-white">
+              <option value="">Select Role</option>
+              <option value="devotee">Devotee</option>
+              <option value="priest">Priest</option>
+              <option value="admin">Admin</option>
+            </select>
+            <div *ngIf="registerForm.get('role')?.invalid && (registerForm.get('role')?.dirty || registerForm.get('role')?.touched)" class="text-red-500 text-sm mt-1">
+              Role is required.
+            </div>
+          </div>
+          <button
+            type="submit"
+            [disabled]="isLoading || registerForm.invalid"
+            class="w-full bg-orange-500 hover:bg-orange-600 disabled:bg-orange-300 text-white py-2 rounded-lg transition flex justify-center items-center"
+          >
+            {{ isLoading ? 'Registering...' : 'Register' }}
+          </button>
+        </form>
+
+        <!-- Forgot Password Form -->
+        <form
+          *ngIf="activeTab === 'forgot'"
+          [formGroup]="forgotForm"
+          (ngSubmit)="onForgot()"
+          class="space-y-4"
+        >
+          <div>
+            <input
+              type="email"
+              formControlName="email"
+              placeholder="Email"
+              class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-400 outline-none"
+            />
+            <div *ngIf="forgotForm.get('email')?.invalid && (forgotForm.get('email')?.dirty || forgotForm.get('email')?.touched)" class="text-red-500 text-sm mt-1">
+              Valid email is required.
+            </div>
+          </div>
+          <button
+            type="submit"
+            [disabled]="isLoading || forgotForm.invalid"
+            class="w-full bg-orange-500 hover:bg-orange-600 disabled:bg-orange-300 text-white py-2 rounded-lg transition flex justify-center items-center"
+          >
+            {{ isLoading ? 'Sending...' : 'Send Reset Link' }}
           </button>
         </form>
       </div>
@@ -221,7 +338,8 @@ export class LoginRegisterationComponent {
       const registerData = {
         username: formData.name,
         email: formData.email,
-        password: formData.password
+        password: formData.password,
+        role: formData.role
       };
       
       this.http.post<any>(`${environment.apiBaseUrl}/public/users/register`, registerData).subscribe({

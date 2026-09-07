@@ -93,27 +93,31 @@ interface ApiTemple {
                   </h1>
                   <div class="flex items-center space-x-2">
                     <button
-                      class="inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 rounded-md px-3"
+                      (click)="toggleFavourite()"
+                      [title]="isFavourite ? 'Remove from favourites' : 'Add to favourites'"
+                      class="inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 rounded-md px-3"
+                      [class.text-red-500]="isFavourite"
+                      [class.border-red-300]="isFavourite"
                     >
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
                         width="24"
                         height="24"
                         viewBox="0 0 24 24"
-                        fill="none"
                         stroke="currentColor"
                         stroke-width="2"
                         stroke-linecap="round"
                         stroke-linejoin="round"
                         class="lucide lucide-heart h-4 w-4"
+                        [attr.fill]="isFavourite ? 'currentColor' : 'none'"
                       >
-                        <path
-                          d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"
-                        ></path>
+                        <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"></path>
                       </svg>
                     </button>
                     <button
-                      class="inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 rounded-md px-3"
+                      (click)="shareTemple()"
+                      title="Share this temple"
+                      class="inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 rounded-md px-3"
                     >
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
@@ -134,6 +138,8 @@ interface ApiTemple {
                         <line x1="15.41" x2="8.59" y1="6.51" y2="10.49"></line>
                       </svg>
                     </button>
+                    <!-- Toast notification -->
+                    <span *ngIf="showShareToast" class="text-xs text-green-600 font-medium animate-pulse">{{ shareToastMsg }}</span>
                   </div>
                 </div>
                 <div class="flex items-center space-x-4 mb-4">
@@ -571,20 +577,22 @@ interface ApiTemple {
 })
 export class ViewTempleComponent implements OnInit {
   temple: Temple | null = null;
-  toastMessage: any;
-  toastType: any;
-  showToast: any;
+  isFavourite = false;
+  showShareToast = false;
+  shareToastMsg = '';
 
   constructor(
     private templeService: CommonService,
     private route: ActivatedRoute
   ) {}
 
-
   ngOnInit(): void {
     const id = this.route.snapshot.paramMap.get('id');
     if (id) {
       this.getTemple(+id);
+      // Restore favourite state from localStorage
+      const favs: number[] = JSON.parse(localStorage.getItem('favouriteTemples') || '[]');
+      this.isFavourite = favs.includes(+id);
     }
   }
 
@@ -599,53 +607,63 @@ export class ViewTempleComponent implements OnInit {
     });
   }
 
+  toggleFavourite(): void {
+    const id = this.temple?.id;
+    if (!id) return;
+    const favs: number[] = JSON.parse(localStorage.getItem('favouriteTemples') || '[]');
+    if (this.isFavourite) {
+      const updated = favs.filter(f => f !== id);
+      localStorage.setItem('favouriteTemples', JSON.stringify(updated));
+      this.isFavourite = false;
+      this.showToast('Removed from favourites');
+    } else {
+      favs.push(id);
+      localStorage.setItem('favouriteTemples', JSON.stringify(favs));
+      this.isFavourite = true;
+      this.showToast('Added to favourites ❤️');
+    }
+  }
+
+  shareTemple(): void {
+    const url = window.location.href;
+    const title = this.temple?.mandir_name || 'Sanatan Temple';
+    const text = `Check out ${title} on Sanatan New Zealand!`;
+
+    if (navigator.share) {
+      navigator.share({ title, text, url }).catch(() => {});
+    } else {
+      navigator.clipboard.writeText(url).then(() => {
+        this.showToast('Link copied to clipboard! 📋');
+      }).catch(() => {
+        this.showToast('Copy this link: ' + url);
+      });
+    }
+  }
+
+  private showToast(msg: string): void {
+    this.shareToastMsg = msg;
+    this.showShareToast = true;
+    setTimeout(() => { this.showShareToast = false; }, 3000);
+  }
+
   private readonly defaultImage =
-  'https://images.unsplash.com/photo-1582510003544-4d00b7f74220?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80';
+    'https://images.unsplash.com/photo-1582510003544-4d00b7f74220?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80';
 
-private backendOrigin = environment.apiBaseUrl.replace(/\/api(\/public)?\/?$/, '');
-
-resolveImageUrl(file: string | undefined | null): string {
-  if (!file) {
-    return this.defaultImage;
+  resolveImageUrl(file: string | undefined | null): string {
+    if (!file) return this.defaultImage;
+    if (/^https?:\/\//i.test(file)) return file;
+    const normalized = file.replace(/\\/g, '/').replace(/^\.\//, '').replace(/^\/+/, '');
+    if (!normalized) return this.defaultImage;
+    const withoutUploads = normalized.startsWith('uploads/') ? normalized.slice('uploads/'.length) : normalized;
+    // Use relative URL — Angular proxy forwards /uploads/* to backend (same-origin, no CORS)
+    return `/uploads/${withoutUploads}`;
   }
 
-  if (/^https?:\/\//i.test(file)) {
-    return file;
-  }
-
-  const normalized = file.replace(/\\/g, '/').replace(/^\.\//, '').replace(/^\//, '');
-
-  if (!normalized) {
-    return this.defaultImage;
-  }
-
-  const normalizedPath = normalized.startsWith('uploads/') || normalized.startsWith('temple_images/')
-    ? normalized
-    : `temple_images/${normalized}`;
-
-  return `${this.backendOrigin}/uploads/${normalizedPath.replace(/^uploads\//, '').replace(/^temple_images\//, 'temple_images/')}`;
-}
-private showToastMessage(message: string, type: 'success' | 'error' = 'error') {
-    this.toastMessage.set(message);
-    this.toastType.set(type);
-    this.showToast.set(true);
-    
-    setTimeout(() => {
-      this.showToast.set(false);
-      this.toastMessage.set('');
-    }, 3000);
-  }
   formatServiceName(service: string): string {
-    // Convert snake_case to Title Case
-    return service.split('_')
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(' ');
+    return service.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
   }
 
   formatFacilityName(facility: string): string {
-    // Convert snake_case to Title Case
-    return facility.split('_')
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(' ');
+    return facility.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
   }
 }

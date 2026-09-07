@@ -375,21 +375,26 @@ export class TemplesComponent implements OnInit {
       return this.defaultImage;
     }
 
+    // Already an absolute URL (Cloudinary, etc.) — use as-is
     if (/^https?:\/\//i.test(file)) {
       return file;
     }
 
-    const normalized = file.replace(/\\/g, '/').replace(/^\.\//, '').replace(/^\//, '');
+    // Normalize backslashes + strip leading ./ or /
+    const normalized = file.replace(/\\/g, '/').replace(/^\.\//, '').replace(/^\/+/, '');
 
     if (!normalized) {
       return this.defaultImage;
     }
 
-    const normalizedPath = normalized.startsWith('uploads/') || normalized.startsWith('temple_images/')
-      ? normalized
-      : `temple_images/${normalized}`;
+    // Strip a leading 'uploads/' prefix if already present
+    const withoutUploads = normalized.startsWith('uploads/')
+      ? normalized.slice('uploads/'.length)
+      : normalized;
 
-    return `${this.backendOrigin}/uploads/${normalizedPath.replace(/^uploads\//, '').replace(/^temple_images\//, 'temple_images/')}`;
+    // Use a relative URL — Angular dev proxy will forward /uploads/* to the backend
+    // This avoids ALL cross-origin issues completely
+    return `/uploads/${withoutUploads}`;
   }
 
   /**

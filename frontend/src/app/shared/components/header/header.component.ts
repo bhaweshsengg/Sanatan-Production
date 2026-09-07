@@ -119,6 +119,67 @@ import { AuthService } from 'src/app/Auth/auth.service';
                 </div>
               </div>
 
+              <!-- Admin Dropdown -->
+              <div *ngIf="isAdmin" class="relative">
+                <a
+                  (click)="toggleAdminDropdown()"
+                  class="text-orange-600 hover:text-orange-700 px-3 py-2 text-sm font-semibold cursor-pointer transition-all duration-200 border-b-2 border-transparent flex items-center gap-1"
+                >
+                  Admin
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                  </svg>
+                </a>
+
+                <div
+                  *ngIf="isAdminDropdownOpen"
+                  class="absolute z-10 mt-2 w-56 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5"
+                >
+                  <div class="py-1">
+                    <a
+                      routerLink="/business/admin/business-submissions"
+                      (click)="closeAdminDropdown()"
+                      routerLinkActive="bg-gray-100 text-orange-600"
+                      class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-orange-600"
+                    >
+                      🏛️ Temples &amp; Businesses
+                    </a>
+                    <a
+                      routerLink="/admin/events"
+                      (click)="closeAdminDropdown()"
+                      routerLinkActive="bg-gray-100 text-orange-600"
+                      class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-orange-600"
+                    >
+                      📅 Events
+                    </a>
+                    <a
+                      routerLink="/admin/user-approvals"
+                      (click)="closeAdminDropdown()"
+                      routerLinkActive="bg-gray-100 text-orange-600"
+                      class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-orange-600"
+                    >
+                      👥 User Approvals
+                    </a>
+                    <a
+                      routerLink="/admin/cities"
+                      (click)="closeAdminDropdown()"
+                      routerLinkActive="bg-gray-100 text-orange-600"
+                      class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-orange-600"
+                    >
+                      📍 Cities
+                    </a>
+                    <a
+                      routerLink="/admin/deities"
+                      (click)="closeAdminDropdown()"
+                      routerLinkActive="bg-gray-100 text-orange-600"
+                      class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-orange-600"
+                    >
+                      🕉️ Deities
+                    </a>
+                  </div>
+                </div>
+              </div>
+
               <button
                 routerLink="/dashboard"
                 class="bg-gradient-to-r from-orange-600 to-red-600 text-white px-6 py-2 rounded-full text-sm font-medium hover:from-orange-700 hover:to-red-700 transform hover:scale-105 transition-all duration-200 shadow-lg"
@@ -243,6 +304,45 @@ import { AuthService } from 'src/app/Auth/auth.service';
                 </a>
               </div>
             </div>
+            <div *ngIf="isAdmin" class="px-3 border-t border-gray-100 pt-2">
+              <span class="block text-xs font-semibold uppercase text-orange-600 tracking-wider mb-1">Admin Panel</span>
+              <a
+                routerLink="/business/admin/business-submissions"
+                (click)="closeMobileMenu()"
+                class="block px-3 py-1.5 text-sm font-medium text-gray-700 hover:text-orange-600 hover:bg-orange-50 rounded-md"
+              >
+                🏛️ Temples &amp; Businesses
+              </a>
+              <a
+                routerLink="/admin/events"
+                (click)="closeMobileMenu()"
+                class="block px-3 py-1.5 text-sm font-medium text-gray-700 hover:text-orange-600 hover:bg-orange-50 rounded-md"
+              >
+                📅 Events
+              </a>
+              <a
+                routerLink="/admin/user-approvals"
+                (click)="closeMobileMenu()"
+                class="block px-3 py-1.5 text-sm font-medium text-gray-700 hover:text-orange-600 hover:bg-orange-50 rounded-md"
+              >
+                👥 User Approvals
+              </a>
+              <a
+                routerLink="/admin/cities"
+                (click)="closeMobileMenu()"
+                class="block px-3 py-1.5 text-sm font-medium text-gray-700 hover:text-orange-600 hover:bg-orange-50 rounded-md"
+              >
+                📍 Cities
+              </a>
+              <a
+                routerLink="/admin/deities"
+                (click)="closeMobileMenu()"
+                class="block px-3 py-1.5 text-sm font-medium text-gray-700 hover:text-orange-600 hover:bg-orange-50 rounded-md"
+              >
+                🕉️ Deities
+              </a>
+            </div>
+
             <button
               routerLink="/dashboard"
               class="bg-gradient-to-r from-orange-600 to-red-600 text-white px-4 py-2 rounded-full text-sm font-medium mx-3 mt-2 hover:from-orange-700 hover:to-red-700 transition-all"
@@ -279,19 +379,28 @@ export class HeaderComponent implements OnInit, OnDestroy {
   isMobileMenuOpen = false;
   isSpiritualToolsDropdownOpen = false;
   isBusinessesDropdownOpen = false;
+  isAdminDropdownOpen = false;
   isLoggedIn = false;
+  isAdmin = false;
   private authSubscription!: Subscription;
 
   constructor(private authService: AuthService, private router: Router) {}
 
   ngOnInit() {
     this.checkScroll();
+    this.checkAdminStatus();
     // Subscribe to authentication state changes
     this.authSubscription = this.authService.isAuthenticated$.subscribe(
       (isAuthenticated) => {
         this.isLoggedIn = isAuthenticated;
+        this.checkAdminStatus();
       }
     );
+  }
+
+  private checkAdminStatus() {
+    const user = this.authService.getUserData();
+    this.isAdmin = user?.role === 'Admin' || user?.role === 'Super Admin';
   }
 
   ngOnDestroy() {
@@ -353,6 +462,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
     if (this.isMobileMenuOpen) {
       this.isSpiritualToolsDropdownOpen = false;
       this.isBusinessesDropdownOpen = false;
+      this.isAdminDropdownOpen = false;
     }
   }
 
@@ -360,12 +470,13 @@ export class HeaderComponent implements OnInit, OnDestroy {
     this.isMobileMenuOpen = false;
     this.isSpiritualToolsDropdownOpen = false;
     this.isBusinessesDropdownOpen = false;
+    this.isAdminDropdownOpen = false;
   }
 
   toggleSpiritualToolsDropdown() {
     this.isSpiritualToolsDropdownOpen = !this.isSpiritualToolsDropdownOpen;
-    // Close other dropdown when this one opens
     this.isBusinessesDropdownOpen = false;
+    this.isAdminDropdownOpen = false;
   }
 
   closeSpiritualToolsDropdown() {
@@ -374,11 +485,21 @@ export class HeaderComponent implements OnInit, OnDestroy {
 
   toggleBusinessesDropdown() {
     this.isBusinessesDropdownOpen = !this.isBusinessesDropdownOpen;
-    // Close other dropdown when this one opens
     this.isSpiritualToolsDropdownOpen = false;
+    this.isAdminDropdownOpen = false;
   }
 
   closeBusinessesDropdown() {
     this.isBusinessesDropdownOpen = false;
+  }
+
+  toggleAdminDropdown() {
+    this.isAdminDropdownOpen = !this.isAdminDropdownOpen;
+    this.isSpiritualToolsDropdownOpen = false;
+    this.isBusinessesDropdownOpen = false;
+  }
+
+  closeAdminDropdown() {
+    this.isAdminDropdownOpen = false;
   }
 }

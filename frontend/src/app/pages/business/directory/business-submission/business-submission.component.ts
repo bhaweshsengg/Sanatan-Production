@@ -31,13 +31,24 @@ interface Submission {
     <div class="min-h-screen bg-gray-50 font-sans">
       <!-- Nav Menu -->
       <nav aria-label="Main" class="relative z-10 flex w-full items-center justify-center p-4 bg-white shadow-sm">
-        <ul data-orientation="horizontal" class="flex list-none items-center justify-center space-x-2 sm:space-x-4">
+        <ul data-orientation="horizontal" class="flex flex-wrap list-none items-center justify-center gap-2 sm:gap-4">
           <li>
-            <a class="group inline-flex h-10 items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors hover:bg-gray-100 hover:text-gray-900" routerLink="/">Home</a>
+            <a class="group inline-flex h-9 items-center justify-center rounded-md px-3 py-1.5 text-sm font-medium transition-colors hover:bg-gray-100 hover:text-gray-900" routerLink="/">Home</a>
           </li>
           <li>
-            <a class="group inline-flex h-10 items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors hover:bg-gray-100 hover:text-gray-900" routerLink="/business/admin/business-submissions">Admin</a>
-            <a class="group inline-flex h-10 items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors hover:bg-gray-100 hover:text-gray-900" routerLink="/admin/events">Events</a>
+            <a class="group inline-flex h-9 items-center justify-center rounded-md px-3 py-1.5 text-sm font-medium transition-colors bg-orange-50 text-orange-600 font-semibold" routerLink="/business/admin/business-submissions">Temples & Businesses</a>
+          </li>
+          <li>
+            <a class="group inline-flex h-9 items-center justify-center rounded-md px-3 py-1.5 text-sm font-medium transition-colors hover:bg-gray-100 hover:text-gray-900" routerLink="/admin/events">Events</a>
+          </li>
+          <li>
+            <a class="group inline-flex h-9 items-center justify-center rounded-md px-3 py-1.5 text-sm font-medium transition-colors hover:bg-gray-100 hover:text-gray-900" routerLink="/admin/user-approvals">User Approvals</a>
+          </li>
+          <li>
+            <a class="group inline-flex h-9 items-center justify-center rounded-md px-3 py-1.5 text-sm font-medium transition-colors hover:bg-gray-100 hover:text-gray-900" routerLink="/admin/cities">Cities</a>
+          </li>
+          <li>
+            <a class="group inline-flex h-9 items-center justify-center rounded-md px-3 py-1.5 text-sm font-medium transition-colors hover:bg-gray-100 hover:text-gray-900" routerLink="/admin/deities">Deities</a>
           </li>
         </ul>
       </nav>
@@ -471,7 +482,7 @@ this.loadData()
   // API Methods
   getBusinesses(): Observable<any[]> {
     return this.http
-      .get<any>(`${this.apiUrl}/business`)
+      .get<any>(`${this.apiUrl}/business?limit=all`)
       .pipe(
         map((response: any) => {
           const businessData = Array.isArray(response) ? response : response?.data ?? [];
@@ -487,7 +498,7 @@ this.loadData()
 
   getTemples(): Observable<any[]> {
     return this.http
-      .get<any>(`${this.apiUrl}/temple`)
+      .get<any>(`${this.apiUrl}/temple?limit=all`)
       .pipe(
         map((response: any) => {
           const temples = Array.isArray(response) ? response : response?.data ?? [];
@@ -549,7 +560,7 @@ this.loadData()
       id: temple.id.toString(),
       name: temple.mandir_name,
       category: temple.main_deity?.name || 'Temple',
-      location: `${temple.full_address}, ${temple.city?.name}`,
+      location: `${temple.full_address}, ${temple.city?.name || ''}`,
       contact: temple.email,
       phone: temple.phone_no,
       hours: temple.opening_hours,
@@ -573,6 +584,7 @@ private mapStatus(apiStatus: string | null | undefined): 'pending' | 'approved' 
     case 'rejected':
       return 'rejected';
     case 'delisted':
+    case 'delist':
       return 'delisted';
     default:
       return 'pending';
