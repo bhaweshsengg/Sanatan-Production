@@ -866,7 +866,7 @@ export class AddTempleComponent implements OnInit {
   });
 }
 
-private backendOrigin = environment.apiBaseUrl.replace(/\/api(\/public)?\/?$/, '');
+private backendOrigin = environment.apiBaseUrl.replace(/\/api(\/v\d+)?(\/public)?\/?$/, '');
 
 private resolveImageUrl(file: string | undefined | null): string {
   if (!file) return '';

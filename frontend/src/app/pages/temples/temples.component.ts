@@ -278,7 +278,7 @@ export class TemplesComponent implements OnInit {
 
   // Root backend origin (without the /api or /api/public suffix), used to
   // resolve relative image paths like "/temple_images/xxx.jpg" returned by the API.
-  private backendOrigin = environment.apiBaseUrl.replace(/\/api(\/public)?\/?$/, '');
+  private backendOrigin = environment.apiBaseUrl.replace(/\/api(\/v\d+)?(\/public)?\/?$/, '');
 
   constructor(private router: Router, private http: HttpClient) {}
 
@@ -392,8 +392,11 @@ export class TemplesComponent implements OnInit {
       ? normalized.slice('uploads/'.length)
       : normalized;
 
-    // Use a relative URL — Angular dev proxy will forward /uploads/* to the backend
-    // This avoids ALL cross-origin issues completely
+    // In production, use the full backend URL for images
+    // In development, use relative paths (Angular proxy handles forwarding)
+    if (environment.production) {
+      return `${this.backendOrigin}/uploads/${withoutUploads}`;
+    }
     return `/uploads/${withoutUploads}`;
   }
 

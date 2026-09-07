@@ -649,13 +649,18 @@ export class ViewTempleComponent implements OnInit {
   private readonly defaultImage =
     'https://images.unsplash.com/photo-1582510003544-4d00b7f74220?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80';
 
+  private backendOrigin = environment.apiBaseUrl.replace(/\/api(\/v\d+)?(\/public)?\/?$/, '');
+
   resolveImageUrl(file: string | undefined | null): string {
     if (!file) return this.defaultImage;
     if (/^https?:\/\//i.test(file)) return file;
     const normalized = file.replace(/\\/g, '/').replace(/^\.\//, '').replace(/^\/+/, '');
     if (!normalized) return this.defaultImage;
     const withoutUploads = normalized.startsWith('uploads/') ? normalized.slice('uploads/'.length) : normalized;
-    // Use relative URL — Angular proxy forwards /uploads/* to backend (same-origin, no CORS)
+    // On production, use full backend URL; locally, Angular proxy handles /uploads/*
+    if (environment.production) {
+      return `${this.backendOrigin}/uploads/${withoutUploads}`;
+    }
     return `/uploads/${withoutUploads}`;
   }
 
