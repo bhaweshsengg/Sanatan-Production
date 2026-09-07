@@ -16,13 +16,19 @@ if (env.cloudinary.enabled) {
 
 const parseListField = (value) => {
   if (Array.isArray(value)) return value;
-  if (typeof value === 'string') {
-    try {
-      const parsed = JSON.parse(value);
-      return Array.isArray(parsed) ? parsed : [parsed];
-    } catch {
-      return value.split(',').map(item => item.trim()).filter(Boolean);
+  if (typeof value === 'string' && value.trim() !== '') {
+    const trimmed = value.trim();
+    // Try parsing as JSON array first (e.g. ["item1","item2"])
+    if (trimmed.startsWith('[') || trimmed.startsWith('{')) {
+      try {
+        const parsed = JSON.parse(trimmed);
+        return Array.isArray(parsed) ? parsed : [String(parsed)];
+      } catch {
+        // fall through to comma-split
+      }
     }
+    // Plain comma-separated or single value (e.g. "daily_aarti" or "a,b,c")
+    return trimmed.split(',').map(item => item.trim()).filter(Boolean);
   }
   return [];
 };
@@ -43,8 +49,8 @@ const normalizeTempleRecord = (temple) => ({
   city: temple.city,
   main_deity: temple.mainDeity,
   images: temple.images || [],
-  service_offered: typeof temple.service_offered === 'string' ? parseListField(temple.service_offered) : temple.service_offered,
-  facilities_offered: typeof temple.facilities_offered === 'string' ? parseListField(temple.facilities_offered) : temple.facilities_offered,
+  service_offered: typeof temple.service_offered === 'string' ? parseListField(temple.service_offered) : (temple.service_offered || []),
+  facilities_offered: typeof temple.facilities_offered === 'string' ? parseListField(temple.facilities_offered) : (temple.facilities_offered || []),
 });
 
 const uploadNewImage = (file) => {
@@ -98,16 +104,27 @@ const resolveLocalImagePath = (imagePath) => {
 export const listTemples = async (req, res) => {
   try {
     await repairTempleStatuses();
-    const { city, deity, temple, page = 1, limit = 20 } = req.query;
+    const { city, deity, temple, status, search, page, limit, sort, order } = req.query;
 
     const where = {};
     if (city) where.cityId = Number(city);
     if (deity) where.mainDeityId = Number(deity);
     if (temple) where.id = Number(temple);
+    if (status) where.status = status;
+    if (search && typeof search === 'string' && search.trim()) {
+      where.OR = [
+        { mandir_name: { contains: search.trim() } },
+        { full_address: { contains: search.trim() } },
+        { description: { contains: search.trim() } },
+      ];
+    }
 
-    const pageNum = Math.max(1, Number(page));
-    const limitNum = Math.max(1, Number(limit));
-    const skip = (pageNum - 1) * limitNum;
+    const sortDirection = (order || sort || 'desc').toLowerCase() === 'asc' ? 'asc' : 'desc';
+
+    const isPaginated = page !== undefined || (limit !== undefined && limit !== 'all');
+    const pageNum = isPaginated ? Math.max(1, Number(page || 1)) : 1;
+    const limitNum = isPaginated ? Math.max(1, Number(limit || 20)) : undefined;
+    const skip = isPaginated ? (pageNum - 1) * limitNum : undefined;
 
     const [temples, total] = await Promise.all([
       prisma.temple.findMany({
@@ -117,9 +134,9 @@ export const listTemples = async (req, res) => {
           mainDeity: true,
           images: true,
         },
-        orderBy: { id: 'asc' },
-        skip,
-        take: limitNum,
+        orderBy: { id: sortDirection },
+        ...(skip !== undefined ? { skip } : {}),
+        ...(limitNum !== undefined ? { take: limitNum } : {}),
       }),
       prisma.temple.count({ where })
     ]);
@@ -129,11 +146,12 @@ export const listTemples = async (req, res) => {
       pagination: {
         total,
         page: pageNum,
-        limit: limitNum,
-        totalPages: Math.ceil(total / limitNum)
+        limit: limitNum || total,
+        totalPages: limitNum ? Math.ceil(total / limitNum) : 1
       }
     });
   } catch (error) {
+    logger.error('listTemples error', { message: error.message });
     return sendError(res, 500, 'Could not fetch temples', { details: error.message });
   }
 };
@@ -185,6 +203,7 @@ export const createTemple = async (req, res) => {
 
     return sendSuccess(res, 201, { data: normalizeTempleRecord(savedTemple), message: 'Temple created successfully' });
   } catch (error) {
+    logger.error('createTemple error', { message: error.message });
     return sendError(res, 400, 'Could not create temple', { details: error.message });
   }
 };
@@ -200,6 +219,7 @@ export const getTemple = async (req, res) => {
     if (!temple) return sendError(res, 404, 'Temple not found', {});
     return sendSuccess(res, 200, { data: normalizeTempleRecord(temple) });
   } catch (error) {
+    logger.error('getTemple error', { message: error.message });
     return sendError(res, 500, 'Could not fetch temple', { details: error.message });
   }
 };
@@ -256,6 +276,7 @@ export const updateTemple = async (req, res) => {
 
     return sendSuccess(res, 200, { data: normalizeTempleRecord(updated), message: 'Temple updated successfully' });
   } catch (error) {
+    logger.error('updateTemple error', { message: error.message });
     return sendError(res, 400, 'Could not update temple', { details: error.message });
   }
 };
@@ -280,6 +301,7 @@ export const deleteTemple = async (req, res) => {
     await prisma.temple.delete({ where: { id: Number(req.params.id) } });
     return sendSuccess(res, 200, { message: 'Temple deleted successfully', data: {} });
   } catch (error) {
+    logger.error('deleteTemple error', { message: error.message });
     return sendError(res, 400, 'Could not delete temple', { details: error.message });
   }
 };
@@ -298,6 +320,7 @@ export const updateTempleStatus = async (req, res) => {
       data: normalizeTempleRecord(temple),
     });
   } catch (error) {
+    logger.error('updateTempleStatus error', { message: error.message });
     return sendError(res, 400, 'Failed to update status', { details: error.message });
   }
 };

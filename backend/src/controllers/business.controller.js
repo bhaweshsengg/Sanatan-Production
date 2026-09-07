@@ -16,18 +16,19 @@ const isMissingBusinessTable = (error) =>
 
 export const getBusinesses = async (req, res) => {
   try {
-    const { page = 1, limit = 20 } = req.query;
-    const pageNum = Math.max(1, Number(page));
-    const limitNum = Math.max(1, Number(limit));
-    const skip = (pageNum - 1) * limitNum;
+    const { page, limit } = req.query;
+    const isPaginated = page !== undefined || (limit !== undefined && limit !== 'all');
+    const pageNum = isPaginated ? Math.max(1, Number(page || 1)) : 1;
+    const limitNum = isPaginated ? Math.max(1, Number(limit || 20)) : undefined;
+    const skip = isPaginated ? (pageNum - 1) * limitNum : undefined;
 
     const [businesses, total] = await Promise.all([
       prisma.business.findMany({
         orderBy: {
           id: 'desc',
         },
-        skip,
-        take: limitNum,
+        ...(skip !== undefined ? { skip } : {}),
+        ...(limitNum !== undefined ? { take: limitNum } : {}),
       }),
       prisma.business.count()
     ]);
@@ -42,8 +43,8 @@ export const getBusinesses = async (req, res) => {
       pagination: {
         total,
         page: pageNum,
-        limit: limitNum,
-        totalPages: Math.ceil(total / limitNum)
+        limit: limitNum || total,
+        totalPages: limitNum ? Math.ceil(total / limitNum) : 1
       }
     });
   } catch (error) {

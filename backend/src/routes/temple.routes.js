@@ -59,14 +59,16 @@ const upload = multer({
 router.get('/', listTemples);
 router.get('/:id', getTemple);
 
-router.use(authenticate);
-
+// Public: anyone can submit a temple for review (no auth required)
 router.post(
   '/',
   upload.array('uploaded_images', env.maxUploadFiles),
   validate(templeCreateSchema),
   createTemple
 );
+
+// Everything below requires authentication
+router.use(authenticate);
 
 router.put(
   '/:id',

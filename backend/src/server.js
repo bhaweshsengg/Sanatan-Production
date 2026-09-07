@@ -12,11 +12,9 @@ import { prisma } from './config/db.js';
 import { logger } from './utils/logger.js';
 
 import authRoutes from './routes/auth.routes.js';
-import adminRoutes from './routes/admin.routes.js';
 import cityRoutes from './routes/city.routes.js';
 import deityRoutes from './routes/deity.routes.js';
 import templeRoutes from './routes/temple.routes.js';
-import publicTempleRoutes from './routes/publicTemple.routes.js';
 import businessRoutes from './routes/business.routes.js';
 import userRegistrationRoutes from './routes/userRegistration.routes.js';
 import eventRoutes from './routes/event.routes.js';
@@ -34,7 +32,7 @@ app.set('trust proxy', 1);
 app.use(morgan('combined', { stream: { write: message => logger.info(message.trim()) } }));
 
 /* =========================
-   CORS
+   CORS  (must run BEFORE static files so images get the header)
 ========================= */
 
 const corsOptions = {
@@ -59,12 +57,34 @@ const corsOptions = {
   credentials: false,
 };
 
+app.use(cors(corsOptions));
+
+/* =========================
+   SECURITY  (must run BEFORE static files)
+========================= */
+
+app.use(
+  helmet({
+    contentSecurityPolicy: false,
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+    crossOriginOpenerPolicy: false,
+    crossOriginEmbedderPolicy: false,
+  })
+);
+
 /* =========================
    STATIC FILES (uploaded images)
 ========================= */
 const fallbackTempleImage = path.resolve(env.uploadDir, 'temple_images', 'temple1.jpg');
 
-app.use('/uploads', (req, res, next) => {
+// Middleware to add cross-origin headers to every static image response
+const staticCorsMiddleware = (_req, res, next) => {
+  res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  next();
+};
+
+app.use('/uploads', staticCorsMiddleware, (req, res, next) => {
   const requestedPath = decodeURIComponent(req.path || '').replace(/^\/+/, '');
   if (!requestedPath) return next();
 
@@ -80,21 +100,9 @@ app.use('/uploads', (req, res, next) => {
   return next();
 });
 
-app.use('/uploads', express.static(path.resolve(env.uploadDir)));
-app.use('/temple_images', express.static(path.resolve(env.uploadDir, 'temple_images')));
-app.use(express.static(path.resolve(env.uploadDir)));
-
-app.use(cors(corsOptions));
-
-/* =========================
-   SECURITY
-========================= */
-
-app.use(
-  helmet({
-    crossOriginResourcePolicy: false,
-  })
-);
+app.use('/uploads', staticCorsMiddleware, express.static(path.resolve(env.uploadDir)));
+app.use('/temple_images', staticCorsMiddleware, express.static(path.resolve(env.uploadDir, 'temple_images')));
+app.use(staticCorsMiddleware, express.static(path.resolve(env.uploadDir)));
 
 /* =========================
    BODY PARSER

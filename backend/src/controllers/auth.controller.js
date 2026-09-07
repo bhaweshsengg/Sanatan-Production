@@ -9,10 +9,16 @@ import { sendEmail } from '../utils/email.js';
 
 export const register = async (req, res) => {
   try {
-    const { username, email, password } = req.body;
+    const { username, email, password, role: reqRole } = req.body;
     
     // Default role for self-registered users
-    const role = 'User';
+    let role = 'User';
+    if (reqRole) {
+      const capitalized = reqRole.charAt(0).toUpperCase() + reqRole.slice(1).toLowerCase();
+      if (['Admin', 'TempleManager', 'BusinessManager', 'User', 'Devotee', 'Priest'].includes(capitalized)) {
+        role = capitalized;
+      }
+    }
 
     const existingUser = await prisma.user.findFirst({
       where: {
@@ -54,7 +60,11 @@ export const register = async (req, res) => {
 export const login = async (req, res) => {
   try {
     const { username, password } = req.body;
-    const user = await prisma.user.findUnique({ where: { username } });
+    const user = await prisma.user.findFirst({ 
+      where: { 
+        OR: [{ username }, { email: username }] 
+      } 
+    });
 
     if (!user || !user.isActive || !(await bcrypt.compare(password, user.passwordHash))) {
       return sendError(res, 400, 'Invalid credentials', {});

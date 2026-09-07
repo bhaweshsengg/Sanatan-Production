@@ -11,6 +11,9 @@ enum Role {
   Admin
   TempleManager
   BusinessManager
+  User
+  Devotee
+  Priest
 }
 
 enum TempleStatus {
@@ -97,7 +100,7 @@ model Temple {
   mainDeityId        Int          @map("main_deity_id")
   description        String
   phone_no           String
-  email              String       @unique
+  email              String?
   website            String
   opening_hours      String
   service_offered    Json
