@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { Component } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { HttpClient} from '@angular/common/http';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { AuthService } from '../auth.service';
 import { environment } from '../../../environments/environment';
 
@@ -27,6 +27,28 @@ import { environment } from '../../../environments/environment';
             (click)="setTab('login')"
           >
             Login
+          </button>
+          <button
+            class="w-1/3 py-2 text-center font-medium transition rounded-t-lg"
+            [ngClass]="
+              activeTab === 'register'
+                ? 'border-b-2 border-orange-500 text-orange-600'
+                : 'text-gray-500'
+            "
+            (click)="setTab('register')"
+          >
+            Register
+          </button>
+          <button
+            class="w-1/3 py-2 text-center font-medium transition rounded-t-lg"
+            [ngClass]="
+              activeTab === 'forgot'
+                ? 'border-b-2 border-orange-500 text-orange-600'
+                : 'text-gray-500'
+            "
+            (click)="setTab('forgot')"
+          >
+            Forgot Password
           </button>
         </div>
 
@@ -83,6 +105,101 @@ import { environment } from '../../../environments/environment';
             {{ isLoading ? 'Logging in...' : 'Login' }}
           </button>
         </form>
+
+        <!-- Register Form -->
+        <form
+          *ngIf="activeTab === 'register'"
+          [formGroup]="registerForm"
+          (ngSubmit)="onRegister()"
+          class="space-y-4"
+        >
+          <div>
+            <input
+              type="text"
+              formControlName="name"
+              placeholder="Username"
+              class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-400 outline-none"
+            />
+            <div *ngIf="registerForm.get('name')?.invalid && (registerForm.get('name')?.dirty || registerForm.get('name')?.touched)" class="text-red-500 text-sm mt-1">
+              Username is required.
+            </div>
+          </div>
+          <div>
+            <input
+              type="email"
+              formControlName="email"
+              placeholder="Email"
+              class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-400 outline-none"
+            />
+            <div *ngIf="registerForm.get('email')?.invalid && (registerForm.get('email')?.dirty || registerForm.get('email')?.touched)" class="text-red-500 text-sm mt-1">
+              Valid email is required.
+            </div>
+          </div>
+          <div>
+            <input
+              type="password"
+              formControlName="password"
+              placeholder="Password"
+              class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-400 outline-none"
+            />
+            <div *ngIf="registerForm.get('password')?.invalid && (registerForm.get('password')?.dirty || registerForm.get('password')?.touched)" class="text-red-500 text-sm mt-1">
+              Password is required (min 6 chars).
+            </div>
+          </div>
+          <div>
+            <input
+              type="password"
+              formControlName="confirmPassword"
+              placeholder="Confirm Password"
+              class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-400 outline-none"
+            />
+          </div>
+          <div>
+            <select formControlName="role" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-400 outline-none bg-white">
+              <option value="">Select Role</option>
+              <option value="devotee">Devotee</option>
+              <option value="priest">Priest</option>
+              <option value="admin">Admin</option>
+            </select>
+            <div *ngIf="registerForm.get('role')?.invalid && (registerForm.get('role')?.dirty || registerForm.get('role')?.touched)" class="text-red-500 text-sm mt-1">
+              Role is required.
+            </div>
+          </div>
+          <button
+            type="submit"
+            [disabled]="isLoading || registerForm.invalid"
+            class="w-full bg-orange-500 hover:bg-orange-600 disabled:bg-orange-300 text-white py-2 rounded-lg transition flex justify-center items-center"
+          >
+            {{ isLoading ? 'Registering...' : 'Register' }}
+          </button>
+        </form>
+
+        <!-- Forgot Password Form -->
+        <form
+          *ngIf="activeTab === 'forgot'"
+          [formGroup]="forgotForm"
+          (ngSubmit)="onForgot()"
+          class="space-y-4"
+        >
+          <div>
+            <input
+              type="email"
+              formControlName="email"
+              placeholder="Email"
+              class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-400 outline-none"
+            />
+            <div *ngIf="forgotForm.get('email')?.invalid && (forgotForm.get('email')?.dirty || forgotForm.get('email')?.touched)" class="text-red-500 text-sm mt-1">
+              Valid email is required.
+            </div>
+          </div>
+          <button
+            type="submit"
+            [disabled]="isLoading || forgotForm.invalid"
+            class="w-full bg-orange-500 hover:bg-orange-600 disabled:bg-orange-300 text-white py-2 rounded-lg transition flex justify-center items-center"
+          >
+            {{ isLoading ? 'Sending...' : 'Send Reset Link' }}
+          </button>
+        </form>
       </div>
     </div>
     
@@ -112,13 +229,18 @@ export class LoginRegisterationComponent {
   forgotForm!: FormGroup;
 
   private apiUrl = `${environment.apiBaseUrl}/public/users/login`;
+  private readonly returnUrl: string;
+  private readonly joinEventId: string | null;
 
   constructor(
     private fb: FormBuilder,
     private http: HttpClient,
     private router: Router,
-    private authService: AuthService
+    private authService: AuthService,
+    private route: ActivatedRoute
   ) {
+    this.returnUrl = this.route.snapshot.queryParamMap.get('returnUrl') || '/dashboard';
+    this.joinEventId = this.route.snapshot.queryParamMap.get('joinEvent');
     // Updated to use username instead of email
     this.loginForm = this.fb.group({
       username: ['', [Validators.required]],
@@ -175,7 +297,9 @@ export class LoginRegisterationComponent {
           
           // Redirect after a short delay
           setTimeout(() => {
-            this.router.navigate(['/business/admin/business-submissions']);
+            this.router.navigate([this.returnUrl], {
+              queryParams: this.joinEventId ? { joinEvent: this.joinEventId } : {},
+            });
           }, 1500);
         },
         error: (error) => {
@@ -209,17 +333,56 @@ export class LoginRegisterationComponent {
         this.showToastMessage('Passwords do not match.', 'error');
         return;
       }
-      console.log('Register Data:', this.registerForm.value);
+      this.isLoading = true;
+      const formData = this.registerForm.value;
+      const registerData = {
+        username: formData.name,
+        email: formData.email,
+        password: formData.password,
+        role: formData.role
+      };
+      
+      this.http.post<any>(`${environment.apiBaseUrl}/public/users/register`, registerData).subscribe({
+        next: (response) => {
+          this.isLoading = false;
+          this.showToastMessage('Registration successful! Please login.', 'success');
+          this.registerForm.reset();
+          this.activeTab = 'login';
+        },
+        error: (error) => {
+          this.isLoading = false;
+          let errorMessage = 'Registration failed. Please try again.';
+          if (error.error && error.error.message) {
+            errorMessage = error.error.message;
+          }
+          this.showToastMessage(errorMessage, 'error');
+        }
+      });
     } else {
       this.registerForm.markAllAsTouched();
+      this.showToastMessage('Please fill in all required fields.', 'error');
     }
   }
 
   onForgot() {
     if (this.forgotForm.valid) {
-      console.log('Forgot Password Data:', this.forgotForm.value);
+      this.isLoading = true;
+      const email = this.forgotForm.value.email;
+      this.http.post<any>(`${environment.apiBaseUrl}/public/users/forgot-password`, { email }).subscribe({
+        next: (response) => {
+          this.isLoading = false;
+          this.showToastMessage('If an account exists, a reset link has been sent to your email.', 'success');
+          this.forgotForm.reset();
+          this.activeTab = 'login';
+        },
+        error: (error) => {
+          this.isLoading = false;
+          this.showToastMessage('Failed to process request. Please try again.', 'error');
+        }
+      });
     } else {
       this.forgotForm.markAllAsTouched();
+      this.showToastMessage('Please provide a valid email.', 'error');
     }
   }
 

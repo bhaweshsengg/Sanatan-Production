@@ -1,17 +1,27 @@
 import 'dotenv/config';
+import fs from 'node:fs';
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
+import path from 'node:path';
+import morgan from 'morgan';
 
 import { env } from './config/env.js';
 import { prisma } from './config/db.js';
+import { logger } from './utils/logger.js';
 
 import authRoutes from './routes/auth.routes.js';
+import adminRoutes from './routes/admin.routes.js';
 import cityRoutes from './routes/city.routes.js';
 import deityRoutes from './routes/deity.routes.js';
 import templeRoutes from './routes/temple.routes.js';
+import publicTempleRoutes from './routes/publicTemple.routes.js';
 import businessRoutes from './routes/business.routes.js';
+import userRegistrationRoutes from './routes/userRegistration.routes.js';
+import eventRoutes from './routes/event.routes.js';
+import statsRoutes from './routes/stats.routes.js';
+import communityRoutes from './routes/community.routes.js';
 
 import { errorHandler } from './middleware/errorHandler.js';
 
@@ -19,6 +29,9 @@ const app = express();
 
 // Vercel proxy ke peeche hai — X-Forwarded-For header trust karo
 app.set('trust proxy', 1);
+
+// Use morgan for HTTP request logging
+app.use(morgan('combined', { stream: { write: message => logger.info(message.trim()) } }));
 
 /* =========================
    CORS
@@ -45,6 +58,31 @@ const corsOptions = {
 
   credentials: false,
 };
+
+/* =========================
+   STATIC FILES (uploaded images)
+========================= */
+const fallbackTempleImage = path.resolve(env.uploadDir, 'temple_images', 'temple1.jpg');
+
+app.use('/uploads', (req, res, next) => {
+  const requestedPath = decodeURIComponent(req.path || '').replace(/^\/+/, '');
+  if (!requestedPath) return next();
+
+  const absolutePath = path.resolve(env.uploadDir, requestedPath);
+  if (fs.existsSync(absolutePath)) {
+    return next();
+  }
+
+  if (fs.existsSync(fallbackTempleImage)) {
+    return res.sendFile(fallbackTempleImage);
+  }
+
+  return next();
+});
+
+app.use('/uploads', express.static(path.resolve(env.uploadDir)));
+app.use('/temple_images', express.static(path.resolve(env.uploadDir, 'temple_images')));
+app.use(express.static(path.resolve(env.uploadDir)));
 
 app.use(cors(corsOptions));
 
@@ -91,21 +129,28 @@ app.get('/health', (_req, res) => {
    API ROUTES
 ========================= */
 
-app.use('/api', authRoutes);
-app.use('/api/city', cityRoutes);
-app.use('/api/deity', deityRoutes);
-app.use('/api/temple', templeRoutes);
-app.use('/api/business', businessRoutes);
+app.use('/api/v1', authRoutes);
+app.use('/api/v1/city', cityRoutes);
+app.use('/api/v1/deity', deityRoutes);
+app.use('/api/v1/temple', templeRoutes);
+app.use('/api/v1/business', businessRoutes);
+app.use('/api/v1/user-registration', userRegistrationRoutes);
+app.use('/api/v1/event', eventRoutes);
+app.use('/api/v1/stats', statsRoutes);
+app.use('/api/v1/community', communityRoutes);
 
 /* =========================
    PUBLIC API ROUTES
 ========================= */
 
-app.use('/api/public/users', authRoutes);
-app.use('/api/public/city', cityRoutes);
-app.use('/api/public/deity', deityRoutes);
-app.use('/api/public/temple', templeRoutes);
-app.use('/api/public/business', businessRoutes);
+app.use('/api/v1/public/users', authRoutes);
+app.use('/api/v1/public/city', cityRoutes);
+app.use('/api/v1/public/deity', deityRoutes);
+app.use('/api/v1/public/temple', templeRoutes);
+app.use('/api/v1/public/business', businessRoutes);
+app.use('/api/v1/public/user-registration', userRegistrationRoutes);
+app.use('/api/v1/public/event', eventRoutes);
+app.use('/api/v1/public/community', communityRoutes);
 
 /* =========================
    ERROR HANDLER
@@ -125,16 +170,13 @@ if (!process.env.VERCEL) {
   prisma
     .$connect()
     .then(() => {
-      console.log('Database connected successfully');
+      logger.info('Database connected successfully');
       app.listen(env.port, '0.0.0.0', () => {
-        console.log(`Server running on port ${env.port}`);
-        console.log(
-          `Business API: http://localhost:${env.port}/api/public/business`
-        );
+        logger.info(`Server running on port ${env.port}`);
       });
     })
     .catch((error) => {
-      console.error('Failed to connect to database', error);
+      logger.error('Failed to connect to database', error);
       process.exit(1);
     });
 }

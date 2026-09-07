@@ -1,3 +1,4 @@
+import { logger } from '../utils/logger.js';
 import { prisma } from '../config/db.js';
 import { sendSuccess, sendError } from '../utils/response.js';
 

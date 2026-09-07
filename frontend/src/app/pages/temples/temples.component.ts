@@ -206,16 +206,24 @@ interface Deity {
                   >
                     Visit Temple
                   </button>
-                  <button
+                  <a
+                    [href]="getPhoneLink(temple.phone)"
+                    [attr.aria-label]="'Call ' + temple.name"
+                    title="Call temple"
                     class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors"
                   >
                     📞
-                  </button>
-                  <button
+                  </a>
+                  <a
+                    [href]="getMapLink(temple)"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    [attr.aria-label]="'Open map for ' + temple.name"
+                    title="Open location in Google Maps"
                     class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors"
                   >
                     📍
-                  </button>
+                  </a>
                 </div>
               </div>
             </div>
@@ -263,8 +271,8 @@ export class TemplesComponent implements OnInit {
   errorMessage = '';
 
   // Fallback image used whenever a temple has no image, or the image fails to load
-  private readonly defaultImage =
-    'https://images.unsplash.com/photo-1582510003544-4d00b7f74220?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80';
+   private readonly defaultImage =
+   'https://images.unsplash.com/photo-1582510003544-4d00b7f74220?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80';
 
   private apiUrl = environment.apiBaseUrl;
 
@@ -365,13 +373,28 @@ export class TemplesComponent implements OnInit {
   private resolveImageUrl(file: string | undefined | null): string {
     if (!file) {
       return this.defaultImage;
-      
     }
+
+    // Already an absolute URL (Cloudinary, etc.) — use as-is
     if (/^https?:\/\//i.test(file)) {
       return file;
     }
-    const path = file.startsWith('/') ? file : `/${file}`;
-    return `${this.backendOrigin}${path}`;
+
+    // Normalize backslashes + strip leading ./ or /
+    const normalized = file.replace(/\\/g, '/').replace(/^\.\//, '').replace(/^\/+/, '');
+
+    if (!normalized) {
+      return this.defaultImage;
+    }
+
+    // Strip a leading 'uploads/' prefix if already present
+    const withoutUploads = normalized.startsWith('uploads/')
+      ? normalized.slice('uploads/'.length)
+      : normalized;
+
+    // Use a relative URL — Angular dev proxy will forward /uploads/* to the backend
+    // This avoids ALL cross-origin issues completely
+    return `/uploads/${withoutUploads}`;
   }
 
   /**
@@ -443,6 +466,18 @@ private transformFromAPIResponse(apiTemple: ApiTemple): Temple {
 
   editTemple(templeId: number | string) {
     this.router.navigate(['/temples/edit-temple', templeId]);
+  }
+
+  getPhoneLink(phone: string): string {
+    const phoneNumber = phone?.trim();
+    return phoneNumber ? `tel:${phoneNumber}` : '#';
+  }
+
+  getMapLink(temple: Temple): string {
+    const address = [temple.address, temple.city, temple.location]
+      .filter(Boolean)
+      .join(', ');
+    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address || temple.name)}`;
   }
 
 }

@@ -31,7 +31,7 @@ if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }
 
-const storage = multer.diskStorage({
+const diskStorage = multer.diskStorage({
   destination: (_req, _file, cb) => {
     cb(null, uploadDir);
   },
@@ -44,6 +44,10 @@ const storage = multer.diskStorage({
     cb(null, safeName);
   },
 });
+
+const storage = env.cloudinary.enabled
+  ? multer.memoryStorage()
+  : diskStorage;
 
 const upload = multer({
   storage,
@@ -71,7 +75,7 @@ router.put(
   updateTemple
 );
 
-router.delete('/:id', deleteTemple);
+router.delete('/:id', authorize('Admin', 'TempleManager'), deleteTemple);
 
 router.patch(
   '/:id/status',

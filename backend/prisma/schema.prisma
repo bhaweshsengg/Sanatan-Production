@@ -20,6 +20,20 @@ enum TempleStatus {
   Rejected
 }
 
+enum RegistrationStatus {
+  Pending
+  Approved
+  Rejected
+}
+
+enum EventStatus {
+  Pending
+  Approved
+  Rejected
+  Cancelled
+  Completed
+}
+
 model User {
   id            Int      @id @default(autoincrement())
   username      String   @unique
@@ -29,22 +43,48 @@ model User {
   isActive      Boolean  @default(true)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+  discussions   Discussion[]
+  comments      Comment[]
+
+  reviewedMandirRegistrations UserMandirRegistration[] @relation("ReviewedMandirUser")
+  events Event[] @relation("EventOrganizer")
+  reviewedEvents Event[] @relation("EventReviewer")
 }
 
 model City {
   id   Int    @id @default(autoincrement())
   name String @unique
   temples Temple[]
+  discussions Discussion[]
 
   @@map("temple_city")
 }
 
-model Deity {
-  id   Int    @id @default(autoincrement())
-  name String @unique
-  temples Temple[]
+model Discussion {
+  id        Int      @id @default(autoincrement())
+  title     String
+  category  String
+  tags      String?  @db.Text
+  content   String   @db.Text
+  authorId  Int
+  cityId    Int?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  author    User     @relation(fields: [authorId], references: [id])
+  city      City?    @relation(fields: [cityId], references: [id])
+  comments  Comment[]
+}
 
-  @@map("temple_deity")
+model Comment {
+  id           Int      @id @default(autoincrement())
+  content      String   @db.Text
+  authorId     Int
+  discussionId Int
+  createdAt    DateTime @default(now())
+
+  author       User       @relation(fields: [authorId], references: [id])
+  discussion   Discussion @relation(fields: [discussionId], references: [id])
 }
 
 model Temple {
@@ -60,8 +100,8 @@ model Temple {
   email              String       @unique
   website            String
   opening_hours      String
-  service_offered    String
-  facilities_offered String
+  service_offered    Json
+  facilities_offered Json
   your_name          String
   your_email         String
   rating             Float        @default(0)
@@ -71,8 +111,87 @@ model Temple {
   city      City         @relation(fields: [cityId], references: [id], onDelete: Cascade)
   mainDeity Deity        @relation(fields: [mainDeityId], references: [id], onDelete: Cascade)
   images    TempleImage[]
+  mandirRegistrations UserMandirRegistration[]
 
   @@map("temple_temple")
+}
+
+model Deity {
+  id   Int    @id @default(autoincrement())
+  name String @unique
+  temples Temple[]
+
+  @@map("temple_deity")
+}
+
+model Event {
+  id                  Int         @id @default(autoincrement())
+  title               String
+  category            String
+  description         String       @db.Text
+  imageUrl            String?      @db.VarChar(2048)
+  status              EventStatus  @default(Pending)
+  eventDate           DateTime
+  startTime           String
+  endTime             String
+  multiDay            Boolean      @default(false)
+  endDate             DateTime?
+  recurring           Boolean      @default(false)
+  frequency           String?
+  registrationOpens   String?
+  registrationCloses  String?
+  templeName          String
+  hallName            String?
+  address             String?
+  mapsLink            String?      @db.VarChar(2048)
+  onlineLink          String?      @db.VarChar(2048)
+  attendees           Int          @default(0)
+  organizerId         Int?         @map("organizer_id")
+  reviewedById        Int?         @map("reviewed_by_id")
+  createdAt           DateTime     @default(now()) @map("created_at")
+  updatedAt           DateTime     @updatedAt @map("updated_at")
+
+  organizer User? @relation("EventOrganizer", fields: [organizerId], references: [id], onDelete: SetNull)
+  reviewer  User? @relation("EventReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+
+  @@index([status])
+  @@index([organizerId])
+  @@map("community_event")
+}
+
+model RelationToMandir {
+  id               Int                     @id @default(autoincrement())
+  relationshipName String                  @unique @map("relationship_name")
+  isActive         Boolean                 @default(true) @map("is_active")
+  registrations    UserMandirRegistration[]
+
+  @@map("relation_to_mandir")
+}
+
+model UserMandirRegistration {
+  id            Int                @id @default(autoincrement())
+  firstName     String             @map("first_name")
+  lastName      String             @map("last_name")
+  email         String
+  mobile        String
+  status        RegistrationStatus @default(Pending)
+  relationId    Int                @map("relation_id")
+  mandirId      Int                @map("mandir_id")
+  reviewedByUserId Int?             @map("reviewed_by_user_id")
+  reviewedAt    DateTime?          @map("reviewed_at")
+  notes         String?            @db.Text
+  createdAt     DateTime           @default(now()) @map("created_at")
+  updatedAt     DateTime           @updatedAt @map("updated_at")
+
+  relation       RelationToMandir @relation(fields: [relationId], references: [id], onDelete: Restrict)
+  mandir         Temple           @relation(fields: [mandirId], references: [id], onDelete: Restrict)
+  reviewedByUser User?            @relation("ReviewedMandirUser", fields: [reviewedByUserId], references: [id], onDelete: SetNull)
+
+  @@index([mandirId, status])
+  @@index([relationId, status])
+  @@index([status])
+  @@index([email])
+  @@map("user_mandir_registration")
 }
 
 model Business {
@@ -106,7 +225,7 @@ model Business {
 model TempleImage {
   id       Int    @id @default(autoincrement())
   templeId Int    @map("temple_id")
-  file     String
+  file     String @db.VarChar(2048)
   temple   Temple @relation(fields: [templeId], references: [id], onDelete: Cascade)
 
   @@map("temple_templeimage")

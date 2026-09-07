@@ -1,6 +1,8 @@
-import { Component } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule, NgIf } from '@angular/common';
 import { RouterLink } from "@angular/router";
+import { HttpClient } from '@angular/common/http';
+import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-community',
@@ -17,8 +19,8 @@ import { RouterLink } from "@angular/router";
           </p>
 
           <!-- Action Buttons -->
-          <div routerLink="/community/discussion/new" class="flex flex-col sm:flex-row items-center justify-center gap-4 max-w-2xl mx-auto">
-            <button class="bg-white text-orange-600 font-medium px-6 py-2 rounded-md hover:bg-gray-50 shadow-md flex items-center gap-2 transition-colors">
+          <div class="flex flex-col sm:flex-row items-center justify-center gap-4 max-w-2xl mx-auto">
+            <button routerLink="/community/discussion/new" class="bg-white text-orange-600 font-medium px-6 py-2 rounded-md hover:bg-gray-50 shadow-md flex items-center gap-2 transition-colors">
               <span class="text-lg">+</span> Start Discussion
             </button>
             <button routerLink="/events/add-event" class="bg-white text-orange-600 font-medium px-6 py-2 rounded-md hover:bg-gray-50 shadow-md flex items-center gap-2 transition-colors">
@@ -58,7 +60,7 @@ import { RouterLink } from "@angular/router";
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 104.5 4.5a7.5 7.5 0 0012.15 12.15z"></path>
                 </svg>
               </div>
-              <button  routerLink="/community/discussion/new" class="bg-orange-600 text-white px-4 py-2 rounded-md hover:bg-orange-700 flex items-center gap-1 transition-colors w-full sm:w-auto">
+              <button routerLink="/community/discussion/new" class="bg-orange-600 text-white px-4 py-2 rounded-md hover:bg-orange-700 flex items-center gap-1 transition-colors w-full sm:w-auto">
                 <span class="text-lg">+</span> New Discussion
               </button>
             </div>
@@ -74,31 +76,33 @@ import { RouterLink } from "@angular/router";
             </div>
 
             <!-- Discussion Thread Card -->
-            <div class="bg-white rounded-xl shadow p-6 mb-4">
-              <h3 class="font-semibold text-lg mb-1">Best places for vegetarian food in Auckland?</h3>
-              <p class="text-sm text-gray-500 mb-4">Looking for authentic vegetarian restaurants that serve good Indian food. Any recommendations?</p>
-              <div class="flex items-center text-sm text-gray-500">
-                <div class="flex items-center mr-4">
-                  <img class="w-6 h-6 rounded-full mr-2" src="https://via.placeholder.com/150" alt="Priya Sharma">
-                  <span>Priya Sharma</span>
+            <div *ngFor="let discussion of discussions" class="bg-white rounded-xl shadow p-6 mb-4">
+              <h3 class="font-semibold text-lg mb-1">{{ discussion.title }}</h3>
+              <p class="text-sm text-gray-500 mb-4">{{ discussion.content }}</p>
+              
+              <div class="flex flex-wrap gap-2 mb-4">
+                <span *ngFor="let tag of discussion.tags" class="text-xs bg-orange-100 text-orange-800 px-2 py-1 rounded-md">#{{ tag }}</span>
+                <span class="text-xs bg-gray-100 text-gray-800 px-2 py-1 rounded-md">{{ discussion.category }}</span>
+              </div>
+
+              <div class="flex flex-wrap items-center text-sm text-gray-500 gap-4">
+                <div class="flex items-center">
+                  <div class="w-6 h-6 rounded-full mr-2 bg-orange-200 flex items-center justify-center text-orange-700 font-bold text-xs">
+                    {{ discussion.authorName ? discussion.authorName.charAt(0).toUpperCase() : 'U' }}
+                  </div>
+                  <span>{{ discussion.authorName }}</span>
                 </div>
-                <span class="mr-4">Auckland</span>
-                <span>2 hours ago</span>
+                <div *ngIf="discussion.cityName" class="flex items-center gap-1">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-map-pin"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                  <span>{{ discussion.cityName }}</span>
+                </div>
+                <span>{{ formatDate(discussion.createdAt) }}</span>
               </div>
             </div>
 
-            <!-- Another Discussion Thread Card -->
-            <div class="bg-white rounded-xl shadow p-6 mb-4">
-              <h3 class="font-semibold text-lg mb-1">Organizing Karva Chauth celebration in Wellington</h3>
-              <p class="text-sm text-gray-500 mb-4">Planning a community Karva Chauth celebration. Looking for volunteers and venue suggestions.</p>
-              <div class="flex items-center text-sm text-gray-500">
-                <div class="flex items-center mr-4">
-                  <img class="w-6 h-6 rounded-full mr-2" src="https://via.placeholder.com/150" alt="Meera Patel">
-                  <span>Meera Patel</span>
-                </div>
-                <span class="mr-4">Wellington</span>
-                <span>4 hours ago</span>
-              </div>
+            <!-- Empty State -->
+            <div *ngIf="discussions.length === 0" class="text-center py-10 bg-white rounded-xl shadow">
+              <p class="text-gray-500">No discussions found.</p>
             </div>
           </div>
 
@@ -118,7 +122,6 @@ import { RouterLink } from "@angular/router";
             <div class="grid md:grid-cols-2 gap-6">
               <!-- Group Card 1 -->
               <div class="bg-white rounded-xl shadow p-6 flex items-start relative gap-4">
-                <!-- SVG Icon for the group card -->
                 <svg class="w-16 h-16 text-orange-600" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M12 2A10 10 0 002 12a10 10 0 0010 10 10 10 0 0010-10A10 10 0 0012 2m0 3a3 3 0 11-3 3 3 3 0 013-3m0 14.2a6 6 0 01-5-2.2c-.2-.2-.5-.4-.5-.7v-1.3c0-.3.2-.6.5-.7a6.2 6.2 0 0110 0c.3.1.5.4.5.7v1.3c0 .3-.2.5-.5.7a6 6 0 01-5 2.2z"/>
                 </svg>
@@ -126,61 +129,10 @@ import { RouterLink } from "@angular/router";
                   <span class="absolute top-4 right-4 bg-orange-100 text-orange-700 text-xs px-2 py-1 rounded">Family</span>
                   <h3 class="font-semibold text-lg mb-2">Auckland Hindu Families</h3>
                   <p class="text-sm text-gray-500 mb-4">Connect with Hindu families in Auckland for playdates, cultural events, and community support.</p>
-                  <div class="text-sm text-black-700 mb-4 flex items-center gap-2">
-                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M16 11c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM16 13c-2.652 0-3.056 1.144-5 1.701v4.299c0 1.657 1.343 3 3 3h4c1.657 0 3-1.343 3-3v-4.299c-1.944-.557-2.348-1.701-5-1.701zM10 8c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM10 10c-1.42 0-2.43 1.077-3.793 2.51l-.207.245V14h8v-1.245c-1.363-1.433-2.373-2.51-3.793-2.51zM4 14.5c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM4 16.5c-1.42 0-2.43 1.077-3.793 2.51l-.207.245V20h8v-1.245c-1.363-1.433-2.373-2.51-3.793-2.51z"/></svg>
-                    <span>245 members · Auckland</span>
-                  </div>
                   <button class="bg-orange-600 text-white px-6 py-2 rounded-md hover:bg-orange-700 mt-auto transition-colors">Join Group</button>
                 </div>
               </div>
-              <!-- Group Card 2 -->
-              <div class="bg-white rounded-xl shadow p-6 flex items-start relative gap-4">
-                <svg class="w-16 h-16 text-orange-600" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M12 2A10 10 0 002 12a10 10 0 0010 10 10 10 0 0010-10A10 10 0 0012 2m0 3a3 3 0 11-3 3 3 3 0 013-3m0 14.2a6 6 0 01-5-2.2c-.2-.2-.5-.4-.5-.7v-1.3c0-.3.2-.6.5-.7a6.2 6.2 0 0110 0c.3.1.5.4.5.7v1.3c0 .3-.2.5-.5.7a6 6 0 01-5 2.2z"/>
-                </svg>
-                <div class="flex-grow">
-                  <span class="absolute top-4 right-4 bg-orange-100 text-orange-700 text-xs px-2 py-1 rounded">Professional</span>
-                  <h3 class="font-semibold text-lg mb-2">Wellington Young Professionals</h3>
-                  <p class="text-sm text-gray-500 mb-4">Networking and social group for young Hindu professionals in the capital.</p>
-                  <div class="text-sm text-black-700 mb-4 flex items-center gap-2">
-                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M16 11c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM16 13c-2.652 0-3.056 1.144-5 1.701v4.299c0 1.657 1.343 3 3 3h4c1.657 0 3-1.343 3-3v-4.299c-1.944-.557-2.348-1.701-5-1.701zM10 8c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM10 10c-1.42 0-2.43 1.077-3.793 2.51l-.207.245V14h8v-1.245c-1.363-1.433-2.373-2.51-3.793-2.51zM4 14.5c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM4 16.5c-1.42 0-2.43 1.077-3.793 2.51l-.207.245V20h8v-1.245c-1.363-1.433-2.373-2.51-3.793-2.51z"/></svg>
-                    <span>89 members · Wellington</span>
-                  </div>
-                  <button class="bg-orange-600 text-white px-6 py-2 rounded-md hover:bg-orange-700 mt-auto transition-colors">Join Group</button>
-                </div>
-              </div>
-              <!-- Group Card 3 -->
-              <div class="bg-white rounded-xl shadow p-6 flex items-start relative gap-4">
-                <svg class="w-16 h-16 text-orange-600" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M12 2A10 10 0 002 12a10 10 0 0010 10 10 10 0 0010-10A10 10 0 0012 2m0 3a3 3 0 11-3 3 3 3 0 013-3m0 14.2a6 6 0 01-5-2.2c-.2-.2-.5-.4-.5-.7v-1.3c0-.3.2-.6.5-.7a6.2 6.2 0 0110 0c.3.1.5.4.5.7v1.3c0 .3-.2.5-.5.7a6 6 0 01-5 2.2z"/>
-                </svg>
-                <div class="flex-grow">
-                  <span class="absolute top-4 right-4 bg-orange-100 text-orange-700 text-xs px-2 py-1 rounded">Cultural</span>
-                  <h3 class="font-semibold text-lg mb-2">Christchurch Cultural Society</h3>
-                  <p class="text-sm text-gray-500 mb-4">Preserving and celebrating Hindu culture through events, workshops, and festivals.</p>
-                  <div class="text-sm text-black-700 mb-4 flex items-center gap-2">
-                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M16 11c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM16 13c-2.652 0-3.056 1.144-5 1.701v4.299c0 1.657 1.343 3 3 3h4c1.657 0 3-1.343 3-3v-4.299c-1.944-.557-2.348-1.701-5-1.701zM10 8c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM10 10c-1.42 0-2.43 1.077-3.793 2.51l-.207.245V14h8v-1.245c-1.363-1.433-2.373-2.51-3.793-2.51zM4 14.5c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM4 16.5c-1.42 0-2.43 1.077-3.793 2.51l-.207.245V20h8v-1.245c-1.363-1.433-2.373-2.51-3.793-2.51z"/></svg>
-                    <span>156 members · Christchurch</span>
-                  </div>
-                  <button class="bg-orange-600 text-white px-6 py-2 rounded-md hover:bg-orange-700 mt-auto transition-colors">Join Group</button>
-                </div>
-              </div>
-              <!-- Group Card 4 -->
-              <div class="bg-white rounded-xl shadow p-6 flex items-start relative gap-4">
-                <svg class="w-16 h-16 text-orange-600" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M12 2A10 10 0 002 12a10 10 0 0010 10 10 10 0 0010-10A10 10 0 0012 2m0 3a3 3 0 11-3 3 3 3 0 013-3m0 14.2a6 6 0 01-5-2.2c-.2-.2-.5-.4-.5-.7v-1.3c0-.3.2-.6.5-.7a6.2 6.2 0 0110 0c.3.1.5.4.5.7v1.3c0 .3-.2.5-.5.7a6 6 0 01-5 2.2z"/>
-                </svg>
-                <div class="flex-grow">
-                  <span class="absolute top-4 right-4 bg-orange-100 text-orange-700 text-xs px-2 py-1 rounded">Spiritual</span>
-                  <h3 class="font-semibold text-lg mb-2">Hamilton Bhajan Group</h3>
-                  <p class="text-sm text-gray-500 mb-4">Weekly bhajan sessions and spiritual discussions for devotees in Hamilton.</p>
-                  <div class="text-sm text-black-700 mb-4 flex items-center gap-2">
-                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M16 11c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM16 13c-2.652 0-3.056 1.144-5 1.701v4.299c0 1.657 1.343 3 3 3h4c1.657 0 3-1.343 3-3v-4.299c-1.944-.557-2.348-1.701-5-1.701zM10 8c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM10 10c-1.42 0-2.43 1.077-3.793 2.51l-.207.245V14h8v-1.245c-1.363-1.433-2.373-2.51-3.793-2.51zM4 14.5c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM4 16.5c-1.42 0-2.43 1.077-3.793 2.51l-.207.245V20h8v-1.245c-1.363-1.433-2.373-2.51-3.793-2.51z"/></svg>
-                    <span>67 members · Hamilton</span>
-                  </div>
-                  <button class="bg-orange-600 text-white px-6 py-2 rounded-md hover:bg-orange-700 mt-auto transition-colors">Join Group</button>
-                </div>
-              </div>
+              <!-- Add more cards as needed -->
             </div>
           </div>
 
@@ -200,10 +152,38 @@ import { RouterLink } from "@angular/router";
     </div>
   `,
 })
-export class CommunityComponent {
+export class CommunityComponent implements OnInit {
+  private http = inject(HttpClient);
   activeTab: 'discussions' | 'groups' | 'members' = 'discussions';
+  discussions: any[] = [];
+
+  ngOnInit() {
+    this.loadDiscussions();
+  }
+
+  loadDiscussions() {
+    this.http.get<any>(`${environment.apiBaseUrl}/public/community/discussions`).subscribe({
+      next: (res) => {
+        if (res.data) {
+          this.discussions = res.data;
+        }
+      },
+      error: (err) => console.error('Failed to load discussions', err)
+    });
+  }
 
   setActiveTab(tab: 'discussions' | 'groups' | 'members') {
     this.activeTab = tab;
+  }
+
+  formatDate(dateString: string): string {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+
+    if (diffInSeconds < 60) return `${diffInSeconds} seconds ago`;
+    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)} minutes ago`;
+    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)} hours ago`;
+    return `${Math.floor(diffInSeconds / 86400)} days ago`;
   }
 }

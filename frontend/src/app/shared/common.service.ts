@@ -249,7 +249,7 @@ updateTemple(id: number, formData: FormData): Observable<Temple> {
   return this.http
     .put<any>(`${this.apiUrl}/temple/${id}`, formData)
     .pipe(
-      map((response: any) => this.transformFromAPIResponse(response)),
+      map((response: any) => this.transformFromAPIResponse(response?.data ?? response)),
       catchError(this.handleError<Temple>('updateTemple'))
     );
 }
@@ -292,7 +292,7 @@ updateTemple(id: number, formData: FormData): Observable<Temple> {
 
 
 addBusiness(businessData: Business | FormData): Observable<any> {
-  return this.http.post<any>(`${this.apiUrl}/business/add`, businessData).pipe(
+  return this.http.post<any>(`${this.apiUrl}/business`, businessData).pipe(
     catchError(error => {
       console.error('Error submitting business:', error);
       return throwError(() => new Error('Something went wrong. Please try again later.'));
