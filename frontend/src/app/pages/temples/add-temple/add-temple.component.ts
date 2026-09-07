@@ -878,15 +878,20 @@ private resolveImageUrl(file: string | undefined | null): string {
     return '';
   }
 
-  if (normalized.startsWith('uploads/')) {
-    return `${this.backendOrigin}/${normalized}`;
+  const cleanFilename = normalized
+    .replace(/^assets\//, '')
+    .replace(/^temple_images\//, '')
+    .replace(/^uploads\/(temple_images\/)?/, '');
+
+  const isDynamicUpload = /^\d{10,}-/.test(cleanFilename);
+  if (isDynamicUpload) {
+    if (environment.production) {
+      return `${this.backendOrigin}/uploads/${cleanFilename}`;
+    }
+    return `/uploads/${cleanFilename}`;
   }
 
-  if (normalized.startsWith('temple_images/')) {
-    return `${this.backendOrigin}/uploads/${normalized}`;
-  }
-
-  return `${this.backendOrigin}/uploads/${normalized}`;
+  return `/assets/temple_images/${cleanFilename}`;
 }
 
   onFileSelected(event: any) {

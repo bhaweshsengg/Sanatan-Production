@@ -387,17 +387,24 @@ export class TemplesComponent implements OnInit {
       return this.defaultImage;
     }
 
-    // Strip a leading 'uploads/' prefix if already present
-    const withoutUploads = normalized.startsWith('uploads/')
-      ? normalized.slice('uploads/'.length)
-      : normalized;
+    // Strip a leading 'assets/', 'temple_images/', or 'uploads/' prefix if present
+    const cleanFilename = normalized
+      .replace(/^assets\//, '')
+      .replace(/^temple_images\//, '')
+      .replace(/^uploads\/(temple_images\/)?/, '');
 
-    // In production, use the full backend URL for images
-    // In development, use relative paths (Angular proxy handles forwarding)
-    if (environment.production) {
-      return `${this.backendOrigin}/temple_images/${withoutUploads}`;
+    // Check if it is a dynamic user upload (timestamp-based like "1788823035223-...")
+    const isDynamicUpload = /^\d{10,}-/.test(cleanFilename);
+
+    if (isDynamicUpload) {
+      if (environment.production) {
+        return `${this.backendOrigin}/uploads/${cleanFilename}`;
+      }
+      return `/uploads/${cleanFilename}`;
     }
-    return `/temple_images/${withoutUploads}`;
+
+    // Pre-seeded temple image: served directly from frontend assets in both dev and production
+    return `/assets/temple_images/${cleanFilename}`;
   }
 
   /**

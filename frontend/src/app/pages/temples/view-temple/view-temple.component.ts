@@ -656,12 +656,21 @@ export class ViewTempleComponent implements OnInit {
     if (/^https?:\/\//i.test(file)) return file;
     const normalized = file.replace(/\\/g, '/').replace(/^\.\//, '').replace(/^\/+/, '');
     if (!normalized) return this.defaultImage;
-    const withoutUploads = normalized.startsWith('uploads/') ? normalized.slice('uploads/'.length) : normalized;
-    // On production, use full backend URL; locally, Angular proxy handles /uploads/*
-    if (environment.production) {
-      return `${this.backendOrigin}/uploads/${withoutUploads}`;
+
+    const cleanFilename = normalized
+      .replace(/^assets\//, '')
+      .replace(/^temple_images\//, '')
+      .replace(/^uploads\/(temple_images\/)?/, '');
+
+    const isDynamicUpload = /^\d{10,}-/.test(cleanFilename);
+    if (isDynamicUpload) {
+      if (environment.production) {
+        return `${this.backendOrigin}/uploads/${cleanFilename}`;
+      }
+      return `/uploads/${cleanFilename}`;
     }
-    return `/uploads/${withoutUploads}`;
+
+    return `/assets/temple_images/${cleanFilename}`;
   }
 
   formatServiceName(service: string): string {

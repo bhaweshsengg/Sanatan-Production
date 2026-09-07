@@ -93,6 +93,11 @@ app.use('/uploads', staticCorsMiddleware, (req, res, next) => {
     return next();
   }
 
+  const templeImagePath = path.resolve(env.uploadDir, 'temple_images', requestedPath);
+  if (fs.existsSync(templeImagePath)) {
+    return res.sendFile(templeImagePath);
+  }
+
   if (fs.existsSync(fallbackTempleImage)) {
     return res.sendFile(fallbackTempleImage);
   }
@@ -118,7 +123,8 @@ app.use(express.urlencoded({ extended: true }));
 app.use(
   rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: 200,
+    max: env.nodeEnv === 'production' ? 5000 : 100000,
+    skip: () => env.nodeEnv === 'development',
   })
 );
 
