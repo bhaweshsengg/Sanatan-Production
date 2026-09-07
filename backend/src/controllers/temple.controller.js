@@ -4,15 +4,16 @@ import path from 'node:path';
 import { prisma, repairTempleStatuses } from '../config/db.js';
 import { env } from '../config/env.js';
 import { sendSuccess, sendError } from '../utils/response.js';
-import { v2 as cloudinary } from 'cloudinary';
+// import { v2 as cloudinary } from 'cloudinary';
 
-if (env.cloudinary.enabled) {
-  cloudinary.config({
-    cloud_name: env.cloudinary.cloudName,
-    api_key: env.cloudinary.apiKey,
-    api_secret: env.cloudinary.apiSecret,
-  });
-}
+// Cloudinary disabled - images are stored and served locally from hosting server
+// if (env.cloudinary.enabled) {
+//   cloudinary.config({
+//     cloud_name: env.cloudinary.cloudName,
+//     api_key: env.cloudinary.apiKey,
+//     api_secret: env.cloudinary.apiSecret,
+//   });
+// }
 
 const parseListField = (value) => {
   if (Array.isArray(value)) return value;
@@ -48,45 +49,74 @@ const normalizeTempleRecord = (temple) => ({
   ...temple,
   city: temple.city,
   main_deity: temple.mainDeity,
-  images: temple.images || [],
+  images: (temple.images || []).map((img) => ({
+    ...img,
+    file: /^https?:\/\//i.test(img.file || '')
+      ? img.file
+      : normalizeUploadedImagePath(img.file) || img.file,
+  })),
   service_offered: typeof temple.service_offered === 'string' ? parseListField(temple.service_offered) : (temple.service_offered || []),
   facilities_offered: typeof temple.facilities_offered === 'string' ? parseListField(temple.facilities_offered) : (temple.facilities_offered || []),
 });
 
-const uploadNewImage = (file) => {
-  if (!env.cloudinary.enabled) {
-    return Promise.resolve(file.path);
+// Cloudinary upload code commented out - images are saved to hosting server
+// const uploadNewImage = (file) => {
+//   if (!env.cloudinary.enabled) {
+//     return Promise.resolve(file.path);
+//   }
+// 
+//   return new Promise((resolve, reject) => {
+//     const uploadStream = cloudinary.uploader.upload_stream(
+//       {
+//         folder: 'sanatan/temples',
+//         resource_type: 'image',
+//       },
+//       (error, result) => {
+//         if (error) {
+//           reject(error);
+//           return;
+//         }
+// 
+//         resolve(result.secure_url);
+//       }
+//     );
+// 
+//     uploadStream.end(file.buffer);
+//   });
+// };
+
+const uploadNewImage = async (file) => {
+  const uploadDir = path.resolve(env.uploadDir);
+  await fs.mkdir(uploadDir, { recursive: true });
+
+  if (file.buffer) {
+    const safeName =
+      `${Date.now()}-${Math.round(Math.random() * 1e9)}` +
+      path.extname(file.originalname || '');
+    const targetPath = path.join(uploadDir, safeName);
+    await fs.writeFile(targetPath, file.buffer);
+    return `/uploads/${safeName}`;
   }
 
-  return new Promise((resolve, reject) => {
-    const uploadStream = cloudinary.uploader.upload_stream(
-      {
-        folder: 'sanatan/temples',
-        resource_type: 'image',
-      },
-      (error, result) => {
-        if (error) {
-          reject(error);
-          return;
-        }
+  if (file.path || file.filename) {
+    const normalized = normalizeUploadedImagePath(file.path || file.filename);
+    return normalized || `/uploads/${file.filename}`;
+  }
 
-        resolve(result.secure_url);
-      }
-    );
-
-    uploadStream.end(file.buffer);
-  });
+  return '';
 };
 
 const saveNewImages = async (templeId, files) => {
   await Promise.all(files.slice(0, env.maxUploadFiles).map(async (file) => {
     const imageUrl = await uploadNewImage(file);
-    await prisma.templeImage.create({
-      data: {
-        templeId,
-        file: imageUrl,
-      },
-    });
+    if (imageUrl) {
+      await prisma.templeImage.create({
+        data: {
+          templeId,
+          file: imageUrl,
+        },
+      });
+    }
   }));
 };
 
