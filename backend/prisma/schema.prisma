@@ -103,8 +103,8 @@ model Temple {
   email              String?
   website            String
   opening_hours      String
-  service_offered    Json
-  facilities_offered Json
+  service_offered    String
+  facilities_offered String
   your_name          String
   your_email         String
   rating             Float        @default(0)
