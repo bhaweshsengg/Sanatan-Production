@@ -241,6 +241,11 @@ export class LoginRegisterationComponent {
   ) {
     this.returnUrl = this.route.snapshot.queryParamMap.get('returnUrl') || '/dashboard';
     this.joinEventId = this.route.snapshot.queryParamMap.get('joinEvent');
+    const tabParam = this.route.snapshot.queryParamMap.get('tab');
+    if (tabParam === 'register' || tabParam === 'forgot') {
+      this.activeTab = tabParam;
+    }
+
     // Updated to use username instead of email
     this.loginForm = this.fb.group({
       username: ['', [Validators.required]],
@@ -345,9 +350,10 @@ export class LoginRegisterationComponent {
       this.http.post<any>(`${environment.apiBaseUrl}/public/users/register`, registerData).subscribe({
         next: (response) => {
           this.isLoading = false;
-          this.showToastMessage('Registration successful! Please login.', 'success');
+          this.showToastMessage('Registration successful! Please login to continue.', 'success');
           this.registerForm.reset();
           this.activeTab = 'login';
+          this.loginForm.patchValue({ username: registerData.username });
         },
         error: (error) => {
           this.isLoading = false;

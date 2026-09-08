@@ -1,7 +1,7 @@
 import { Component, signal, OnInit, computed, ChangeDetectionStrategy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { RouterLink, Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { Observable, forkJoin } from 'rxjs';
 import { map, catchError } from 'rxjs/operators';
@@ -297,7 +297,21 @@ interface Submission {
                           </button>
                         }
                         @if (item.status === 'approved') {
-                          <button (click)="delistSubmission(item)" class="inline-flex items-center justify-center whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-red-600 text-white hover:bg-red-700 h-9 rounded-md px-3 gap-1">
+                          @if (item.type === 'temple') {
+                            <button
+                              type="button"
+                              (click)="editTemple(item)"
+                              class="inline-flex items-center justify-center whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-orange-500 bg-orange-50 text-orange-700 hover:bg-orange-100 h-9 rounded-md px-3 gap-1 cursor-pointer"
+                              title="Edit Temple details"
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4">
+                                <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>
+                                <path d="m15 5 4 4"/>
+                              </svg>
+                              Edit
+                            </button>
+                          }
+                          <button (click)="delistSubmission(item)" class="inline-flex items-center justify-center whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-red-600 text-white hover:bg-red-700 h-9 rounded-md px-3 gap-1 cursor-pointer">
                             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4">
                               <path d="M3 6h18"></path>
                               <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
@@ -361,8 +375,9 @@ interface Submission {
   `]
 })
 export class BusinessSubmissionComponent implements OnInit {
-  // Inject HttpClient
+  // Inject HttpClient & Router
   private http = inject(HttpClient);
+  private router = inject(Router);
   
   // Base API URL - Update this to match your backend
   private apiUrl = environment.apiBaseUrl;
@@ -477,6 +492,14 @@ this.loadData()
 
   delistSubmission(item: Submission) {
     this.updateSubmissionStatus(item, 'delisted');
+  }
+
+  editTemple(item: Submission) {
+    if (item.type === 'temple') {
+      this.router.navigate(['/temples/edit-temple', item.id], {
+        queryParams: { returnUrl: '/business/admin/business-submissions' }
+      });
+    }
   }
 
   // API Methods

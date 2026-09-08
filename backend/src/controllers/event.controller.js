@@ -1,6 +1,38 @@
+import path from 'node:path';
+import fs from 'node:fs/promises';
+import { env } from '../config/env.js';
 import { logger } from '../utils/logger.js';
 import { prisma } from '../config/db.js';
 import { sendError, sendSuccess } from '../utils/response.js';
+
+const normalizeUploadedImagePath = (value) => {
+  if (!value || typeof value !== 'string') return '';
+  const normalized = value.replace(/\\/g, '/');
+  const lastSegment = normalized.split('/').filter(Boolean).pop();
+  if (!lastSegment) return '';
+  return `/uploads/${lastSegment}`;
+};
+
+const uploadNewImage = async (file) => {
+  const uploadDir = path.resolve(env.uploadDir);
+  await fs.mkdir(uploadDir, { recursive: true });
+
+  if (file.buffer) {
+    const safeName =
+      `${Date.now()}-${Math.round(Math.random() * 1e9)}` +
+      path.extname(file.originalname || '');
+    const targetPath = path.join(uploadDir, safeName);
+    await fs.writeFile(targetPath, file.buffer);
+    return `/uploads/${safeName}`;
+  }
+
+  if (file.path || file.filename) {
+    const normalized = normalizeUploadedImagePath(file.path || file.filename);
+    return normalized || `/uploads/${file.filename}`;
+  }
+
+  return '';
+};
 
 const toEventData = (body) => ({
   title: body.title,
@@ -16,6 +48,7 @@ const toEventData = (body) => ({
   frequency: body.frequency || null,
   registrationOpens: body.registrationOpens || null,
   registrationCloses: body.registrationCloses || null,
+  templeId: body.templeId ? Number(body.templeId) : null,
   templeName: body.templeName,
   hallName: body.hallName || null,
   address: body.address || null,
@@ -26,24 +59,30 @@ const toEventData = (body) => ({
 const eventInclude = {
   organizer: { select: { id: true, username: true, email: true } },
   reviewer: { select: { id: true, username: true } },
+  temple: { select: { id: true, mandir_name: true, full_address: true } },
 };
 
 export const listApprovedEvents = async (req, res) => {
   try {
-    const { page = 1, limit = 20 } = req.query;
+    const { page = 1, limit = 20, templeId } = req.query;
     const pageNum = Math.max(1, Number(page));
     const limitNum = Math.max(1, Number(limit));
     const skip = (pageNum - 1) * limitNum;
 
+    const where = {
+      status: 'Approved',
+      ...(templeId ? { templeId: Number(templeId) } : {}),
+    };
+
     const [events, total] = await Promise.all([
       prisma.event.findMany({ 
-        where: { status: 'Approved' }, 
+        where, 
         include: eventInclude, 
         orderBy: { eventDate: 'asc' },
         skip,
         take: limitNum
       }),
-      prisma.event.count({ where: { status: 'Approved' } })
+      prisma.event.count({ where })
     ]);
     
     return sendSuccess(res, 200, { 
@@ -134,5 +173,51 @@ export const updateEventStatus = async (req, res) => {
     return sendSuccess(res, 200, { data: event, message: `Event ${req.body.status.toLowerCase()} successfully` });
   } catch (error) {
     return sendError(res, 400, 'Could not update event status', { details: error.message });
+  }
+};
+
+export const uploadEventImage = async (req, res) => {
+  try {
+    if (!req.file) {
+      return sendError(res, 400, 'No image file uploaded');
+    }
+
+    const imageUrl = await uploadNewImage(req.file);
+    if (!imageUrl) {
+      return sendError(res, 400, 'Could not save uploaded image');
+    }
+
+    return sendSuccess(res, 200, {
+      data: { url: imageUrl },
+      url: imageUrl,
+      message: 'Event image uploaded successfully',
+    });
+  } catch (error) {
+    logger.error('uploadEventImage error', { message: error.message });
+    return sendError(res, 500, 'Could not upload event image', { details: error.message });
+  }
+};
+
+export const deleteEvent = async (req, res) => {
+  try {
+    const event = await prisma.event.findUnique({
+      where: { id: Number(req.params.id) },
+    });
+
+    if (!event) {
+      return sendError(res, 404, 'Event not found', {});
+    }
+
+    await prisma.event.delete({
+      where: { id: Number(req.params.id) },
+    });
+
+    return sendSuccess(res, 200, {
+      message: 'Event deleted successfully',
+      data: {},
+    });
+  } catch (error) {
+    logger.error('deleteEvent error', { message: error.message });
+    return sendError(res, 400, 'Could not delete event', { details: error.message });
   }
 };

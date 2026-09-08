@@ -1050,7 +1050,12 @@ async onSubmit() {
         
         // Delay navigation to allow toast to be visible
         setTimeout(() => {
-          this.router.navigate(['/temples']);
+          const returnUrl = this.route.snapshot.queryParams['returnUrl'];
+          if (returnUrl) {
+            this.router.navigateByUrl(returnUrl);
+          } else {
+            this.router.navigate(['/temples/view-temple', this.templeId]);
+          }
         }, 1500);
       },
       error: (error) => {
@@ -1069,7 +1074,12 @@ async onSubmit() {
         
         // Delay navigation to allow toast to be visible
         setTimeout(() => {
-          this.router.navigate(['/temples']);
+          const returnUrl = this.route.snapshot.queryParams['returnUrl'];
+          if (returnUrl) {
+            this.router.navigateByUrl(returnUrl);
+          } else {
+            this.router.navigate(['/temples']);
+          }
         }, 1500);
       },
       error: (error) => {
@@ -1092,7 +1102,14 @@ async onSubmit() {
   }
 
   onCancel() {
-    this.router.navigate(['/temples']);
+    const returnUrl = this.route.snapshot.queryParams['returnUrl'];
+    if (returnUrl) {
+      this.router.navigateByUrl(returnUrl);
+    } else if (this.isEditMode && this.templeId) {
+      this.router.navigate(['/temples/view-temple', this.templeId]);
+    } else {
+      this.router.navigate(['/temples']);
+    }
   }
   formatOpeningHours(hours: string): string {
     // Example conversion: "6:00 AM - 8:00 PM" → "06:00-20:00"

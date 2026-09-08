@@ -5,6 +5,7 @@ import { Router, RouterLink } from '@angular/router';
 import { HttpClient, HttpClientModule } from '@angular/common/http';
 import { Observable, catchError, map, of } from 'rxjs';
 import { environment } from '../../../environments/environment';
+import { AuthService } from '../../Auth/auth.service';
 
 interface Temple {
   status: string;
@@ -269,6 +270,7 @@ export class TemplesComponent implements OnInit {
   deities: Deity[] = [];
   isLoading = true;
   errorMessage = '';
+  readonly isAdmin: boolean;
 
   // Fallback image used whenever a temple has no image, or the image fails to load
   private readonly defaultImage =
@@ -280,7 +282,14 @@ export class TemplesComponent implements OnInit {
   // resolve relative image paths like "/temple_images/xxx.jpg" returned by the API.
   private backendOrigin = environment.apiBaseUrl.replace(/\/api(\/v\d+)?(\/public)?\/?$/, '');
 
-  constructor(private router: Router, private http: HttpClient) { }
+  constructor(
+    private router: Router,
+    private http: HttpClient,
+    private authService: AuthService
+  ) {
+    const user = this.authService.getUserData();
+    this.isAdmin = user?.role === 'Admin' || user?.role === 'Super Admin';
+  }
 
   ngOnInit() {
     this.loadCities();

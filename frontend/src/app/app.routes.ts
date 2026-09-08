@@ -34,7 +34,7 @@ export const routes: Routes = [
   { path: 'dashboard', component: DashboardComponent },
   { path: 'temples/add-temple', component: AddTempleComponent },
   { path: 'temples/view-temple/:id', component: ViewTempleComponent },
-  { path: 'temples/edit-temple/:id', component: AddTempleComponent },
+  { path: 'temples/edit-temple/:id', component: AddTempleComponent, canActivate: [adminGuard] },
   { path: 'events', component: EventsComponent },
   { path: 'events/add-event', component: AddEventComponent },
   { path: 'admin/events', component: EventAdminComponent, canActivate: [adminGuard] },

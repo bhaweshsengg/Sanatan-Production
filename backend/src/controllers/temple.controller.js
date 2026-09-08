@@ -57,6 +57,7 @@ const normalizeTempleRecord = (temple) => ({
   })),
   service_offered: typeof temple.service_offered === 'string' ? parseListField(temple.service_offered) : (temple.service_offered || []),
   facilities_offered: typeof temple.facilities_offered === 'string' ? parseListField(temple.facilities_offered) : (temple.facilities_offered || []),
+  events: temple.events || [],
 });
 
 // Cloudinary upload code commented out - images are saved to hosting server
@@ -243,7 +244,15 @@ export const getTemple = async (req, res) => {
     await repairTempleStatuses();
     const temple = await prisma.temple.findUnique({
       where: { id: Number(req.params.id) },
-      include: { city: true, mainDeity: true, images: true },
+      include: {
+        city: true,
+        mainDeity: true,
+        images: true,
+        events: {
+          where: { status: 'Approved' },
+          orderBy: { eventDate: 'asc' },
+        },
+      },
     });
 
     if (!temple) return sendError(res, 404, 'Temple not found', {});

@@ -115,6 +115,7 @@ model Temple {
   mainDeity Deity        @relation(fields: [mainDeityId], references: [id], onDelete: Cascade)
   images    TempleImage[]
   mandirRegistrations UserMandirRegistration[]
+  events    Event[]
 
   @@map("temple_temple")
 }
@@ -134,15 +135,16 @@ model Event {
   description         String       @db.Text
   imageUrl            String?      @db.VarChar(2048)
   status              EventStatus  @default(Pending)
-  eventDate           DateTime
+  eventDate           String
   startTime           String
   endTime             String
   multiDay            Boolean      @default(false)
-  endDate             DateTime?
+  endDate             String?
   recurring           Boolean      @default(false)
   frequency           String?
   registrationOpens   String?
   registrationCloses  String?
+  templeId            Int?         @map("temple_id")
   templeName          String
   hallName            String?
   address             String?
@@ -154,11 +156,13 @@ model Event {
   createdAt           DateTime     @default(now()) @map("created_at")
   updatedAt           DateTime     @updatedAt @map("updated_at")
 
-  organizer User? @relation("EventOrganizer", fields: [organizerId], references: [id], onDelete: SetNull)
-  reviewer  User? @relation("EventReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+  temple    Temple? @relation(fields: [templeId], references: [id], onDelete: SetNull)
+  organizer User?   @relation("EventOrganizer", fields: [organizerId], references: [id], onDelete: SetNull)
+  reviewer  User?   @relation("EventReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
 
   @@index([status])
   @@index([organizerId])
+  @@index([templeId])
   @@map("community_event")
 }
 

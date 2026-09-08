@@ -72,6 +72,7 @@ router.use(authenticate);
 
 router.put(
   '/:id',
+  authorize('Admin', 'TempleManager'),
   upload.array('uploaded_images', env.maxUploadFiles),
   validate(templeUpdateSchema),
   updateTemple

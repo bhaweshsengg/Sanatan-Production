@@ -58,6 +58,7 @@ images?: Array<{
   file: string;
   temple: number;
 }>;
+  events?: Array<any>;
   created_at?: string; // Timestamp (ISO format)
   updated_at?: string; // Timestamp (ISO format)
 }
@@ -227,6 +228,18 @@ formatOpeningHours(hours: string): string {
           return this.transformFromAPIResponse(temple);
         }),
         catchError(this.handleError<Temple>('getTemple'))
+      );
+  }
+
+  getEventsByTemple(templeId: number): Observable<any[]> {
+    return this.http
+      .get<any>(`${this.apiUrl}/event?templeId=${templeId}`)
+      .pipe(
+        map((response: any) => {
+          const data = response?.data ?? response;
+          return Array.isArray(data) ? data : [];
+        }),
+        catchError(this.handleError<any[]>('getEventsByTemple', []))
       );
   }
 

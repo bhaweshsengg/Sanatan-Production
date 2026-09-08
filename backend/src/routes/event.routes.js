@@ -1,11 +1,17 @@
 import { Router } from 'express';
+import multer from 'multer';
+import path from 'node:path';
+import fs from 'node:fs';
+import { env } from '../config/env.js';
 import {
   createEvent,
+  deleteEvent,
   getAdminEvent,
   getAdminEvents,
   listApprovedEvents,
   updateEvent,
   updateEventStatus,
+  uploadEventImage,
 } from '../controllers/event.controller.js';
 import { authenticate, authorize } from '../middleware/auth.js';
 import { validate } from '../middleware/validate.js';
@@ -13,6 +19,40 @@ import { eventCreateSchema, eventStatusSchema, eventUpdateSchema } from '../vali
 
 const router = Router();
 
+const uploadDir = path.resolve(env.uploadDir);
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
+
+const diskStorage = multer.diskStorage({
+  destination: (_req, _file, cb) => {
+    cb(null, uploadDir);
+  },
+  filename: (_req, file, cb) => {
+    const safeName =
+      `${Date.now()}-${Math.round(Math.random() * 1e9)}` +
+      path.extname(file.originalname);
+    cb(null, safeName);
+  },
+});
+
+const storage = env.cloudinary.enabled ? multer.memoryStorage() : diskStorage;
+
+const upload = multer({
+  storage,
+  limits: {
+    fileSize: 5 * 1024 * 1024,
+  },
+  fileFilter: (_req, file, cb) => {
+    if (file.mimetype && file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only image files are allowed'));
+    }
+  },
+});
+
+router.post('/upload-image', upload.single('image'), uploadEventImage);
 router.get('/', listApprovedEvents);
 router.get('/admin', authenticate, authorize('Admin'), getAdminEvents);
 router.get('/admin/:id', authenticate, authorize('Admin'), getAdminEvent);
@@ -23,6 +63,7 @@ router.post('/', validate(eventCreateSchema), (req, res, next) => {
   return authenticate(req, res, next);
 }, createEvent);
 router.put('/:id', authenticate, authorize('Admin'), validate(eventUpdateSchema), updateEvent);
+router.delete('/:id', authenticate, authorize('Admin'), deleteEvent);
 router.patch('/:id/status', authenticate, authorize('Admin'), validate(eventStatusSchema), updateEventStatus);
 
 export default router;

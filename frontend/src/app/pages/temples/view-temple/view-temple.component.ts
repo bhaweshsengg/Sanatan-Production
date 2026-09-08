@@ -1,7 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { CommonService, Temple } from 'src/app/shared/common.service';
+import { AuthService } from 'src/app/Auth/auth.service';
 import { environment } from '../../../../environments/environment';
 
 interface ApiTemple {
@@ -35,7 +36,7 @@ interface ApiTemple {
 @Component({
   selector: 'app-view-temple',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, RouterModule],
   template: `
     <div class="min-h-screen bg-gray-50">
       <header class="border-b bg-white">
@@ -426,13 +427,26 @@ interface ApiTemple {
                   </div>
                 </div>
                 <div class="p-6 pt-0 space-y-4">
-                  <div class="p-3 bg-orange-50 rounded-lg">
-                    <h4 class="font-medium text-gray-900">Ganesh Chaturthi</h4>
-                    <p class="text-sm text-black-700">Fri, 22 Nov at 6:00 PM</p>
+                  <div *ngIf="isLoadingEvents" class="text-sm text-gray-500 py-3 text-center">
+                    Loading upcoming events...
                   </div>
-                  <div class="p-3 bg-orange-50 rounded-lg">
-                    <h4 class="font-medium text-gray-900">Monthly Bhajan</h4>
-                    <p class="text-sm text-black-700">Tue, 19 Nov at 7:00 PM</p>
+                  <div *ngIf="!isLoadingEvents && templeEvents.length > 0" class="space-y-3">
+                    <div *ngFor="let ev of templeEvents" class="p-3 bg-orange-50 rounded-lg border border-orange-100 flex gap-3 items-start">
+                      <img *ngIf="ev.imageUrl" [src]="resolveImageUrl(ev.imageUrl)" [alt]="ev.title" class="w-12 h-12 rounded object-cover flex-shrink-0" />
+                      <div class="flex-1 min-w-0">
+                        <div class="flex items-center justify-between gap-1">
+                          <h4 class="font-medium text-gray-900 truncate">{{ ev.title }}</h4>
+                          <span class="text-xs font-semibold px-2 py-0.5 rounded bg-orange-200 text-orange-800 flex-shrink-0">{{ ev.category }}</span>
+                        </div>
+                        <p class="text-sm text-black-700 mt-0.5">
+                          📅 {{ ev.eventDate }} · 🕐 {{ ev.startTime }}{{ ev.endTime ? ' - ' + ev.endTime : '' }}
+                        </p>
+                        <p *ngIf="ev.hallName" class="text-xs text-gray-600">📍 {{ ev.hallName }}</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div *ngIf="!isLoadingEvents && templeEvents.length === 0" class="p-4 bg-gray-50 rounded-lg border border-dashed border-gray-300 text-center">
+                    <p class="text-sm text-gray-500">No upcoming events scheduled for this mandir.</p>
                   </div>
                   <a
                     class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border border-input hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2 w-full bg-transparent"
@@ -577,14 +591,28 @@ interface ApiTemple {
 })
 export class ViewTempleComponent implements OnInit {
   temple: Temple | null = null;
+  templeEvents: any[] = [];
+  isLoadingEvents = false;
   isFavourite = false;
   showShareToast = false;
   shareToastMsg = '';
+  isAdmin = false;
 
   constructor(
     private templeService: CommonService,
-    private route: ActivatedRoute
-  ) {}
+    private route: ActivatedRoute,
+    private router: Router,
+    private authService: AuthService
+  ) {
+    const user = this.authService.getUserData();
+    this.isAdmin = !!user && (user.role === 'Admin' || user.role === 'Super Admin');
+  }
+
+  editTemple(): void {
+    if (this.temple?.id) {
+      this.router.navigate(['/temples/edit-temple', this.temple.id]);
+    }
+  }
 
   ngOnInit(): void {
     const id = this.route.snapshot.paramMap.get('id');
@@ -600,9 +628,26 @@ export class ViewTempleComponent implements OnInit {
     this.templeService.getTemplebyId(id).subscribe({
       next: (temple) => {
         this.temple = temple;
+        if (temple && (temple as any).events && (temple as any).events.length > 0) {
+          this.templeEvents = (temple as any).events;
+        }
+        this.loadTempleEvents(id);
       },
       error: (error) => {
         console.error('Error fetching temple:', error);
+      }
+    });
+  }
+
+  loadTempleEvents(templeId: number): void {
+    this.isLoadingEvents = true;
+    this.templeService.getEventsByTemple(templeId).subscribe({
+      next: (events) => {
+        this.templeEvents = events || [];
+        this.isLoadingEvents = false;
+      },
+      error: () => {
+        this.isLoadingEvents = false;
       }
     });
   }
