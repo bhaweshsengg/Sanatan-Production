@@ -27,8 +27,12 @@ const router = Router();
 
 const uploadDir = path.resolve(env.uploadDir);
 
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
+try {
+  if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true });
+  }
+} catch {
+  // Ignore directory creation error in read-only environments when using Blob/Cloudinary
 }
 
 const diskStorage = multer.diskStorage({
@@ -45,7 +49,9 @@ const diskStorage = multer.diskStorage({
   },
 });
 
-const storage = env.cloudinary.enabled
+const isBlobEnabled = Boolean(env.isBlobConfigured || env.blobToken || process.env.BLOB_READ_WRITE_TOKEN);
+
+const storage = (isBlobEnabled || env.cloudinary.enabled)
   ? multer.memoryStorage()
   : diskStorage;
 
@@ -53,6 +59,7 @@ const upload = multer({
   storage,
   limits: {
     files: env.maxUploadFiles,
+    fileSize: 10 * 1024 * 1024,
   },
 });
 

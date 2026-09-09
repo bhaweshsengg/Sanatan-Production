@@ -1,5 +1,6 @@
 import path from 'node:path';
 import fs from 'node:fs/promises';
+import { put, del } from '@vercel/blob';
 import { env } from '../config/env.js';
 import { logger } from '../utils/logger.js';
 import { prisma } from '../config/db.js';
@@ -13,14 +14,37 @@ const normalizeUploadedImagePath = (value) => {
   return `/uploads/${lastSegment}`;
 };
 
-const uploadNewImage = async (file) => {
+const uploadNewImage = async (file, folder = 'events') => {
+  const isBlobConfigured = Boolean(env.isBlobConfigured || env.blobToken || process.env.BLOB_READ_WRITE_TOKEN);
+  const ext = path.extname(file.originalname || '').toLowerCase() || '.jpg';
+  const baseName = path.basename(file.originalname || 'image', ext).replace(/[^a-zA-Z0-9_-]/g, '_');
+  const safeName = `${Date.now()}-${Math.round(Math.random() * 1e9)}-${baseName}${ext}`;
+
+  if (isBlobConfigured) {
+    const fileContent = file.buffer || (file.path ? await fs.readFile(file.path) : null);
+    if (!fileContent) {
+      logger.warn('uploadNewImage: File has no buffer or path', { file: file.originalname });
+      return '';
+    }
+
+    const blob = await put(`${folder}/${safeName}`, fileContent, {
+      access: 'public',
+      token: env.blobToken || process.env.BLOB_READ_WRITE_TOKEN,
+      contentType: file.mimetype || 'image/jpeg',
+    });
+
+    if (file.path) {
+      await fs.unlink(file.path).catch(() => {});
+    }
+
+    return blob.url;
+  }
+
+  // Fallback: local disk storage
   const uploadDir = path.resolve(env.uploadDir);
   await fs.mkdir(uploadDir, { recursive: true });
 
   if (file.buffer) {
-    const safeName =
-      `${Date.now()}-${Math.round(Math.random() * 1e9)}` +
-      path.extname(file.originalname || '');
     const targetPath = path.join(uploadDir, safeName);
     await fs.writeFile(targetPath, file.buffer);
     return `/uploads/${safeName}`;
@@ -206,6 +230,26 @@ export const deleteEvent = async (req, res) => {
 
     if (!event) {
       return sendError(res, 404, 'Event not found', {});
+    }
+
+    if (event.imageUrl) {
+      if (event.imageUrl.includes('blob.vercel-storage.com')) {
+        try {
+          await del(event.imageUrl, {
+            token: env.blobToken || process.env.BLOB_READ_WRITE_TOKEN,
+          });
+        } catch (delErr) {
+          logger.warn('Failed to delete blob event image', { error: delErr.message, url: event.imageUrl });
+        }
+      } else if (!/^https?:\/\//i.test(event.imageUrl)) {
+        const normalized = event.imageUrl.replace(/\\/g, '/').replace(/^\/+/, '');
+        const relativePath = normalized.startsWith('uploads/') ? normalized.slice('uploads/'.length) : normalized;
+        const candidate = path.resolve(env.uploadDir, relativePath);
+        const uploadRoot = path.resolve(env.uploadDir) + path.sep;
+        if (candidate.startsWith(uploadRoot)) {
+          await fs.rm(candidate, { force: true }).catch(() => {});
+        }
+      }
     }
 
     await prisma.event.delete({

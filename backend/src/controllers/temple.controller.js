@@ -1,6 +1,7 @@
 import { logger } from '../utils/logger.js';
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { put, del } from '@vercel/blob';
 import { prisma, repairTempleStatuses } from '../config/db.js';
 import { env } from '../config/env.js';
 import { sendSuccess, sendError } from '../utils/response.js';
@@ -60,40 +61,37 @@ const normalizeTempleRecord = (temple) => ({
   events: temple.events || [],
 });
 
-// Cloudinary upload code commented out - images are saved to hosting server
-// const uploadNewImage = (file) => {
-//   if (!env.cloudinary.enabled) {
-//     return Promise.resolve(file.path);
-//   }
-// 
-//   return new Promise((resolve, reject) => {
-//     const uploadStream = cloudinary.uploader.upload_stream(
-//       {
-//         folder: 'sanatan/temples',
-//         resource_type: 'image',
-//       },
-//       (error, result) => {
-//         if (error) {
-//           reject(error);
-//           return;
-//         }
-// 
-//         resolve(result.secure_url);
-//       }
-//     );
-// 
-//     uploadStream.end(file.buffer);
-//   });
-// };
+const uploadNewImage = async (file, folder = 'temples') => {
+  const isBlobConfigured = Boolean(env.isBlobConfigured || env.blobToken || process.env.BLOB_READ_WRITE_TOKEN);
+  const ext = path.extname(file.originalname || '').toLowerCase() || '.jpg';
+  const baseName = path.basename(file.originalname || 'image', ext).replace(/[^a-zA-Z0-9_-]/g, '_');
+  const safeName = `${Date.now()}-${Math.round(Math.random() * 1e9)}-${baseName}${ext}`;
 
-const uploadNewImage = async (file) => {
+  if (isBlobConfigured) {
+    const fileContent = file.buffer || (file.path ? await fs.readFile(file.path) : null);
+    if (!fileContent) {
+      logger.warn('uploadNewImage: File has no buffer or path', { file: file.originalname });
+      return '';
+    }
+
+    const blob = await put(`${folder}/${safeName}`, fileContent, {
+      access: 'public',
+      token: env.blobToken || process.env.BLOB_READ_WRITE_TOKEN,
+      contentType: file.mimetype || 'image/jpeg',
+    });
+
+    if (file.path) {
+      await fs.unlink(file.path).catch(() => {});
+    }
+
+    return blob.url;
+  }
+
+  // Fallback: local disk storage (for local dev when BLOB_READ_WRITE_TOKEN is not configured)
   const uploadDir = path.resolve(env.uploadDir);
   await fs.mkdir(uploadDir, { recursive: true });
 
   if (file.buffer) {
-    const safeName =
-      `${Date.now()}-${Math.round(Math.random() * 1e9)}` +
-      path.extname(file.originalname || '');
     const targetPath = path.join(uploadDir, safeName);
     await fs.writeFile(targetPath, file.buffer);
     return `/uploads/${safeName}`;
@@ -303,6 +301,35 @@ export const updateTemple = async (req, res) => {
       include: { city: true, mainDeity: true, images: true },
     });
 
+    // Prune removed images if existing_images was provided by edit form
+    if (req.body.existing_images !== undefined) {
+      const kept = Array.isArray(req.body.existing_images)
+        ? req.body.existing_images
+        : [req.body.existing_images].filter(Boolean);
+
+      const imagesToDelete = current.images.filter((img) => {
+        return !kept.some((k) => k === img.file || k.includes(img.file) || img.file.includes(k));
+      });
+
+      for (const img of imagesToDelete) {
+        if (img.file && img.file.includes('blob.vercel-storage.com')) {
+          try {
+            await del(img.file, {
+              token: env.blobToken || process.env.BLOB_READ_WRITE_TOKEN,
+            });
+          } catch (delErr) {
+            logger.warn('Failed to delete blob during update', { error: delErr.message, url: img.file });
+          }
+        } else if (img.file && !/^https?:\/\//i.test(img.file)) {
+          const absolutePath = resolveLocalImagePath(img.file);
+          if (absolutePath) {
+            await fs.rm(absolutePath, { force: true }).catch(() => {});
+          }
+        }
+        await prisma.templeImage.delete({ where: { id: img.id } }).catch(() => {});
+      }
+    }
+
     const files = Array.isArray(req.files) ? req.files : [];
     if (files.length) {
       await saveNewImages(temple.id, files);
@@ -331,10 +358,21 @@ export const deleteTemple = async (req, res) => {
 
     for (const image of temple.images) {
       const imagePath = image.file || '';
-      if (/^https?:\/\//i.test(imagePath)) continue;
+      if (/^https?:\/\//i.test(imagePath)) {
+        if (imagePath.includes('blob.vercel-storage.com')) {
+          try {
+            await del(imagePath, {
+              token: env.blobToken || process.env.BLOB_READ_WRITE_TOKEN,
+            });
+          } catch (delErr) {
+            logger.warn('Failed to delete blob image', { error: delErr.message, url: imagePath });
+          }
+        }
+        continue;
+      }
 
       const absolutePath = resolveLocalImagePath(imagePath);
-      if (absolutePath) await fs.rm(absolutePath, { force: true });
+      if (absolutePath) await fs.rm(absolutePath, { force: true }).catch(() => {});
     }
 
     await prisma.temple.delete({ where: { id: Number(req.params.id) } });
