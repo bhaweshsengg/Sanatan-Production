@@ -132,6 +132,13 @@ interface CommunityEvent {
                 >
                   Delete Event
                 </button>
+                <a
+                  *ngIf="isAdmin"
+                  routerLink="/admin/events"
+                  class="block text-center mt-2 text-xs font-semibold text-orange-600 hover:text-orange-700 hover:underline"
+                >
+                  👥 View Attendees in Admin →
+                </a>
               </div>
             </div>
           </div>
@@ -270,6 +277,13 @@ export class EventsComponent implements OnInit {
 
   ngOnInit(): void {
     this.joinedEventIds = this.loadJoinedEventIds();
+    this.loadEvents();
+    if (this.authService.isLoggedIn()) {
+      this.loadMyJoinedEvents();
+    }
+  }
+
+  loadEvents(): void {
     this.http.get<any>(`${this.apiUrl}/event`).subscribe({
       next: response => {
         const approvedEvents = Array.isArray(response?.data) ? response.data.map((event: any) => this.mapApiEvent(event)) : [];
@@ -282,7 +296,25 @@ export class EventsComponent implements OnInit {
     });
   }
 
+  loadMyJoinedEvents(): void {
+    this.http.get<any>(`${this.apiUrl}/event/my-joined`).subscribe({
+      next: response => {
+        if (Array.isArray(response?.data)) {
+          response.data.forEach((id: string) => this.joinedEventIds.add(String(id)));
+          this.saveJoinedEventIds();
+          this.events.forEach(ev => {
+            if (this.joinedEventIds.has(ev.id)) {
+              ev.joined = true;
+            }
+          });
+        }
+      },
+      error: () => {},
+    });
+  }
+
   joinEvent(event: CommunityEvent): void {
+    if (!event) return;
     // Check if already joined (prevent duplicate registration)
     if (event.joined || this.joinedEventIds.has(event.id)) {
       this.showToast(`You have already joined "${event.title}".`, 'info');
@@ -297,11 +329,28 @@ export class EventsComponent implements OnInit {
       return;
     }
 
-    event.joined = true;
-    event.attendees += 1;
-    this.joinedEventIds.add(event.id);
-    this.saveJoinedEventIds();
-    this.showToast(`Successfully joined "${event.title}"! See you there.`, 'success');
+    this.http.post<any>(`${this.apiUrl}/event/${event.id}/join`, {}).subscribe({
+      next: (response) => {
+        event.joined = true;
+        if (response?.data?.attendees !== undefined) {
+          event.attendees = response.data.attendees;
+        } else {
+          event.attendees += 1;
+        }
+        this.joinedEventIds.add(event.id);
+        this.saveJoinedEventIds();
+        this.showToast(response?.message || `Successfully joined "${event.title}"! See you there.`, 'success');
+      },
+      error: (err) => {
+        if (err?.status === 401) {
+          this.router.navigate(['/auth/login-registeration-forget'], {
+            queryParams: { returnUrl: '/events', joinEvent: event.id, tab: 'register' },
+          });
+          return;
+        }
+        this.showToast(err?.error?.message || 'Failed to join event. Please try again.', 'error');
+      },
+    });
   }
 
   leaveEvent(event: CommunityEvent): void {
@@ -309,11 +358,22 @@ export class EventsComponent implements OnInit {
       return;
     }
 
-    event.joined = false;
-    event.attendees = Math.max(0, event.attendees - 1);
-    this.joinedEventIds.delete(event.id);
-    this.saveJoinedEventIds();
-    this.showToast(`You have left "${event.title}".`, 'info');
+    this.http.post<any>(`${this.apiUrl}/event/${event.id}/leave`, {}).subscribe({
+      next: (response) => {
+        event.joined = false;
+        if (response?.data?.attendees !== undefined) {
+          event.attendees = response.data.attendees;
+        } else {
+          event.attendees = Math.max(0, event.attendees - 1);
+        }
+        this.joinedEventIds.delete(event.id);
+        this.saveJoinedEventIds();
+        this.showToast(response?.message || `You have left "${event.title}".`, 'info');
+      },
+      error: (err) => {
+        this.showToast(err?.error?.message || 'Failed to leave event. Please try again.', 'error');
+      },
+    });
   }
 
   confirmDeleteEvent(event: CommunityEvent): void {

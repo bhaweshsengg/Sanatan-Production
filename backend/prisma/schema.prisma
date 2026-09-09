@@ -52,6 +52,7 @@ model User {
   reviewedMandirRegistrations UserMandirRegistration[] @relation("ReviewedMandirUser")
   events Event[] @relation("EventOrganizer")
   reviewedEvents Event[] @relation("EventReviewer")
+  eventAttendances EventAttendee[]
 }
 
 model City {
@@ -159,6 +160,7 @@ model Event {
   temple    Temple? @relation(fields: [templeId], references: [id], onDelete: SetNull)
   organizer User?   @relation("EventOrganizer", fields: [organizerId], references: [id], onDelete: SetNull)
   reviewer  User?   @relation("EventReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+  attendeesList EventAttendee[]
 
   @@index([status])
   @@index([organizerId])
@@ -236,4 +238,21 @@ model TempleImage {
   temple   Temple @relation(fields: [templeId], references: [id], onDelete: Cascade)
 
   @@map("temple_templeimage")
+}
+
+model EventAttendee {
+  id        Int      @id @default(autoincrement())
+  eventId   Int      @map("event_id")
+  userId    Int      @map("user_id")
+  name      String?
+  email     String?
+  joinedAt  DateTime @default(now()) @map("joined_at")
+
+  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, userId], name: "eventId_userId")
+  @@index([eventId])
+  @@index([userId])
+  @@map("community_event_attendee")
 }

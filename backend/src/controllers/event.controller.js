@@ -3,7 +3,7 @@ import fs from 'node:fs/promises';
 import { put, del } from '@vercel/blob';
 import { env } from '../config/env.js';
 import { logger } from '../utils/logger.js';
-import { prisma } from '../config/db.js';
+import { prisma, ensureEventAttendeeTable } from '../config/db.js';
 import { sendError, sendSuccess } from '../utils/response.js';
 
 const normalizeUploadedImagePath = (value) => {
@@ -265,3 +265,204 @@ export const deleteEvent = async (req, res) => {
     return sendError(res, 400, 'Could not delete event', { details: error.message });
   }
 };
+
+export const joinEvent = async (req, res) => {
+  try {
+    await ensureEventAttendeeTable();
+    const eventId = Number(req.params.id);
+
+    if (!Number.isInteger(eventId) || eventId <= 0) {
+      return sendError(res, 400, 'Invalid event id');
+    }
+
+    const event = await prisma.event.findUnique({
+      where: { id: eventId },
+    });
+
+    if (!event) {
+      return sendError(res, 404, 'Event not found');
+    }
+
+    // Check for existing registration to prevent duplicates
+    const existing = await prisma.eventAttendee.findFirst({
+      where: {
+        eventId,
+        userId: req.user.id,
+      },
+    });
+
+    if (existing) {
+      return sendSuccess(res, 200, {
+        message: 'You have already joined this event',
+        data: {
+          joined: true,
+          alreadyJoined: true,
+          attendees: event.attendees,
+        },
+      });
+    }
+
+    // Create attendee record
+    await prisma.eventAttendee.create({
+      data: {
+        eventId,
+        userId: req.user.id,
+        name: req.user.username,
+        email: req.user.email,
+      },
+    });
+
+    // Recalculate actual attendee count to keep it completely accurate
+    const attendeeCount = await prisma.eventAttendee.count({
+      where: { eventId },
+    });
+
+    await prisma.event.update({
+      where: { id: eventId },
+      data: { attendees: attendeeCount },
+    });
+
+    return sendSuccess(res, 200, {
+      message: 'Successfully joined the event',
+      data: {
+        joined: true,
+        attendees: attendeeCount,
+      },
+    });
+  } catch (error) {
+    logger.error('joinEvent error', { message: error.message });
+    return sendError(res, 500, 'Could not join event', { details: error.message });
+  }
+};
+
+export const leaveEvent = async (req, res) => {
+  try {
+    await ensureEventAttendeeTable();
+    const eventId = Number(req.params.id);
+
+    if (!Number.isInteger(eventId) || eventId <= 0) {
+      return sendError(res, 400, 'Invalid event id');
+    }
+
+    const event = await prisma.event.findUnique({
+      where: { id: eventId },
+    });
+
+    if (!event) {
+      return sendError(res, 404, 'Event not found');
+    }
+
+    // Delete attendee record
+    await prisma.eventAttendee.deleteMany({
+      where: {
+        eventId,
+        userId: req.user.id,
+      },
+    });
+
+    // Recalculate actual attendee count
+    const attendeeCount = await prisma.eventAttendee.count({
+      where: { eventId },
+    });
+
+    await prisma.event.update({
+      where: { id: eventId },
+      data: { attendees: attendeeCount },
+    });
+
+    return sendSuccess(res, 200, {
+      message: 'Successfully left the event',
+      data: {
+        joined: false,
+        attendees: attendeeCount,
+      },
+    });
+  } catch (error) {
+    logger.error('leaveEvent error', { message: error.message });
+    return sendError(res, 500, 'Could not leave event', { details: error.message });
+  }
+};
+
+export const getMyJoinedEvents = async (req, res) => {
+  try {
+    await ensureEventAttendeeTable();
+    const records = await prisma.eventAttendee.findMany({
+      where: { userId: req.user.id },
+      select: { eventId: true },
+    });
+
+    const eventIds = records.map((r) => String(r.eventId));
+    return sendSuccess(res, 200, { data: eventIds });
+  } catch (error) {
+    logger.error('getMyJoinedEvents error', { message: error.message });
+    return sendError(res, 500, 'Could not fetch joined events', { details: error.message });
+  }
+};
+
+export const getEventAttendees = async (req, res) => {
+  try {
+    await ensureEventAttendeeTable();
+    const eventId = Number(req.params.id);
+
+    if (!Number.isInteger(eventId) || eventId <= 0) {
+      return sendError(res, 400, 'Invalid event id');
+    }
+
+    const event = await prisma.event.findUnique({
+      where: { id: eventId },
+      select: {
+        id: true,
+        title: true,
+        category: true,
+        templeName: true,
+        hallName: true,
+        eventDate: true,
+        startTime: true,
+        endTime: true,
+        attendees: true,
+        status: true,
+      },
+    });
+
+    if (!event) {
+      return sendError(res, 404, 'Event not found');
+    }
+
+    const attendees = await prisma.eventAttendee.findMany({
+      where: { eventId },
+      include: {
+        user: {
+          select: {
+            id: true,
+            username: true,
+            email: true,
+            role: true,
+            createdAt: true,
+          },
+        },
+      },
+      orderBy: { joinedAt: 'desc' },
+    });
+
+    const formattedAttendees = attendees.map((att) => ({
+      id: att.id,
+      userId: att.userId,
+      name: att.user?.username || att.name || 'Devotee',
+      email: att.user?.email || att.email || 'N/A',
+      role: att.user?.role || 'User',
+      joinedAt: att.joinedAt,
+    }));
+
+    return sendSuccess(res, 200, {
+      data: {
+        event,
+        total: formattedAttendees.length,
+        attendees: formattedAttendees,
+      },
+    });
+  } catch (error) {
+    logger.error('getEventAttendees error', { message: error.message });
+    return sendError(res, 500, 'Could not fetch event attendees', { details: error.message });
+  }
+};
+

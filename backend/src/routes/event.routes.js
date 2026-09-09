@@ -12,6 +12,10 @@ import {
   updateEvent,
   updateEventStatus,
   uploadEventImage,
+  joinEvent,
+  leaveEvent,
+  getMyJoinedEvents,
+  getEventAttendees,
 } from '../controllers/event.controller.js';
 import { authenticate, authorize } from '../middleware/auth.js';
 import { validate } from '../middleware/validate.js';
@@ -67,6 +71,11 @@ router.post('/', validate(eventCreateSchema), (req, res, next) => {
   }
   return authenticate(req, res, next);
 }, createEvent);
+router.get('/my-joined', authenticate, getMyJoinedEvents);
+router.post('/:id/join', authenticate, joinEvent);
+router.post('/:id/leave', authenticate, leaveEvent);
+router.get('/admin/:id/attendees', authenticate, authorize('Admin'), getEventAttendees);
+router.get('/:id/attendees', authenticate, authorize('Admin'), getEventAttendees);
 router.put('/:id', authenticate, authorize('Admin'), validate(eventUpdateSchema), updateEvent);
 router.delete('/:id', authenticate, authorize('Admin'), deleteEvent);
 router.patch('/:id/status', authenticate, authorize('Admin'), validate(eventStatusSchema), updateEventStatus);

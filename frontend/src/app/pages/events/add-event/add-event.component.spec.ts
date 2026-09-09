@@ -41,7 +41,7 @@ describe('AddEventComponent', () => {
       description: 'A welcoming study session for the Bhagavad Gita and its practical wisdom for daily community life.',
       imageUrl: '', status: 'Published', date: '2026-09-20', startTime: '10:00', endTime: '12:00',
       multiDay: false, endDate: '', recurring: false, frequency: 'Daily', registrationOpens: '', registrationCloses: '',
-      templeName: 'Sanatan Community Temple', hallName: 'Main Hall', address: 'Auckland', mapsLink: '', onlineLink: '',
+      templeId: null, templeName: 'Sanatan Community Temple', hallName: 'Main Hall', address: 'Auckland', mapsLink: '', onlineLink: '',
     };
 
     component.createEvent();

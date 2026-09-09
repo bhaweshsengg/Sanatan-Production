@@ -41,3 +41,29 @@ export const repairTempleStatuses = () => {
 
   return templeStatusRepair;
 };
+
+let eventAttendeeTablePromise;
+
+export const ensureEventAttendeeTable = () => {
+  if (!eventAttendeeTablePromise) {
+    eventAttendeeTablePromise = prisma.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS \`community_event_attendee\` (
+        \`id\` INT NOT NULL AUTO_INCREMENT,
+        \`event_id\` INT NOT NULL,
+        \`user_id\` INT NOT NULL,
+        \`name\` VARCHAR(191) NULL,
+        \`email\` VARCHAR(191) NULL,
+        \`joined_at\` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+        PRIMARY KEY (\`id\`),
+        UNIQUE KEY \`event_user_unique\` (\`event_id\`, \`user_id\`),
+        INDEX \`community_event_attendee_event_id_idx\` (\`event_id\`),
+        INDEX \`community_event_attendee_user_id_idx\` (\`user_id\`)
+      ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+    `).catch((error) => {
+      eventAttendeeTablePromise = undefined;
+      throw error;
+    });
+  }
+
+  return eventAttendeeTablePromise;
+};
