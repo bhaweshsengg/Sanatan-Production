@@ -2,7 +2,7 @@ import { logger } from '../utils/logger.js';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { put, del } from '@vercel/blob';
-import { prisma, repairTempleStatuses } from '../config/db.js';
+import { prisma, repairTempleStatuses, ensureRequiredTables } from '../config/db.js';
 import { env } from '../config/env.js';
 import { sendSuccess, sendError } from '../utils/response.js';
 // import { v2 as cloudinary } from 'cloudinary';
@@ -240,18 +240,41 @@ export const createTemple = async (req, res) => {
 export const getTemple = async (req, res) => {
   try {
     await repairTempleStatuses();
-    const temple = await prisma.temple.findUnique({
-      where: { id: Number(req.params.id) },
-      include: {
-        city: true,
-        mainDeity: true,
-        images: true,
-        events: {
-          where: { status: 'Approved' },
-          orderBy: { eventDate: 'asc' },
+    await ensureRequiredTables().catch(() => {});
+
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id) || id <= 0) {
+      return sendError(res, 400, 'Invalid temple id');
+    }
+
+    let temple;
+    try {
+      temple = await prisma.temple.findUnique({
+        where: { id },
+        include: {
+          city: true,
+          mainDeity: true,
+          images: true,
+          events: {
+            where: { status: 'Approved' },
+            orderBy: { eventDate: 'asc' },
+          },
         },
-      },
-    });
+      });
+    } catch (queryError) {
+      logger.warn('getTemple: events relation query failed, falling back to basic include', {
+        id,
+        error: queryError.message,
+      });
+      temple = await prisma.temple.findUnique({
+        where: { id },
+        include: {
+          city: true,
+          mainDeity: true,
+          images: true,
+        },
+      });
+    }
 
     if (!temple) return sendError(res, 404, 'Temple not found', {});
     return sendSuccess(res, 200, { data: normalizeTempleRecord(temple) });

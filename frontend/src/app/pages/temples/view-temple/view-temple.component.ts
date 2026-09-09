@@ -58,6 +58,19 @@ interface ApiTemple {
       </header>
       <div class="container mx-auto px-4 py-8">
         <div class="max-w-6xl mx-auto">
+          <div *ngIf="isLoadingTemple" class="py-20 text-center">
+            <div class="inline-block animate-spin rounded-full h-12 w-12 border-4 border-orange-500 border-t-transparent"></div>
+            <p class="mt-4 text-gray-600 font-medium">Loading mandir details...</p>
+          </div>
+          <div *ngIf="!isLoadingTemple && !temple" class="py-20 text-center max-w-md mx-auto">
+            <div class="text-5xl mb-4">🕉️</div>
+            <h2 class="text-2xl font-bold text-gray-800 mb-2">Mandir Details Not Found</h2>
+            <p class="text-gray-600 mb-6">We couldn't locate this temple. It may have been updated or removed.</p>
+            <a routerLink="/temples" class="inline-block bg-orange-600 text-white px-6 py-2.5 rounded-lg hover:bg-orange-700 font-medium shadow-sm transition">
+              Explore All Temples
+            </a>
+          </div>
+          <ng-container *ngIf="!isLoadingTemple && temple">
           <div class="grid lg:grid-cols-2 gap-8 mb-8">
             <div class="space-y-4">
               <div class="relative h-80 rounded-lg overflow-hidden">
@@ -584,6 +597,7 @@ interface ApiTemple {
               </div>
             </div>
           </div>
+          </ng-container>
         </div>
       </div>
     </div>
@@ -592,6 +606,7 @@ interface ApiTemple {
 export class ViewTempleComponent implements OnInit {
   temple: Temple | null = null;
   templeEvents: any[] = [];
+  isLoadingTemple = true;
   isLoadingEvents = false;
   isFavourite = false;
   showShareToast = false;
@@ -621,13 +636,17 @@ export class ViewTempleComponent implements OnInit {
       // Restore favourite state from localStorage
       const favs: number[] = JSON.parse(localStorage.getItem('favouriteTemples') || '[]');
       this.isFavourite = favs.includes(+id);
+    } else {
+      this.isLoadingTemple = false;
     }
   }
 
   getTemple(id: number): void {
+    this.isLoadingTemple = true;
     this.templeService.getTemplebyId(id).subscribe({
       next: (temple) => {
         this.temple = temple;
+        this.isLoadingTemple = false;
         if (temple && (temple as any).events && (temple as any).events.length > 0) {
           this.templeEvents = (temple as any).events;
         }
@@ -635,6 +654,7 @@ export class ViewTempleComponent implements OnInit {
       },
       error: (error) => {
         console.error('Error fetching temple:', error);
+        this.isLoadingTemple = false;
       }
     });
   }

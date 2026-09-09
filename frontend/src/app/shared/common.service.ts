@@ -169,6 +169,7 @@ transformToAPIPayload(temple: Temple): TempleAPIPayload {
 
 
  transformFromAPIResponse(apiTemple: any): Temple {
+  if (!apiTemple) return null as any;
   return {
     ...apiTemple,
     service_offered: typeof apiTemple.service_offered === 'string' 
