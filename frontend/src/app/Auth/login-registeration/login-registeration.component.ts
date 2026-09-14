@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { Component } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { HttpClient} from '@angular/common/http';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AuthService } from '../auth.service';
 import { environment } from '../../../environments/environment';
 
@@ -11,7 +11,7 @@ import { environment } from '../../../environments/environment';
 @Component({
   selector: 'app-login-registeration',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, RouterLink],
   template: `
     <div class="flex justify-center items-center min-h-screen bg-gray-100">
       <div class="bg-white rounded-2xl shadow-lg w-full max-w-md p-6">
@@ -113,6 +113,13 @@ import { environment } from '../../../environments/environment';
           (ngSubmit)="onRegister()"
           class="space-y-4"
         >
+          <div class="rounded-lg bg-orange-50 p-3 border border-orange-200 text-center">
+            <p class="text-xs text-slate-700">Looking to join a temple community?</p>
+            <a routerLink="/user-registration" class="text-xs font-bold text-orange-600 hover:text-orange-700 underline mt-0.5 inline-block">
+              Register as a Temple Devotee &rarr;
+            </a>
+          </div>
+
           <div>
             <input
               type="text"

@@ -1,15 +1,22 @@
+import bcrypt from 'bcryptjs';
 import { logger } from '../utils/logger.js';
 import { prisma } from '../config/db.js';
 import { sendSuccess, sendError } from '../utils/response.js';
 import { validateApprovalLimit, isTempleAdminRelation } from '../utils/mandirApproval.js';
 
-const normalizeRegistration = (registration) => ({
-  ...registration,
-  id: Number(registration.id),
-  relationId: Number(registration.relationId),
-  mandirId: Number(registration.mandirId),
-  reviewedByUserId: registration.reviewedByUserId ? Number(registration.reviewedByUserId) : null,
-});
+const getDevoteeModel = () => prisma.templeDevoteeRegistration || prisma.userMandirRegistration;
+
+const normalizeRegistration = (registration) => {
+  const { password, ...rest } = registration;
+  return {
+    ...rest,
+    id: Number(registration.id),
+    relationId: Number(registration.relationId),
+    mandirId: Number(registration.mandirId),
+    subscription: registration.subscription || 'No',
+    reviewedByUserId: registration.reviewedByUserId ? Number(registration.reviewedByUserId) : null,
+  };
+};
 
 export const listRelationOptions = async (_req, res) => {
   try {
@@ -26,34 +33,74 @@ export const listRelationOptions = async (_req, res) => {
 
 export const createUserRegistration = async (req, res) => {
   try {
-    const payload = {
-      firstName: req.body.firstName,
-      lastName: req.body.lastName,
-      email: req.body.email.toLowerCase().trim(),
-      mobile: req.body.mobile.trim(),
-      relationId: Number(req.body.relationId),
-      mandirId: Number(req.body.mandirId),
-    };
+    const email = req.body.email.toLowerCase().trim();
+    const mandirId = Number(req.body.mandirId);
+    const subscription = req.body.subscription === 'Yes' ? 'Yes' : 'No';
 
-    const relation = await prisma.relationToMandir.findUnique({
-      where: { id: payload.relationId },
-    });
-
-    if (!relation || !relation.isActive) {
-      return sendError(res, 400, 'Selected relation is invalid or inactive.', {});
-    }
-
+    // Verify Temple exists
     const mandir = await prisma.temple.findUnique({
-      where: { id: payload.mandirId },
+      where: { id: mandirId },
     });
 
     if (!mandir) {
-      return sendError(res, 404, 'Selected Mandir was not found.', {});
+      return sendError(res, 404, 'Selected Temple was not found.', {});
     }
 
-    const registration = await prisma.userMandirRegistration.create({
+    // Determine Relation: use provided relationId or default to 'Temple Devotee'
+    let relationId = req.body.relationId ? Number(req.body.relationId) : null;
+    if (relationId) {
+      const relation = await prisma.relationToMandir.findUnique({
+        where: { id: relationId },
+      });
+      if (!relation || !relation.isActive) {
+        return sendError(res, 400, 'Selected relation is invalid or inactive.', {});
+      }
+    } else {
+      let devoteeRelation = await prisma.relationToMandir.findFirst({
+        where: { relationshipName: 'Temple Devotee', isActive: true },
+      });
+      if (!devoteeRelation) {
+        devoteeRelation = await prisma.relationToMandir.findFirst({
+          where: { isActive: true },
+        });
+      }
+      if (!devoteeRelation) {
+        return sendError(res, 500, 'No active registration relationship available.', {});
+      }
+      relationId = devoteeRelation.id;
+    }
+
+    // Check for existing pending registration for this email and temple
+    const model = getDevoteeModel();
+    const existingPending = await model.findFirst({
+      where: {
+        email,
+        mandirId,
+        status: 'Pending',
+      },
+    });
+
+    if (existingPending) {
+      return sendError(res, 409, 'A pending registration with this email already exists for the selected Temple.', {});
+    }
+
+    // Hash password if provided
+    let passwordHash = null;
+    if (req.body.password) {
+      const salt = await bcrypt.genSalt(10);
+      passwordHash = await bcrypt.hash(req.body.password, salt);
+    }
+
+    const registration = await model.create({
       data: {
-        ...payload,
+        firstName: req.body.firstName.trim(),
+        lastName: req.body.lastName.trim(),
+        email,
+        mobile: req.body.mobile.trim(),
+        password: passwordHash,
+        subscription,
+        relationId,
+        mandirId,
         status: 'Pending',
       },
       include: {
@@ -63,12 +110,12 @@ export const createUserRegistration = async (req, res) => {
     });
 
     return sendSuccess(res, 201, {
-      message: 'Registration submitted successfully and is pending approval.',
+      message: 'Registration submitted successfully and is pending admin approval.',
       data: normalizeRegistration(registration),
     });
   } catch (error) {
     if (error?.code === 'P2002') {
-      return sendError(res, 409, 'A registration with this email already exists for the selected Mandir.', {});
+      return sendError(res, 409, 'A registration with this email already exists for the selected Temple.', {});
     }
 
     return sendError(res, 400, 'Could not submit registration', { details: error.message });
@@ -77,7 +124,8 @@ export const createUserRegistration = async (req, res) => {
 
 export const listPendingRegistrations = async (_req, res) => {
   try {
-    const registrations = await prisma.userMandirRegistration.findMany({
+    const model = getDevoteeModel();
+    const registrations = await model.findMany({
       where: { status: 'Pending' },
       include: {
         relation: true,
@@ -103,7 +151,8 @@ const updateRegistrationStatus = async (req, res, targetStatus) => {
     const registrationId = Number(req.params.id);
 
     const result = await prisma.$transaction(async (tx) => {
-      const registration = await tx.userMandirRegistration.findUnique({
+      const model = tx.templeDevoteeRegistration || tx.userMandirRegistration;
+      const registration = await model.findUnique({
         where: { id: registrationId },
         include: { relation: true, mandir: true },
       });
@@ -120,10 +169,10 @@ const updateRegistrationStatus = async (req, res, targetStatus) => {
         throw error;
       }
 
-      if (targetStatus === 'Approved' && isTempleAdminRelation(registration.relation.relationshipName)) {
+      if (targetStatus === 'Approved' && isTempleAdminRelation(registration.relation?.relationshipName)) {
         await tx.$queryRaw`SELECT id FROM temple_temple WHERE id = ${registration.mandirId} FOR UPDATE`;
 
-        const approvedTempleAdmins = await tx.userMandirRegistration.count({
+        const approvedTempleAdmins = await model.count({
           where: {
             mandirId: registration.mandirId,
             status: 'Approved',
@@ -136,7 +185,7 @@ const updateRegistrationStatus = async (req, res, targetStatus) => {
         validateApprovalLimit(approvedTempleAdmins);
       }
 
-      const updated = await tx.userMandirRegistration.update({
+      const updated = await model.update({
         where: { id: registrationId },
         data: {
           status: targetStatus,
@@ -146,6 +195,30 @@ const updateRegistrationStatus = async (req, res, targetStatus) => {
         },
         include: { relation: true, mandir: true },
       });
+
+      // If approved and password was set, ensure a Devotee user account exists
+      if (targetStatus === 'Approved' && updated.password) {
+        const existingUser = await tx.user.findFirst({
+          where: {
+            OR: [
+              { email: updated.email },
+              { username: updated.email },
+            ],
+          },
+        });
+
+        if (!existingUser) {
+          await tx.user.create({
+            data: {
+              username: updated.email,
+              email: updated.email,
+              passwordHash: updated.password,
+              role: 'Devotee',
+              isActive: true,
+            },
+          });
+        }
+      }
 
       return updated;
     });

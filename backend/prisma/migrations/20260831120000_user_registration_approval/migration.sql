@@ -101,30 +101,32 @@ CREATE TABLE IF NOT EXISTS `relation_to_mandir` (
   UNIQUE INDEX `relation_to_mandir_relationship_name_key` (`relationship_name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS `user_mandir_registration` (
+CREATE TABLE IF NOT EXISTS `TempleDevotee_registration` (
   `id` INT NOT NULL AUTO_INCREMENT,
   `first_name` VARCHAR(191) NOT NULL,
   `last_name` VARCHAR(191) NOT NULL,
   `email` VARCHAR(191) NOT NULL,
   `mobile` VARCHAR(191) NOT NULL,
+  `password` VARCHAR(255) NULL,
   `status` ENUM('Pending', 'Approved', 'Rejected') NOT NULL DEFAULT 'Pending',
   `relation_id` INT NOT NULL,
   `mandir_id` INT NOT NULL,
+  `subscription` VARCHAR(10) NOT NULL DEFAULT 'No',
   `reviewed_by_user_id` INT NULL,
   `reviewed_at` DATETIME(3) NULL,
   `notes` TEXT NULL,
   `created_at` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
   `updated_at` DATETIME(3) NOT NULL,
   PRIMARY KEY (`id`),
-  INDEX `user_mandir_registration_mandir_id_status_idx` (`mandir_id`, `status`),
-  INDEX `user_mandir_registration_relation_id_status_idx` (`relation_id`, `status`),
-  INDEX `user_mandir_registration_status_idx` (`status`),
-  INDEX `user_mandir_registration_email_idx` (`email`),
-  CONSTRAINT `user_mandir_registration_relation_id_fkey`
+  INDEX `templedevotee_registration_mandir_id_status_idx` (`mandir_id`, `status`),
+  INDEX `templedevotee_registration_relation_id_status_idx` (`relation_id`, `status`),
+  INDEX `templedevotee_registration_status_idx` (`status`),
+  INDEX `templedevotee_registration_email_idx` (`email`),
+  CONSTRAINT `templedevotee_registration_relation_id_fkey`
     FOREIGN KEY (`relation_id`) REFERENCES `relation_to_mandir`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE,
-  CONSTRAINT `user_mandir_registration_mandir_id_fkey`
+  CONSTRAINT `templedevotee_registration_mandir_id_fkey`
     FOREIGN KEY (`mandir_id`) REFERENCES `temple_temple`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE,
-  CONSTRAINT `user_mandir_registration_reviewed_by_user_id_fkey`
+  CONSTRAINT `templedevotee_registration_reviewed_by_user_id_fkey`
     FOREIGN KEY (`reviewed_by_user_id`) REFERENCES `User`(`id`) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 

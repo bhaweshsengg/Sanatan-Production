@@ -49,7 +49,7 @@ model User {
   discussions   Discussion[]
   comments      Comment[]
 
-  reviewedMandirRegistrations UserMandirRegistration[] @relation("ReviewedMandirUser")
+  reviewedMandirRegistrations TempleDevoteeRegistration[] @relation("ReviewedMandirUser")
   events Event[] @relation("EventOrganizer")
   reviewedEvents Event[] @relation("EventReviewer")
   eventAttendances EventAttendee[]
@@ -115,7 +115,7 @@ model Temple {
   city      City         @relation(fields: [cityId], references: [id], onDelete: Cascade)
   mainDeity Deity        @relation(fields: [mainDeityId], references: [id], onDelete: Cascade)
   images    TempleImage[]
-  mandirRegistrations UserMandirRegistration[]
+  mandirRegistrations TempleDevoteeRegistration[]
   events    Event[]
 
   @@map("temple_temple")
@@ -172,17 +172,19 @@ model RelationToMandir {
   id               Int                     @id @default(autoincrement())
   relationshipName String                  @unique @map("relationship_name")
   isActive         Boolean                 @default(true) @map("is_active")
-  registrations    UserMandirRegistration[]
+  registrations    TempleDevoteeRegistration[]
 
   @@map("relation_to_mandir")
 }
 
-model UserMandirRegistration {
+model TempleDevoteeRegistration {
   id            Int                @id @default(autoincrement())
   firstName     String             @map("first_name")
   lastName      String             @map("last_name")
   email         String
   mobile        String
+  password      String?            @db.VarChar(255)
+  subscription  String             @default("No") @db.VarChar(10)
   status        RegistrationStatus @default(Pending)
   relationId    Int                @map("relation_id")
   mandirId      Int                @map("mandir_id")
@@ -200,7 +202,7 @@ model UserMandirRegistration {
   @@index([relationId, status])
   @@index([status])
   @@index([email])
-  @@map("user_mandir_registration")
+  @@map("TempleDevotee_registration")
 }
 
 model Business {
