@@ -61,17 +61,20 @@ import { environment } from '../../../environments/environment';
         >
           <div>
             <input
-              type="text"
-              formControlName="username"
-              placeholder="Username"
+              type="email"
+              formControlName="email"
+              placeholder="Email Address"
               class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-400 outline-none"
             />
             <div
-              *ngIf="loginForm.get('username')?.invalid && (loginForm.get('username')?.dirty || loginForm.get('username')?.touched)"
+              *ngIf="loginForm.get('email')?.invalid && (loginForm.get('email')?.dirty || loginForm.get('email')?.touched)"
               class="text-red-500 text-sm mt-1"
             >
-              <div *ngIf="loginForm.get('username')?.errors?.['required']">
-                Username is required.
+              <div *ngIf="loginForm.get('email')?.errors?.['required']">
+                Email address is required.
+              </div>
+              <div *ngIf="loginForm.get('email')?.errors?.['email']">
+                Please enter a valid email address.
               </div>
             </div>
           </div>
@@ -253,9 +256,8 @@ export class LoginRegisterationComponent {
       this.activeTab = tabParam;
     }
 
-    // Updated to use username instead of email
     this.loginForm = this.fb.group({
-      username: ['', [Validators.required]],
+      email: ['', [Validators.required, Validators.email]],
       password: ['', [Validators.required]],
     });
 
@@ -286,7 +288,7 @@ export class LoginRegisterationComponent {
     if (this.loginForm.valid) {
       this.isLoading = true;
       const loginData = {
-        username: this.loginForm.value.username,
+        email: this.loginForm.value.email,
         password: this.loginForm.value.password
       };
 
@@ -305,7 +307,7 @@ export class LoginRegisterationComponent {
           this.authService.login(loginData.access, loginData);
           
           // Show success message
-          this.showToastMessage('Login successful! Redirecting...to Admin', 'success');
+          this.showToastMessage('Login successful! Redirecting...', 'success');
           
           // Redirect after a short delay
           setTimeout(() => {
@@ -322,7 +324,7 @@ export class LoginRegisterationComponent {
           if (error.error && error.error.message) {
             errorMessage = error.error.message;
           } else if (error.status === 401) {
-            errorMessage = 'Invalid username or password.';
+            errorMessage = 'Invalid email address or password.';
           } else if (error.status === 0) {
             errorMessage = 'Unable to connect to server. Please check your connection.';
           }
@@ -360,7 +362,7 @@ export class LoginRegisterationComponent {
           this.showToastMessage('Registration successful! Please login to continue.', 'success');
           this.registerForm.reset();
           this.activeTab = 'login';
-          this.loginForm.patchValue({ username: registerData.username });
+          this.loginForm.patchValue({ email: registerData.email });
         },
         error: (error) => {
           this.isLoading = false;

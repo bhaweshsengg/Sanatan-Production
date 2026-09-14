@@ -47,19 +47,19 @@ import { AuthService } from 'src/app/Auth/auth.service';
             </div>
           </div>
 
-          <div class="hidden md:block">
-            <div class="ml-10 flex items-baseline space-x-8">
+          <div class="hidden lg:block">
+            <div class="ml-4 lg:ml-8 flex items-center space-x-3 lg:space-x-6">
               <a
                 routerLink="/temples"
                 routerLinkActive="text-orange-600 border-b-2 border-orange-600"
-                class="text-gray-700 hover:text-orange-600 px-3 py-2 text-sm font-medium transition-all duration-200 border-b-2 border-transparent"
+                class="text-gray-700 hover:text-orange-600 px-2 lg:px-3 py-2 text-sm font-medium transition-all duration-200 border-b-2 border-transparent"
               >
                 Temples
               </a>
               <a
                 routerLink="/events"
                 routerLinkActive="text-orange-600 border-b-2 border-orange-600"
-                class="text-gray-700 hover:text-orange-600 px-3 py-2 text-sm font-medium transition-all duration-200 border-b-2 border-transparent"
+                class="text-gray-700 hover:text-orange-600 px-2 lg:px-3 py-2 text-sm font-medium transition-all duration-200 border-b-2 border-transparent"
               >
                 Events
               </a>
@@ -75,21 +75,21 @@ import { AuthService } from 'src/app/Auth/auth.service';
               <a
                 routerLink="/community"
                 routerLinkActive="text-orange-600 border-b-2 border-orange-600"
-                class="text-gray-700 hover:text-orange-600 px-3 py-2 text-sm font-medium transition-all duration-200 border-b-2 border-transparent"
+                class="text-gray-700 hover:text-orange-600 px-2 lg:px-3 py-2 text-sm font-medium transition-all duration-200 border-b-2 border-transparent"
               >
                 Community
               </a>
               <a
                 routerLink="/help"
                 routerLinkActive="text-orange-600 border-b-2 border-orange-600"
-                class="text-gray-700 hover:text-orange-600 px-3 py-2 text-sm font-medium transition-all duration-200 border-b-2 border-transparent"
+                class="text-gray-700 hover:text-orange-600 px-2 lg:px-3 py-2 text-sm font-medium transition-all duration-200 border-b-2 border-transparent"
               >
                 Help
               </a>
               <div class="relative">
                 <a
                   (click)="toggleSpiritualToolsDropdown()"
-                  class="text-gray-700 hover:text-orange-600 px-3 py-2 text-sm font-medium cursor-pointer transition-all duration-200 border-b-2 border-transparent"
+                  class="text-gray-700 hover:text-orange-600 px-2 lg:px-3 py-2 text-sm font-medium cursor-pointer transition-all duration-200 border-b-2 border-transparent"
                 >
                   Spirituals
                 </a>
@@ -123,7 +123,7 @@ import { AuthService } from 'src/app/Auth/auth.service';
               <div *ngIf="isAdmin" class="relative">
                 <a
                   (click)="toggleAdminDropdown()"
-                  class="text-orange-600 hover:text-orange-700 px-3 py-2 text-sm font-semibold cursor-pointer transition-all duration-200 border-b-2 border-transparent flex items-center gap-1"
+                  class="text-orange-600 hover:text-orange-700 px-2 lg:px-3 py-2 text-sm font-semibold cursor-pointer transition-all duration-200 border-b-2 border-transparent flex items-center gap-1"
                 >
                   Admin
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -182,7 +182,7 @@ import { AuthService } from 'src/app/Auth/auth.service';
 
               <button
                 routerLink="/dashboard"
-                class="bg-gradient-to-r from-orange-600 to-red-600 text-white px-6 py-2 rounded-full text-sm font-medium hover:from-orange-700 hover:to-red-700 transform hover:scale-105 transition-all duration-200 shadow-lg"
+                class="bg-gradient-to-r from-orange-600 to-red-600 text-white px-5 py-2 rounded-full text-sm font-medium hover:from-orange-700 hover:to-red-700 transform hover:scale-105 transition-all duration-200 shadow-lg"
               >
                 Explore
               </button>
@@ -191,7 +191,7 @@ import { AuthService } from 'src/app/Auth/auth.service';
               <button
                 *ngIf="!isLoggedIn; else logoutButton"
                 routerLink="/auth/login-registeration-forget"
-                class="bg-gradient-to-r from-orange-600 to-red-600 text-white px-4 py-2 rounded-full text-sm font-medium mx-3 mt-2 hover:from-orange-700 hover:to-red-700 transition-all"
+                class="bg-gradient-to-r from-orange-600 to-red-600 text-white px-4 py-2 rounded-full text-sm font-medium hover:from-orange-700 hover:to-red-700 transition-all shrink-0"
               >
                 Login
               </button>
@@ -199,7 +199,7 @@ import { AuthService } from 'src/app/Auth/auth.service';
               <ng-template #logoutButton>
                 <button
                   (click)="onLogout()"
-                  class="bg-gradient-to-r from-gray-600 to-gray-800 text-white px-4 py-2 rounded-full text-sm font-medium mx-3 mt-2 hover:from-gray-700 hover:to-gray-900 transition-all"
+                  class="bg-gradient-to-r from-gray-600 to-gray-800 text-white px-4 py-2 rounded-full text-sm font-medium hover:from-gray-700 hover:to-gray-900 transition-all shrink-0"
                 >
                   Logout
                 </button>
@@ -207,7 +207,7 @@ import { AuthService } from 'src/app/Auth/auth.service';
             </div>
           </div>
 
-          <div class="md:hidden">
+          <div class="lg:hidden">
             <button
               (click)="toggleMobileMenu()"
               class="text-gray-700 hover:text-orange-600 focus:outline-none focus:text-orange-600 transition-colors"
@@ -240,7 +240,7 @@ import { AuthService } from 'src/app/Auth/auth.service';
         <div
           *ngIf="isMobileMenuOpen"
           [@slideIn]
-          class="md:hidden bg-white border-t border-gray-200 py-4"
+          class="lg:hidden bg-white border-t border-gray-200 py-4"
         >
           <div class="flex flex-col space-y-2">
             <a

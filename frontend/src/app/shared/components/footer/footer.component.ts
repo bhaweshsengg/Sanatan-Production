@@ -9,9 +9,9 @@ import { RouterModule } from '@angular/router';
   template: `
     <footer class="bg-gradient-to-r from-gray-900 to-gray-800 text-white py-16">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="grid md:grid-cols-4 gap-8 mb-12">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
           <!-- Brand Section -->
-          <div class="md:col-span-1">
+          <div class="sm:col-span-1">
             <div class="flex items-center mb-6">
               <div class="w-12 h-12 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center text-white font-bold text-xl mr-4">
                 ॐ
@@ -90,10 +90,10 @@ import { RouterModule } from '@angular/router';
             <div class="bg-gray-800 rounded-lg p-4">
               <h5 class="font-semibold mb-3 text-orange-400">Newsletter</h5>
               <p class="text-sm text-gray-400 mb-3">Get updates on events and festivals</p>
-              <div class="flex">
+              <div class="flex items-center min-w-0">
                 <input type="email" placeholder="Your email" 
-                       class="flex-1 px-3 py-2 bg-gray-700 text-white rounded-l-md text-sm focus:outline-none focus:ring-2 focus:ring-orange-500">
-                <button class="bg-orange-600 px-4 py-2 rounded-r-md hover:bg-orange-700 transition-colors">
+                       class="min-w-0 flex-1 px-3 py-2 bg-gray-700 text-white rounded-l-md text-sm focus:outline-none focus:ring-2 focus:ring-orange-500">
+                <button class="bg-orange-600 px-4 py-2 rounded-r-md hover:bg-orange-700 transition-colors shrink-0">
                   <span class="text-sm">📧</span>
                 </button>
               </div>

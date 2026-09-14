@@ -59,15 +59,24 @@ export const register = async (req, res) => {
 
 export const login = async (req, res) => {
   try {
-    const { username, password } = req.body;
+    const { email, username, password } = req.body;
+    const identifier = (email || username || '').trim();
+
+    if (!identifier) {
+      return sendError(res, 400, 'Email address is required', {});
+    }
+
     const user = await prisma.user.findFirst({ 
       where: { 
-        OR: [{ username }, { email: username }] 
+        OR: [
+          { email: identifier },
+          { username: identifier }
+        ] 
       } 
     });
 
     if (!user || !user.isActive || !(await bcrypt.compare(password, user.passwordHash))) {
-      return sendError(res, 400, 'Invalid credentials', {});
+      return sendError(res, 400, 'Invalid email or password', {});
     }
 
     const accessToken = signAccessToken(user);

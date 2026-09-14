@@ -26,7 +26,7 @@ import { CommonModule } from '@angular/common';
               <div class="flex justify-between items-center">
                 <div>
                   <h3 class="text-2xl font-bold mb-1">🕐 सनातन पंचांग</h3>
-                  <p class="text-orange-100">08 अगस्त 2025, शुक्रवार</p>
+                  <p class="text-orange-100">{{ currentHindiFormattedDate }}</p>
                 </div>
                 <div class="text-right">
                   <p class="text-orange-100">📍 Ujjain, India</p>
@@ -51,7 +51,7 @@ import { CommonModule } from '@angular/common';
                   </div>
                   
                   <div class="text-center mb-6">
-                    <p class="text-lg text-gray-700 mb-2">08:21:51 <span class="text-sm text-gray-500">शुक्रवार</span></p>
+                    <p class="text-lg text-gray-700 mb-2">{{ currentTime }} <span class="text-sm text-gray-500">{{ currentHindiDay }}</span></p>
                   </div>
                   
                   <div class="bg-orange-50 rounded-lg p-4 mb-4">
@@ -131,8 +131,8 @@ import { CommonModule } from '@angular/common';
               <div class="grid md:grid-cols-2 gap-6 text-center w-full">
                 <div>
                   <p class="text-sm text-gray-500">Gregorian Date</p>
-                  <p class="font-bold text-lg text-gray-900">Saturday, August 16, 2025</p>
-                  <p class="text-sm text-black-700">10:47 PM (New Zealand Time)</p>
+                  <p class="font-bold text-lg text-gray-900">{{ currentEnglishFormattedDate }}</p>
+                  <p class="text-sm text-black-700">{{ currentTime }} (New Zealand Time)</p>
                 </div>
                 <div>
                   <p class="text-sm text-gray-500">Sanatan Calendar</p>
@@ -327,7 +327,7 @@ import { CommonModule } from '@angular/common';
 
             <p class="text-center text-sm text-gray-500 mb-4">
               Note: This Panchang is calculated for Auckland, New Zealand. Times may vary slightly for other locations.<br>
-              Last updated: August 16, 2025 10:47 PM NZST
+              Last updated: {{ currentEnglishFormattedDate }} {{ currentTime }} NZST
             </p>
 
             <div class="text-center">
@@ -348,7 +348,10 @@ import { CommonModule } from '@angular/common';
   `
 })
 export class PanchangComponent implements OnInit, OnDestroy {
-  currentTime: string = '20:54:37';
+  currentTime: string = '';
+  currentHindiFormattedDate: string = '';
+  currentHindiDay: string = '';
+  currentEnglishFormattedDate: string = '';
   private timeInterval: any;
   showFullPanchang: boolean = false;
   selectedTab: string = 'main-elements';
@@ -373,6 +376,22 @@ export class PanchangComponent implements OnInit, OnDestroy {
       hour: '2-digit',
       minute: '2-digit',
       second: '2-digit'
+    });
+
+    const hindiDays = ['रविवार', 'सोमवार', 'मंगलवार', 'बुधवार', 'गुरुवार', 'शुक्रवार', 'शनिवार'];
+    const hindiMonths = ['जनवरी', 'फ़रवरी', 'मार्च', 'अप्रैल', 'मई', 'जून', 'जुलाई', 'अगस्त', 'सितंबर', 'अक्टूबर', 'नवंबर', 'दिसंबर'];
+
+    const dayNum = now.getDate().toString().padStart(2, '0');
+    const monthName = hindiMonths[now.getMonth()];
+    const yearNum = now.getFullYear();
+    this.currentHindiDay = hindiDays[now.getDay()];
+
+    this.currentHindiFormattedDate = `${dayNum} ${monthName} ${yearNum}, ${this.currentHindiDay}`;
+    this.currentEnglishFormattedDate = now.toLocaleDateString('en-US', {
+      weekday: 'long',
+      month: 'long',
+      day: 'numeric',
+      year: 'numeric'
     });
   }
 }
