@@ -31,6 +31,19 @@ test('templeUpdateSchema accepts string or empty string existing_images', () => 
   assert.equal(result2.data.existing_images, 'uploads/single.jpg');
 });
 
+test('templeUpdateSchema accepts placeholder email and website values such as Not available', () => {
+  const result = templeUpdateSchema.safeParse({
+    email: 'Not available',
+    website: 'Not Available',
+    your_email: ' admin@example.com ',
+  });
+
+  assert.equal(result.success, true, 'Validation must succeed for legacy/production placeholder email/website strings');
+  assert.equal(result.data.email, 'Not available');
+  assert.equal(result.data.website, 'Not Available');
+  assert.equal(result.data.your_email, 'admin@example.com');
+});
+
 test('normalizeTempleRecord populates both camelCase and snake_case for city and deity IDs', async () => {
   const mockTemple = {
     id: 10,

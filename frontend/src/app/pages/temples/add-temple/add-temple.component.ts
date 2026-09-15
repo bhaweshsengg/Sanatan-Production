@@ -854,8 +854,13 @@ export class AddTempleComponent implements OnInit {
   this.isLoading = true;
   this.commonService.getTemplebyId(id).subscribe({
     next: (temple) => {
+      const cleanEmail = temple.email && !/^(not available|n\/a|none|nil)$/i.test(temple.email.trim()) ? temple.email.trim() : '';
+      const cleanWebsite = temple.website && !/^(not available|n\/a|none|nil)$/i.test(temple.website.trim()) ? temple.website.trim() : '';
+
       this.temple = {
         ...temple,
+        email: cleanEmail,
+        website: cleanWebsite,
         city_id: Number(temple.city_id || (temple as any).cityId || temple.city?.id || 0),
         main_deity_id: Number(temple.main_deity_id || (temple as any).mainDeityId || temple.main_deity?.id || (temple as any).mainDeity?.id || 0),
       };
@@ -1017,8 +1022,15 @@ async onSubmit() {
   formData.append('location', this.temple.location);
 
   // Use the submitter email when the temple does not have a separate email.
-  formData.append('email', this.temple.email || this.temple.your_email);
-  formData.append('website', this.temple.website || '');
+  const templeEmail = (this.temple.email || '').trim();
+  const submitterEmail = (this.temple.your_email || '').trim();
+  const isPlaceholderEmail = /^(not available|n\/a|none|nil)$/i.test(templeEmail);
+  const finalEmail = !isPlaceholderEmail && templeEmail ? templeEmail : submitterEmail;
+  formData.append('email', finalEmail);
+
+  const templeWebsite = (this.temple.website || '').trim();
+  const isPlaceholderWebsite = /^(not available|n\/a|none|nil)$/i.test(templeWebsite);
+  formData.append('website', !isPlaceholderWebsite ? templeWebsite : '');
   if (this.temple.rating) {
     formData.append('rating', this.temple.rating.toString());
   }
