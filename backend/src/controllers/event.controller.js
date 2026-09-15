@@ -88,23 +88,57 @@ const eventInclude = {
 
 export const listApprovedEvents = async (req, res) => {
   try {
-    const { page = 1, limit = 20, templeId } = req.query;
-    const pageNum = Math.max(1, Number(page));
-    const limitNum = Math.max(1, Number(limit));
-    const skip = (pageNum - 1) * limitNum;
+    const { page = 1, limit, templeId, category, search } = req.query;
+    const isPaginated = limit !== 'all';
+    const pageNum = isPaginated ? Math.max(1, Number(page || 1)) : 1;
+    const limitNum = isPaginated ? Math.max(1, Number(limit || 20)) : undefined;
+    const skip = isPaginated ? (pageNum - 1) * limitNum : undefined;
 
     const where = {
       status: 'Approved',
       ...(templeId ? { templeId: Number(templeId) } : {}),
     };
 
+    if (category && typeof category === 'string' && category.trim()) {
+      const catTrim = category.trim();
+      if (catTrim.toLowerCase() === 'festival') {
+        where.OR = [
+          { category: 'Festival' },
+          { category: 'Major Festival' },
+          { category: 'Religious Observance' },
+          { category: { contains: 'Festival' } },
+          { category: { contains: 'festival' } },
+        ];
+      } else {
+        where.category = catTrim;
+      }
+    }
+
+    if (search && typeof search === 'string' && search.trim()) {
+      const searchTrim = search.trim();
+      const searchConditions = [
+        { title: { contains: searchTrim } },
+        { description: { contains: searchTrim } },
+        { templeName: { contains: searchTrim } },
+      ];
+      if (where.OR) {
+        where.AND = [
+          { OR: where.OR },
+          { OR: searchConditions },
+        ];
+        delete where.OR;
+      } else {
+        where.OR = searchConditions;
+      }
+    }
+
     const [events, total] = await Promise.all([
       prisma.event.findMany({ 
         where, 
         include: eventInclude, 
         orderBy: { eventDate: 'asc' },
-        skip,
-        take: limitNum
+        ...(skip !== undefined ? { skip } : {}),
+        ...(limitNum !== undefined ? { take: limitNum } : {}),
       }),
       prisma.event.count({ where })
     ]);
@@ -114,8 +148,8 @@ export const listApprovedEvents = async (req, res) => {
       pagination: {
         total,
         page: pageNum,
-        limit: limitNum,
-        totalPages: Math.ceil(total / limitNum)
+        limit: limitNum || total,
+        totalPages: limitNum ? Math.ceil(total / limitNum) : 1
       }
     });
   } catch (error) {

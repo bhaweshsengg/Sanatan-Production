@@ -170,8 +170,15 @@ transformToAPIPayload(temple: Temple): TempleAPIPayload {
 
  transformFromAPIResponse(apiTemple: any): Temple {
   if (!apiTemple) return null as any;
+  const cityId = Number(apiTemple.city_id ?? apiTemple.cityId ?? apiTemple.city?.id ?? 0);
+  const mainDeityId = Number(apiTemple.main_deity_id ?? apiTemple.mainDeityId ?? apiTemple.main_deity?.id ?? apiTemple.mainDeity?.id ?? 0);
+
   return {
     ...apiTemple,
+    city_id: cityId,
+    main_deity_id: mainDeityId,
+    city: apiTemple.city,
+    main_deity: apiTemple.main_deity || apiTemple.mainDeity,
     service_offered: typeof apiTemple.service_offered === 'string' 
       ? apiTemple.service_offered.split(', ').filter((s: string) => s.trim() !== '')
       : apiTemple.service_offered || [],
@@ -241,6 +248,19 @@ formatOpeningHours(hours: string): string {
           return Array.isArray(data) ? data : [];
         }),
         catchError(this.handleError<any[]>('getEventsByTemple', []))
+      );
+  }
+
+  getFestivalEvents(category?: string): Observable<any[]> {
+    const catParam = category && category !== 'All' ? `&category=${encodeURIComponent(category)}` : '&category=Festival';
+    return this.http
+      .get<any>(`${this.apiUrl}/event?limit=all${catParam}`)
+      .pipe(
+        map((response: any) => {
+          const data = response?.data ?? response;
+          return Array.isArray(data) ? data : [];
+        }),
+        catchError(this.handleError<any[]>('getFestivalEvents', []))
       );
   }
 

@@ -43,6 +43,8 @@ interface TempleOption {
                   <select class="mt-2 flex h-10 w-full rounded-md border border-gray-300 px-3 text-sm focus:border-orange-500 focus:outline-none focus:ring-1 focus:ring-orange-500" id="category" name="category" [(ngModel)]="event.category" required>
                     <option value="" disabled>Select event category</option>
                     <option>Festival</option>
+                    <option>Major Festival</option>
+                    <option>Religious Observance</option>
                     <option>Pooja</option>
                     <option>Havan/Yagna</option>
                     <option>Bhajan/Kirtan</option>

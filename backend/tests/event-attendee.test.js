@@ -134,3 +134,31 @@ test('Event Attendee Flow: join, duplicate check, leave, and attendee list', asy
     await prisma.user.delete({ where: { id: testUser.id } }).catch(() => {});
   }
 });
+
+test('listApprovedEvents filters by festival category and limit=all correctly', async () => {
+  const { listApprovedEvents } = await import('../src/controllers/event.controller.js');
+
+  let responseStatus = 200;
+  let responseData = null;
+  const mockRes = {
+    status(s) { responseStatus = s; return this; },
+    json(payload) { responseData = payload; return this; },
+  };
+
+  const mockReq = {
+    query: {
+      category: 'Festival',
+      limit: 'all',
+    }
+  };
+
+  await listApprovedEvents(mockReq, mockRes);
+  assert.equal(responseStatus, 200);
+  assert.equal(responseData?.success, true);
+  assert.ok(Array.isArray(responseData?.data));
+  for (const ev of responseData.data) {
+    assert.equal(ev.status, 'Approved');
+    const isFestival = ev.category.toLowerCase().includes('festival') || ev.category === 'Religious Observance';
+    assert.ok(isFestival, `Event category ${ev.category} should be a festival category`);
+  }
+});

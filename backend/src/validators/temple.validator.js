@@ -23,6 +23,10 @@ export const templeCreateSchema = z.object({
   rating: z.coerce.number().min(0).max(5).optional(),
   location: z.string().min(1),
   status: z.enum(['Pending', 'Approved', 'Delist', 'Rejected']).optional(),
+  role: z.string().optional(),
+  contactRole: z.string().optional(),
+  review: z.string().optional(),
+  existing_images: z.union([z.array(z.string()), z.string()]).optional(),
 });
 
 export const templeUpdateSchema = templeCreateSchema.partial();

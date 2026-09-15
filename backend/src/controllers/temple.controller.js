@@ -48,7 +48,12 @@ const normalizeUploadedImagePath = (value) => {
 
 const normalizeTempleRecord = (temple) => ({
   ...temple,
+  cityId: temple.cityId ?? temple.city_id,
+  city_id: temple.cityId ?? temple.city_id,
   city: temple.city,
+  mainDeityId: temple.mainDeityId ?? temple.main_deity_id,
+  main_deity_id: temple.mainDeityId ?? temple.main_deity_id,
+  mainDeity: temple.mainDeity,
   main_deity: temple.mainDeity,
   images: (temple.images || []).map((img) => ({
     ...img,
@@ -326,12 +331,23 @@ export const updateTemple = async (req, res) => {
 
     // Prune removed images if existing_images was provided by edit form
     if (req.body.existing_images !== undefined) {
-      const kept = Array.isArray(req.body.existing_images)
+      const keptRaw = Array.isArray(req.body.existing_images)
         ? req.body.existing_images
-        : [req.body.existing_images].filter(Boolean);
+        : [req.body.existing_images];
+      const kept = keptRaw.map((k) => String(k).trim()).filter(Boolean);
 
       const imagesToDelete = current.images.filter((img) => {
-        return !kept.some((k) => k === img.file || k.includes(img.file) || img.file.includes(k));
+        return !kept.some((k) => {
+          const normK = k.replace(/\\/g, '/').replace(/^https?:\/\/[^\/]+/, '');
+          const normImg = (img.file || '').replace(/\\/g, '/').replace(/^https?:\/\/[^\/]+/, '');
+          return (
+            normK === normImg ||
+            normK.endsWith(normImg) ||
+            normImg.endsWith(normK) ||
+            path.basename(normK) === path.basename(normImg) ||
+            String(img.id) === k
+          );
+        });
       });
 
       for (const img of imagesToDelete) {

@@ -264,12 +264,12 @@ import {
                         name="city"
                         #city="ngModel"
                       >
-                        <option value="" disabled [selected]="!temple.city_id">
+                        <option [ngValue]="0" disabled [selected]="!temple.city_id">
                           Select city
                         </option>
                         <option
                           *ngFor="let cityOption of cities"
-                          [value]="cityOption.id"
+                          [ngValue]="cityOption.id"
                         >
                           {{ cityOption.name }}
                         </option>
@@ -316,13 +316,13 @@ import {
                       #mainDeity="ngModel"
                     >
                       <option
-                        value=""
+                        [ngValue]="0"
                         disabled
                         [selected]="!temple.main_deity_id"
                       >
                         Select main deity
                       </option>
-                      <option *ngFor="let deity of deities" [value]="deity.id">
+                      <option *ngFor="let deity of deities" [ngValue]="deity.id">
                         {{ deity.name }}
                       </option>
                     </select>
@@ -746,7 +746,14 @@ export class AddTempleComponent implements OnInit {
   toastMessage: string = '';
   toastType: 'success' | 'error' = 'success';
   showToast: boolean = false;
-  uploadedImages: { file: File; preview: string; name: string }[] = [];
+  uploadedImages: {
+    file: File;
+    preview: string;
+    name: string;
+    id?: number;
+    originalFile?: string;
+    isExisting?: boolean;
+  }[] = [];
   cities: City[] = [];
   deities: Deity[] = [];
 
@@ -847,13 +854,21 @@ export class AddTempleComponent implements OnInit {
   this.isLoading = true;
   this.commonService.getTemplebyId(id).subscribe({
     next: (temple) => {
-      this.temple = temple;
+      this.temple = {
+        ...temple,
+        city_id: Number(temple.city_id || (temple as any).cityId || temple.city?.id || 0),
+        main_deity_id: Number(temple.main_deity_id || (temple as any).mainDeityId || temple.main_deity?.id || (temple as any).mainDeity?.id || 0),
+      };
+      this.uploadedImages = [];
       if (temple.images && temple.images.length > 0) {
-        temple.images.forEach((img, index) => {
+        temple.images.forEach((img: any, index: number) => {
           this.uploadedImages.push({
             file: new File([], `existing-image-${index}`),
             preview: this.resolveImageUrl(img.file),
             name: `Existing Image ${index + 1}`,
+            id: img.id,
+            originalFile: img.file,
+            isExisting: true,
           });
         });
       }
@@ -900,6 +915,11 @@ private resolveImageUrl(file: string | undefined | null): string {
 
     if (!files || files.length === 0) return;
 
+    // In edit mode, when a new image is selected, replace existing temple image(s)
+    if (this.isEditMode && this.uploadedImages.some((img) => img.isExisting)) {
+      this.uploadedImages = [];
+    }
+
     // Check if adding these files would exceed the maximum of 5
     if (this.uploadedImages.length + files.length > 5) {
       this.uploadError = 'Maximum 5 photos allowed';
@@ -928,6 +948,7 @@ private resolveImageUrl(file: string | undefined | null): string {
           file: file,
           preview: e.target.result,
           name: file.name,
+          isExisting: false,
         });
       };
       reader.readAsDataURL(file);
@@ -1022,18 +1043,27 @@ async onSubmit() {
   }
 
   // Add uploaded images to FormData
-  if (this.uploadedImages.length > 0) {
+  if (this.isEditMode) {
+    let hasExisting = false;
     for (let i = 0; i < this.uploadedImages.length; i++) {
       const img = this.uploadedImages[i];
-      
-      // Only add new files (not existing ones from edit mode)
-      if (img.file.size > 0) {
+      if (!img.isExisting && img.file.size > 0) {
         formData.append('uploaded_images', img.file, img.name || `image_${i}`);
-      } else if (this.isEditMode && img.preview) {
-        // For existing images in edit mode, send the URL as a string
-        // Make sure img.preview is a string, not an object
-        if (typeof img.preview === 'string') {
-          formData.append('existing_images', img.preview);
+      } else if (img.isExisting) {
+        hasExisting = true;
+        formData.append('existing_images', img.originalFile || img.preview);
+      }
+    }
+    // If no existing images remain, send an empty string so backend knows to prune all previous images
+    if (!hasExisting) {
+      formData.append('existing_images', '');
+    }
+  } else {
+    if (this.uploadedImages.length > 0) {
+      for (let i = 0; i < this.uploadedImages.length; i++) {
+        const img = this.uploadedImages[i];
+        if (img.file.size > 0) {
+          formData.append('uploaded_images', img.file, img.name || `image_${i}`);
         }
       }
     }

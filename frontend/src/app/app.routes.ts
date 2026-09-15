@@ -7,6 +7,7 @@ import { PanchangComponent } from './pages/panchang/panchang.component';
 import { FestivalComponent } from './pages/festival/festival.component';
 import { DateandtimeComponent } from './pages/dateandtime/dateandtime.component';
 import { AboutComponent } from './pages/about/about.component';
+import { ReligiousContentsComponent } from './pages/religious-contents/religious-contents.component';
 import { NotFoundComponent } from './pages/not-found/not-found.component';
 import { AdddiscussionComponent } from './pages/community/adddiscussion/adddiscussion.component';
 import { AddEventComponent } from './pages/events/add-event/add-event.component';
@@ -43,6 +44,8 @@ export const routes: Routes = [
   { path: 'community/discussion/new', component: AdddiscussionComponent },
   { path: 'panchang', component: PanchangComponent },
   { path: 'festival', component: FestivalComponent },
+  { path: 'religiouscontents', component: ReligiousContentsComponent },
+  { path: 'religious-contents', redirectTo: '/religiouscontents' },
   { path: 'dateandtime', component: DateandtimeComponent },
   { path: 'about', component: AboutComponent },
   { path: 'help', component: HelppageComponent },

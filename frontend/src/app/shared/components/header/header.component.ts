@@ -1,5 +1,4 @@
-// header.component.ts
-import { Component, HostListener, OnInit, OnDestroy } from '@angular/core';
+import { Component, HostListener, OnInit, OnDestroy, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 import { trigger, state, style, transition, animate } from '@angular/animations';
@@ -86,17 +85,22 @@ import { AuthService } from 'src/app/Auth/auth.service';
               >
                 Help
               </a>
-              <div class="relative">
-                <a
+              <div class="relative spiritual-tools-dropdown">
+                <button
+                  type="button"
                   (click)="toggleSpiritualToolsDropdown()"
-                  class="text-gray-700 hover:text-orange-600 px-2 lg:px-3 py-2 text-sm font-medium cursor-pointer transition-all duration-200 border-b-2 border-transparent"
+                  class="text-gray-700 hover:text-orange-600 px-2 lg:px-3 py-2 text-sm font-medium cursor-pointer transition-all duration-200 border-b-2 border-transparent flex items-center gap-1 focus:outline-none"
+                  [ngClass]="{'text-orange-600 border-orange-600': isSpiritualsActive()}"
                 >
-                  Spirituals
-                </a>
+                  <span>Spirituals</span>
+                  <svg class="w-4 h-4 transition-transform duration-200" [ngClass]="{'rotate-180': isSpiritualToolsDropdownOpen}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                  </svg>
+                </button>
 
                 <div
                   *ngIf="isSpiritualToolsDropdownOpen"
-                  class="absolute z-10 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5"
+                  class="absolute z-10 mt-2 w-52 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5"
                 >
                   <div class="py-1">
                     <a
@@ -115,12 +119,20 @@ import { AuthService } from 'src/app/Auth/auth.service';
                     >
                       Panchang
                     </a>
+                    <a
+                      routerLink="/religiouscontents"
+                      (click)="closeSpiritualToolsDropdown()"
+                      routerLinkActive="bg-gray-100 text-orange-600"
+                      class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-orange-600"
+                    >
+                      Religious Contents
+                    </a>
                   </div>
                 </div>
               </div>
 
               <!-- Admin Dropdown -->
-              <div *ngIf="isAdmin" class="relative">
+              <div *ngIf="isAdmin" class="relative admin-dropdown-container">
                 <a
                   (click)="toggleAdminDropdown()"
                   class="text-orange-600 hover:text-orange-700 px-2 lg:px-3 py-2 text-sm font-semibold cursor-pointer transition-all duration-200 border-b-2 border-transparent flex items-center gap-1"
@@ -276,21 +288,25 @@ import { AuthService } from 'src/app/Auth/auth.service';
               Help
             </a>
             <div class="px-3">
-              <a
+              <button
+                type="button"
                 (click)="toggleSpiritualToolsDropdown()"
-                class="block text-gray-700 hover:text-orange-600 text-sm font-medium cursor-pointer py-2"
+                class="w-full flex items-center justify-between text-gray-700 hover:text-orange-600 text-sm font-medium cursor-pointer py-2 focus:outline-none"
               >
-                Spirituals
-              </a>
+                <span>Spirituals</span>
+                <svg class="w-4 h-4 transition-transform duration-200" [ngClass]="{'rotate-180': isSpiritualToolsDropdownOpen}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                </svg>
+              </button>
               <div
                 *ngIf="isSpiritualToolsDropdownOpen"
-                class="flex flex-col pl-4 space-y-2"
+                class="flex flex-col pl-4 space-y-1 mt-1 border-l-2 border-orange-200 ml-2"
               >
                 <a
                   routerLink="/festival"
                   (click)="closeMobileMenu(); closeSpiritualToolsDropdown()"
                   routerLinkActive="bg-gray-100 text-orange-600"
-                  class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-orange-600 rounded-md"
+                  class="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-orange-600 rounded-md"
                 >
                   Festival
                 </a>
@@ -298,9 +314,17 @@ import { AuthService } from 'src/app/Auth/auth.service';
                   routerLink="/panchang"
                   (click)="closeMobileMenu(); closeSpiritualToolsDropdown()"
                   routerLinkActive="bg-gray-100 text-orange-600"
-                  class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-orange-600 rounded-md"
+                  class="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-orange-600 rounded-md"
                 >
                   Panchang
+                </a>
+                <a
+                  routerLink="/religiouscontents"
+                  (click)="closeMobileMenu(); closeSpiritualToolsDropdown()"
+                  routerLinkActive="bg-gray-100 text-orange-600"
+                  class="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-orange-600 rounded-md"
+                >
+                  Religious Contents
                 </a>
               </div>
             </div>
@@ -384,7 +408,11 @@ export class HeaderComponent implements OnInit, OnDestroy {
   isAdmin = false;
   private authSubscription!: Subscription;
 
-  constructor(private authService: AuthService, private router: Router) {}
+  constructor(
+    private authService: AuthService,
+    private router: Router,
+    private elementRef: ElementRef
+  ) {}
 
   ngOnInit() {
     this.checkScroll();
@@ -426,31 +454,21 @@ export class HeaderComponent implements OnInit, OnDestroy {
     }
 
     const targetElement = event.target as HTMLElement;
-    const spiritualToolsLink = document.querySelector(
-      'a.hover\\:text-orange-600.px-3.py-2.text-sm.font-medium.cursor-pointer[onclick*="toggleSpiritualToolsDropdown"]'
-    );
-    const businessesLink = document.querySelector(
-      'a.hover\\:text-orange-600.px-3.py-2.text-sm.font-medium.cursor-pointer[onclick*="toggleBusinessesDropdown"]'
-    );
-    const spiritualToolsDropdown = document.querySelector('.absolute.z-10');
+    const spiritualToolsContainer = this.elementRef?.nativeElement?.querySelector('.spiritual-tools-dropdown');
+    const adminDropdownContainer = this.elementRef?.nativeElement?.querySelector('.admin-dropdown-container');
 
-    if (
-      spiritualToolsLink &&
-      !spiritualToolsLink.contains(targetElement) &&
-      spiritualToolsDropdown &&
-      !spiritualToolsDropdown.contains(targetElement)
-    ) {
+    if (spiritualToolsContainer && !spiritualToolsContainer.contains(targetElement)) {
       this.isSpiritualToolsDropdownOpen = false;
     }
 
-    if (
-      businessesLink &&
-      !businessesLink.contains(targetElement) &&
-      spiritualToolsDropdown &&
-      !spiritualToolsDropdown.contains(targetElement)
-    ) {
-      this.isBusinessesDropdownOpen = false;
+    if (adminDropdownContainer && !adminDropdownContainer.contains(targetElement)) {
+      this.isAdminDropdownOpen = false;
     }
+  }
+
+  isSpiritualsActive(): boolean {
+    const url = this.router.url;
+    return url.startsWith('/festival') || url.startsWith('/panchang') || url.startsWith('/religiouscontents');
   }
 
   private checkScroll() {
