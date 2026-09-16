@@ -43,3 +43,28 @@ export const authorize = (...roles) => (req, res, next) => {
 
   next();
 };
+
+export const optionalAuthenticate = async (req, res, next) => {
+  try {
+    const authHeader = req.headers.authorization || '';
+    const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
+
+    if (token) {
+      const decoded = jwt.verify(token, env.jwtAccessSecret);
+      const user = await prisma.user.findUnique({ where: { id: decoded.sub } });
+
+      if (user && user.isActive) {
+        req.user = {
+          id: user.id,
+          username: user.username,
+          email: user.email,
+          role: user.role,
+        };
+      }
+    }
+  } catch {
+    // Ignore token errors for optional authentication
+  }
+
+  next();
+};

@@ -24,194 +24,234 @@ import { AuthService } from 'src/app/Auth/auth.service';
   ],
   template: `
     <header
-      class="bg-white shadow-lg fixed top-0 z-50 w-full transition-all duration-300"
+      class="bg-white shadow-md fixed top-0 z-50 w-full transition-all duration-300"
     >
-      <nav class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <nav class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-4 xl:px-8">
         <div class="flex justify-between items-center h-16">
-          <div class="flex items-center cursor-pointer" routerLink="/">
-            <div class="flex-shrink-0 flex items-center">
+          <!-- Brand / Logo Area -->
+          <div class="flex items-center cursor-pointer shrink-0 select-none py-1 mr-2 sm:mr-4" routerLink="/">
+            <div class="flex items-center gap-2 sm:gap-3">
               <div
-                class="w-12 h-12 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center text-white font-bold text-xl shadow-lg hover:shadow-xl transition-shadow duration-300"
+                class="w-8 h-8 sm:w-9 sm:h-9 xl:w-10 xl:h-10 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center text-white font-bold text-base sm:text-lg xl:text-xl shadow-md hover:shadow-lg transition-shadow duration-300 shrink-0"
               >
                 ॐ
               </div>
-              <div class="ml-3">
+              <div class="flex flex-col justify-center min-w-0">
                 <h1
-                  class="text-xl font-bold text-gray-900 hover:text-orange-600 transition-colors"
+                  class="text-sm sm:text-base md:text-lg xl:text-xl font-bold text-gray-900 hover:text-orange-600 transition-colors tracking-tight whitespace-nowrap leading-tight"
                 >
                   Sanatan New Zealand
                 </h1>
-                <p class="text-sm text-black-700">Sanatan Community Platform</p>
+                <p class="hidden sm:block lg:hidden 2xl:block text-[11px] xl:text-xs text-gray-500 font-medium whitespace-nowrap leading-tight mt-0.5">
+                  Sanatan Community Platform
+                </p>
               </div>
             </div>
           </div>
 
-          <div class="hidden lg:block">
-            <div class="ml-4 lg:ml-8 flex items-center space-x-3 lg:space-x-6">
-              <a
-                routerLink="/temples"
-                routerLinkActive="text-orange-600 border-b-2 border-orange-600"
-                class="text-gray-700 hover:text-orange-600 px-2 lg:px-3 py-2 text-sm font-medium transition-all duration-200 border-b-2 border-transparent"
-              >
-                Temples
-              </a>
-              <a
-                routerLink="/events"
-                routerLinkActive="text-orange-600 border-b-2 border-orange-600"
-                class="text-gray-700 hover:text-orange-600 px-2 lg:px-3 py-2 text-sm font-medium transition-all duration-200 border-b-2 border-transparent"
-              >
-                Events
-              </a>
-           <!--
+          <!-- Desktop Navigation Bar -->
+          <div class="hidden lg:flex items-center gap-1 xl:gap-2 2xl:gap-3 shrink-0 ml-auto">
+            <a
+              routerLink="/temples"
+              routerLinkActive="text-orange-600 border-orange-600 font-semibold"
+              class="text-gray-700 hover:text-orange-600 px-1.5 xl:px-2.5 2xl:px-3 py-1.5 text-[13px] xl:text-[14px] font-medium transition-all duration-200 border-b-2 border-transparent whitespace-nowrap shrink-0"
+            >
+              Temples
+            </a>
+            <a
+              routerLink="/events"
+              routerLinkActive="text-orange-600 border-orange-600 font-semibold"
+              class="text-gray-700 hover:text-orange-600 px-1.5 xl:px-2.5 2xl:px-3 py-1.5 text-[13px] xl:text-[14px] font-medium transition-all duration-200 border-b-2 border-transparent whitespace-nowrap shrink-0"
+            >
+              Events
+            </a>
 
-  routerLink="/business/directory"
-  routerLinkActive="text-orange-600 border-b-2 border-orange-600"
-  class="text-gray-700 hover:text-orange-600 px-3 py-2 text-sm font-medium transition-all duration-200 border-b-2 border-transparent"
->
-  Business
-</a>
--->
-              <a
-                routerLink="/community"
-                routerLinkActive="text-orange-600 border-b-2 border-orange-600"
-                class="text-gray-700 hover:text-orange-600 px-2 lg:px-3 py-2 text-sm font-medium transition-all duration-200 border-b-2 border-transparent"
+            <!-- Services Dropdown -->
+            <div class="relative services-dropdown-container shrink-0">
+              <button
+                type="button"
+                (click)="toggleBusinessesDropdown()"
+                class="text-gray-700 hover:text-orange-600 px-1.5 xl:px-2.5 2xl:px-3 py-1.5 text-[13px] xl:text-[14px] font-medium cursor-pointer transition-all duration-200 border-b-2 border-transparent flex items-center gap-1 focus:outline-none whitespace-nowrap shrink-0"
+                [ngClass]="{'text-orange-600 border-orange-600 font-semibold': isServicesActive()}"
               >
-                Community
-              </a>
-              <a
-                routerLink="/help"
-                routerLinkActive="text-orange-600 border-b-2 border-orange-600"
-                class="text-gray-700 hover:text-orange-600 px-2 lg:px-3 py-2 text-sm font-medium transition-all duration-200 border-b-2 border-transparent"
+                <span>Services</span>
+                <svg class="w-3.5 h-3.5 xl:w-4 xl:h-4 transition-transform duration-200" [ngClass]="{'rotate-180': isBusinessesDropdownOpen}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                </svg>
+              </button>
+
+              <div
+                *ngIf="isBusinessesDropdownOpen"
+                class="absolute left-0 z-50 mt-2 w-52 rounded-xl shadow-xl bg-white ring-1 ring-black ring-opacity-5 py-1 transition-all"
               >
-                Help
-              </a>
-              <div class="relative spiritual-tools-dropdown">
-                <button
-                  type="button"
-                  (click)="toggleSpiritualToolsDropdown()"
-                  class="text-gray-700 hover:text-orange-600 px-2 lg:px-3 py-2 text-sm font-medium cursor-pointer transition-all duration-200 border-b-2 border-transparent flex items-center gap-1 focus:outline-none"
-                  [ngClass]="{'text-orange-600 border-orange-600': isSpiritualsActive()}"
-                >
-                  <span>Spirituals</span>
-                  <svg class="w-4 h-4 transition-transform duration-200" [ngClass]="{'rotate-180': isSpiritualToolsDropdownOpen}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-                  </svg>
-                </button>
-
-                <div
-                  *ngIf="isSpiritualToolsDropdownOpen"
-                  class="absolute z-10 mt-2 w-52 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5"
-                >
-                  <div class="py-1">
-                    <a
-                      routerLink="/festival"
-                      (click)="closeSpiritualToolsDropdown()"
-                      routerLinkActive="bg-gray-100 text-orange-600"
-                      class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-orange-600"
-                    >
-                      Festival
-                    </a>
-                    <a
-                      routerLink="/panchang"
-                      (click)="closeSpiritualToolsDropdown()"
-                      routerLinkActive="bg-gray-100 text-orange-600"
-                      class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-orange-600"
-                    >
-                      Panchang
-                    </a>
-                    <a
-                      routerLink="/religiouscontents"
-                      (click)="closeSpiritualToolsDropdown()"
-                      routerLinkActive="bg-gray-100 text-orange-600"
-                      class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-orange-600"
-                    >
-                      Blog &amp; Religious Articles
-                    </a>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Admin Dropdown -->
-              <div *ngIf="isAdmin" class="relative admin-dropdown-container">
                 <a
-                  (click)="toggleAdminDropdown()"
-                  class="text-orange-600 hover:text-orange-700 px-2 lg:px-3 py-2 text-sm font-semibold cursor-pointer transition-all duration-200 border-b-2 border-transparent flex items-center gap-1"
+                  routerLink="/services"
+                  (click)="closeBusinessesDropdown()"
+                  routerLinkActive="bg-orange-50 text-orange-600 font-semibold"
+                  class="block px-4 py-2 text-[13px] xl:text-sm text-gray-700 hover:bg-orange-50 hover:text-orange-600 transition-colors"
                 >
-                  Admin
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-                  </svg>
+                  🏛️ Service Directory
                 </a>
-
-                <div
-                  *ngIf="isAdminDropdownOpen"
-                  class="absolute z-10 mt-2 w-56 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5"
+                <a
+                  routerLink="/services/add"
+                  (click)="closeBusinessesDropdown()"
+                  routerLinkActive="bg-orange-50 text-orange-600 font-semibold"
+                  class="block px-4 py-2 text-[13px] xl:text-sm text-gray-700 hover:bg-orange-50 hover:text-orange-600 transition-colors"
                 >
-                  <div class="py-1">
-                    <a
-                      routerLink="/business/admin/business-submissions"
-                      (click)="closeAdminDropdown()"
-                      routerLinkActive="bg-gray-100 text-orange-600"
-                      class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-orange-600"
-                    >
-                      🏛️ Temples &amp; Businesses
-                    </a>
-                    <a
-                      routerLink="/admin/events"
-                      (click)="closeAdminDropdown()"
-                      routerLinkActive="bg-gray-100 text-orange-600"
-                      class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-orange-600"
-                    >
-                      📅 Events
-                    </a>
-                    <a
-                      routerLink="/admin/user-approvals"
-                      (click)="closeAdminDropdown()"
-                      routerLinkActive="bg-gray-100 text-orange-600"
-                      class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-orange-600"
-                    >
-                      👥 User Approvals
-                    </a>
-                    <a
-                      routerLink="/admin/cities"
-                      (click)="closeAdminDropdown()"
-                      routerLinkActive="bg-gray-100 text-orange-600"
-                      class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-orange-600"
-                    >
-                      📍 Cities
-                    </a>
-                    <a
-                      routerLink="/admin/deities"
-                      (click)="closeAdminDropdown()"
-                      routerLinkActive="bg-gray-100 text-orange-600"
-                      class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-orange-600"
-                    >
-                      🕉️ Deities
-                    </a>
-                    <a
-                      routerLink="/admin/blogs"
-                      (click)="closeAdminDropdown()"
-                      routerLinkActive="bg-gray-100 text-orange-600"
-                      class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-orange-600"
-                    >
-                      📰 Blog Posts
-                    </a>
-                  </div>
-                </div>
+                  ➕ Add Service
+                </a>
               </div>
+            </div>
 
+            <a
+              routerLink="/community"
+              routerLinkActive="text-orange-600 border-orange-600 font-semibold"
+              class="text-gray-700 hover:text-orange-600 px-1.5 xl:px-2.5 2xl:px-3 py-1.5 text-[13px] xl:text-[14px] font-medium transition-all duration-200 border-b-2 border-transparent whitespace-nowrap shrink-0"
+            >
+              Community
+            </a>
+            <a
+              routerLink="/help"
+              routerLinkActive="text-orange-600 border-orange-600 font-semibold"
+              class="text-gray-700 hover:text-orange-600 px-1.5 xl:px-2.5 2xl:px-3 py-1.5 text-[13px] xl:text-[14px] font-medium transition-all duration-200 border-b-2 border-transparent whitespace-nowrap shrink-0"
+            >
+              Help
+            </a>
+
+            <!-- Spirituals Dropdown -->
+            <div class="relative spiritual-tools-dropdown shrink-0">
+              <button
+                type="button"
+                (click)="toggleSpiritualToolsDropdown()"
+                class="text-gray-700 hover:text-orange-600 px-1.5 xl:px-2.5 2xl:px-3 py-1.5 text-[13px] xl:text-[14px] font-medium cursor-pointer transition-all duration-200 border-b-2 border-transparent flex items-center gap-1 focus:outline-none whitespace-nowrap shrink-0"
+                [ngClass]="{'text-orange-600 border-orange-600 font-semibold': isSpiritualsActive()}"
+              >
+                <span>Spirituals</span>
+                <svg class="w-3.5 h-3.5 xl:w-4 xl:h-4 transition-transform duration-200" [ngClass]="{'rotate-180': isSpiritualToolsDropdownOpen}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                </svg>
+              </button>
+
+              <div
+                *ngIf="isSpiritualToolsDropdownOpen"
+                class="absolute left-0 z-50 mt-2 w-52 rounded-xl shadow-xl bg-white ring-1 ring-black ring-opacity-5 py-1 transition-all"
+              >
+                <a
+                  routerLink="/festival"
+                  (click)="closeSpiritualToolsDropdown()"
+                  routerLinkActive="bg-orange-50 text-orange-600 font-semibold"
+                  class="block px-4 py-2 text-[13px] xl:text-sm text-gray-700 hover:bg-orange-50 hover:text-orange-600 transition-colors"
+                >
+                  🌸 Festival
+                </a>
+                <a
+                  routerLink="/panchang"
+                  (click)="closeSpiritualToolsDropdown()"
+                  routerLinkActive="bg-orange-50 text-orange-600 font-semibold"
+                  class="block px-4 py-2 text-[13px] xl:text-sm text-gray-700 hover:bg-orange-50 hover:text-orange-600 transition-colors"
+                >
+                  📅 Panchang
+                </a>
+                <a
+                  routerLink="/blog"
+                  (click)="closeSpiritualToolsDropdown()"
+                  routerLinkActive="bg-orange-50 text-orange-600 font-semibold"
+                  class="block px-4 py-2 text-[13px] xl:text-sm text-gray-700 hover:bg-orange-50 hover:text-orange-600 transition-colors"
+                >
+                  📰 Blog
+                </a>
+                <a
+                  routerLink="/religiouscontents"
+                  (click)="closeSpiritualToolsDropdown()"
+                  routerLinkActive="bg-orange-50 text-orange-600 font-semibold"
+                  class="block px-4 py-2 text-[13px] xl:text-sm text-gray-700 hover:bg-orange-50 hover:text-orange-600 transition-colors"
+                >
+                  📜 Religious Articles
+                </a>
+              </div>
+            </div>
+
+            <!-- Admin Dropdown -->
+            <div *ngIf="isAdmin" class="relative admin-dropdown-container shrink-0">
+              <a
+                (click)="toggleAdminDropdown()"
+                class="text-orange-600 hover:text-orange-700 px-1.5 xl:px-2.5 2xl:px-3 py-1.5 text-[13px] xl:text-[14px] font-semibold cursor-pointer transition-all duration-200 border-b-2 border-transparent flex items-center gap-1 whitespace-nowrap shrink-0"
+                [ngClass]="{'border-orange-600': isAdminActive()}"
+              >
+                <span>Admin</span>
+                <svg class="w-3.5 h-3.5 xl:w-4 xl:h-4 transition-transform duration-200" [ngClass]="{'rotate-180': isAdminDropdownOpen}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                </svg>
+              </a>
+
+              <div
+                *ngIf="isAdminDropdownOpen"
+                class="absolute right-0 z-50 mt-2 w-56 rounded-xl shadow-xl bg-white ring-1 ring-black ring-opacity-5 py-1 transition-all"
+              >
+                <a
+                  routerLink="/business/admin/business-submissions"
+                  (click)="closeAdminDropdown()"
+                  routerLinkActive="bg-orange-50 text-orange-600 font-semibold"
+                  class="block px-4 py-2 text-[13px] xl:text-sm text-gray-700 hover:bg-orange-50 hover:text-orange-600 transition-colors"
+                >
+                  🏛️ Temples &amp; Businesses
+                </a>
+                <a
+                  routerLink="/admin/events"
+                  (click)="closeAdminDropdown()"
+                  routerLinkActive="bg-orange-50 text-orange-600 font-semibold"
+                  class="block px-4 py-2 text-[13px] xl:text-sm text-gray-700 hover:bg-orange-50 hover:text-orange-600 transition-colors"
+                >
+                  📅 Events
+                </a>
+                <a
+                  routerLink="/admin/user-approvals"
+                  (click)="closeAdminDropdown()"
+                  routerLinkActive="bg-orange-50 text-orange-600 font-semibold"
+                  class="block px-4 py-2 text-[13px] xl:text-sm text-gray-700 hover:bg-orange-50 hover:text-orange-600 transition-colors"
+                >
+                  👥 User Approvals
+                </a>
+                <a
+                  routerLink="/admin/cities"
+                  (click)="closeAdminDropdown()"
+                  routerLinkActive="bg-orange-50 text-orange-600 font-semibold"
+                  class="block px-4 py-2 text-[13px] xl:text-sm text-gray-700 hover:bg-orange-50 hover:text-orange-600 transition-colors"
+                >
+                  📍 Cities
+                </a>
+                <a
+                  routerLink="/admin/deities"
+                  (click)="closeAdminDropdown()"
+                  routerLinkActive="bg-orange-50 text-orange-600 font-semibold"
+                  class="block px-4 py-2 text-[13px] xl:text-sm text-gray-700 hover:bg-orange-50 hover:text-orange-600 transition-colors"
+                >
+                  🕉️ Deities
+                </a>
+                <a
+                  routerLink="/admin/blogs"
+                  (click)="closeAdminDropdown()"
+                  routerLinkActive="bg-orange-50 text-orange-600 font-semibold"
+                  class="block px-4 py-2 text-[13px] xl:text-sm text-gray-700 hover:bg-orange-50 hover:text-orange-600 transition-colors"
+                >
+                  📰 Blog Posts
+                </a>
+              </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex items-center gap-1.5 xl:gap-2 shrink-0 ml-1 xl:ml-2">
               <button
                 routerLink="/dashboard"
-                class="bg-gradient-to-r from-orange-600 to-red-600 text-white px-5 py-2 rounded-full text-sm font-medium hover:from-orange-700 hover:to-red-700 transform hover:scale-105 transition-all duration-200 shadow-lg"
+                class="bg-gradient-to-r from-orange-600 to-red-600 text-white px-3 xl:px-4 py-1.5 rounded-full text-[12px] xl:text-[13px] font-semibold hover:from-orange-700 hover:to-red-700 transform hover:scale-105 transition-all duration-200 shadow-sm hover:shadow shrink-0 whitespace-nowrap"
               >
                 Explore
               </button>
 
-              <!-- Updated Login/Logout Button -->
               <button
                 *ngIf="!isLoggedIn; else logoutButton"
                 routerLink="/auth/login-registeration-forget"
-                class="bg-gradient-to-r from-orange-600 to-red-600 text-white px-4 py-2 rounded-full text-sm font-medium hover:from-orange-700 hover:to-red-700 transition-all shrink-0"
+                class="bg-gradient-to-r from-orange-600 to-red-600 text-white px-3 xl:px-4 py-1.5 rounded-full text-[12px] xl:text-[13px] font-semibold hover:from-orange-700 hover:to-red-700 transition-all shadow-sm hover:shadow shrink-0 whitespace-nowrap"
               >
                 Login
               </button>
@@ -219,7 +259,7 @@ import { AuthService } from 'src/app/Auth/auth.service';
               <ng-template #logoutButton>
                 <button
                   (click)="onLogout()"
-                  class="bg-gradient-to-r from-gray-600 to-gray-800 text-white px-4 py-2 rounded-full text-sm font-medium hover:from-gray-700 hover:to-gray-900 transition-all shrink-0"
+                  class="bg-gradient-to-r from-gray-600 to-gray-800 text-white px-3 xl:px-4 py-1.5 rounded-full text-[12px] xl:text-[13px] font-semibold hover:from-gray-700 hover:to-gray-900 transition-all shadow-sm hover:shadow shrink-0 whitespace-nowrap"
                 >
                   Logout
                 </button>
@@ -227,10 +267,12 @@ import { AuthService } from 'src/app/Auth/auth.service';
             </div>
           </div>
 
-          <div class="lg:hidden">
+          <!-- Mobile Hamburger Button -->
+          <div class="lg:hidden flex items-center shrink-0">
             <button
               (click)="toggleMobileMenu()"
-              class="mobile-menu-toggle-button text-gray-700 hover:text-orange-600 focus:outline-none focus:text-orange-600 transition-colors"
+              aria-label="Toggle mobile navigation menu"
+              class="mobile-menu-toggle-button p-2 rounded-lg text-gray-700 hover:text-orange-600 hover:bg-orange-50 focus:outline-none focus:text-orange-600 transition-colors"
             >
               <svg
                 class="h-6 w-6"
@@ -257,50 +299,90 @@ import { AuthService } from 'src/app/Auth/auth.service';
           </div>
         </div>
 
+        <!-- Mobile Menu Drawer -->
         <div
           *ngIf="isMobileMenuOpen"
           [@slideIn]
-          class="lg:hidden bg-white border-t border-gray-200 py-4 mobile-menu-container"
+          class="lg:hidden bg-white border-t border-gray-200 py-3 px-2 max-h-[calc(100vh-4.25rem)] overflow-y-auto mobile-menu-container shadow-inner"
         >
-          <div class="flex flex-col space-y-2">
+          <div class="flex flex-col space-y-1">
             <a
               routerLink="/temples"
               (click)="closeMobileMenu()"
-              routerLinkActive="text-orange-600 bg-orange-50"
-              class="text-gray-700 hover:text-orange-600 hover:bg-orange-50 px-3 py-2 text-sm font-medium rounded-md transition-all"
+              routerLinkActive="text-orange-600 bg-orange-50 font-semibold"
+              class="text-gray-700 hover:text-orange-600 hover:bg-orange-50 px-3 py-2 text-sm font-medium rounded-lg transition-all"
             >
               Temples
             </a>
             <a
               routerLink="/events"
               (click)="closeMobileMenu()"
-              routerLinkActive="text-orange-600 bg-orange-50"
-              class="text-gray-700 hover:text-orange-600 hover:bg-orange-50 px-3 py-2 text-sm font-medium rounded-md transition-all"
+              routerLinkActive="text-orange-600 bg-orange-50 font-semibold"
+              class="text-gray-700 hover:text-orange-600 hover:bg-orange-50 px-3 py-2 text-sm font-medium rounded-lg transition-all"
             >
               Events
             </a>
+
+            <!-- Mobile Services Accordion -->
+            <div class="px-1">
+              <button
+                type="button"
+                (click)="toggleBusinessesDropdown()"
+                class="w-full flex items-center justify-between text-gray-700 hover:text-orange-600 px-2 py-2 text-sm font-medium rounded-lg cursor-pointer focus:outline-none transition-colors"
+                [ngClass]="{'text-orange-600 bg-orange-50 font-semibold': isServicesActive()}"
+              >
+                <span>Services</span>
+                <svg class="w-4 h-4 transition-transform duration-200" [ngClass]="{'rotate-180': isBusinessesDropdownOpen}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                </svg>
+              </button>
+              <div
+                *ngIf="isBusinessesDropdownOpen"
+                class="flex flex-col pl-3 space-y-1 mt-1 border-l-2 border-orange-300 ml-4 py-1"
+              >
+                <a
+                  routerLink="/services"
+                  (click)="closeMobileMenu(); closeBusinessesDropdown()"
+                  routerLinkActive="bg-orange-50 text-orange-600 font-semibold"
+                  class="block px-3 py-1.5 text-sm text-gray-700 hover:bg-orange-50 hover:text-orange-600 rounded-lg transition-colors"
+                >
+                  🏛️ Service Directory
+                </a>
+                <a
+                  routerLink="/services/add"
+                  (click)="closeMobileMenu(); closeBusinessesDropdown()"
+                  routerLinkActive="bg-orange-50 text-orange-600 font-semibold"
+                  class="block px-3 py-1.5 text-sm text-gray-700 hover:bg-orange-50 hover:text-orange-600 rounded-lg transition-colors"
+                >
+                  ➕ Add Service
+                </a>
+              </div>
+            </div>
+
             <a
               routerLink="/community"
               (click)="closeMobileMenu()"
-              routerLinkActive="text-orange-600 bg-orange-50"
-              class="text-gray-700 hover:text-orange-600 hover:bg-orange-50 px-3 py-2 text-sm font-medium rounded-md transition-all"
+              routerLinkActive="text-orange-600 bg-orange-50 font-semibold"
+              class="text-gray-700 hover:text-orange-600 hover:bg-orange-50 px-3 py-2 text-sm font-medium rounded-lg transition-all"
             >
               Community
             </a>
             <a
               routerLink="/help"
               (click)="closeMobileMenu()"
-              routerLinkActive="text-orange-600 bg-orange-50"
-              class="text-gray-700 hover:text-orange-600 hover:bg-orange-50 px-3 py-2 text-sm font-medium rounded-md transition-all"
+              routerLinkActive="text-orange-600 bg-orange-50 font-semibold"
+              class="text-gray-700 hover:text-orange-600 hover:bg-orange-50 px-3 py-2 text-sm font-medium rounded-lg transition-all"
             >
               Help
             </a>
-            <div class="px-3">
+
+            <!-- Mobile Spirituals Accordion -->
+            <div class="px-1">
               <button
                 type="button"
                 (click)="toggleSpiritualToolsDropdown()"
-                class="w-full flex items-center justify-between text-gray-700 hover:text-orange-600 text-sm font-medium cursor-pointer py-2 focus:outline-none"
-                [ngClass]="{'text-orange-600': isSpiritualsActive()}"
+                class="w-full flex items-center justify-between text-gray-700 hover:text-orange-600 px-2 py-2 text-sm font-medium rounded-lg cursor-pointer focus:outline-none transition-colors"
+                [ngClass]="{'text-orange-600 bg-orange-50 font-semibold': isSpiritualsActive()}"
               >
                 <span>Spirituals</span>
                 <svg class="w-4 h-4 transition-transform duration-200" [ngClass]="{'rotate-180': isSpiritualToolsDropdownOpen}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -309,105 +391,140 @@ import { AuthService } from 'src/app/Auth/auth.service';
               </button>
               <div
                 *ngIf="isSpiritualToolsDropdownOpen"
-                class="flex flex-col pl-4 space-y-1 mt-1 border-l-2 border-orange-200 ml-2"
+                class="flex flex-col pl-3 space-y-1 mt-1 border-l-2 border-orange-300 ml-4 py-1"
               >
                 <a
                   routerLink="/festival"
                   (click)="closeMobileMenu(); closeSpiritualToolsDropdown()"
-                  routerLinkActive="bg-gray-100 text-orange-600"
-                  class="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-orange-600 rounded-md"
+                  routerLinkActive="bg-orange-50 text-orange-600 font-semibold"
+                  class="block px-3 py-1.5 text-sm text-gray-700 hover:bg-orange-50 hover:text-orange-600 rounded-lg transition-colors"
                 >
-                  Festival
+                  🌸 Festival
                 </a>
                 <a
                   routerLink="/panchang"
                   (click)="closeMobileMenu(); closeSpiritualToolsDropdown()"
-                  routerLinkActive="bg-gray-100 text-orange-600"
-                  class="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-orange-600 rounded-md"
+                  routerLinkActive="bg-orange-50 text-orange-600 font-semibold"
+                  class="block px-3 py-1.5 text-sm text-gray-700 hover:bg-orange-50 hover:text-orange-600 rounded-lg transition-colors"
                 >
-                  Panchang
+                  📅 Panchang
+                </a>
+                <a
+                  routerLink="/blog"
+                  (click)="closeMobileMenu(); closeSpiritualToolsDropdown()"
+                  routerLinkActive="bg-orange-50 text-orange-600 font-semibold"
+                  class="block px-3 py-1.5 text-sm text-gray-700 hover:bg-orange-50 hover:text-orange-600 rounded-lg transition-colors"
+                >
+                  📰 Blog
                 </a>
                 <a
                   routerLink="/religiouscontents"
                   (click)="closeMobileMenu(); closeSpiritualToolsDropdown()"
-                  routerLinkActive="bg-gray-100 text-orange-600"
-                  class="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-orange-600 rounded-md"
+                  routerLinkActive="bg-orange-50 text-orange-600 font-semibold"
+                  class="block px-3 py-1.5 text-sm text-gray-700 hover:bg-orange-50 hover:text-orange-600 rounded-lg transition-colors"
                 >
-                  Blog &amp; Religious Articles
+                  📜 Religious Articles
                 </a>
               </div>
             </div>
-            <div *ngIf="isAdmin" class="px-3 border-t border-gray-100 pt-2">
-              <span class="block text-xs font-semibold uppercase text-orange-600 tracking-wider mb-1">Admin Panel</span>
-              <a
-                routerLink="/business/admin/business-submissions"
-                (click)="closeMobileMenu()"
-                class="block px-3 py-1.5 text-sm font-medium text-gray-700 hover:text-orange-600 hover:bg-orange-50 rounded-md"
+
+            <!-- Mobile Admin Accordion Dropdown -->
+            <div *ngIf="isAdmin" class="px-1 border-t border-gray-100 pt-2">
+              <button
+                type="button"
+                (click)="toggleAdminDropdown()"
+                class="w-full flex items-center justify-between text-gray-700 hover:text-orange-600 px-2 py-2 text-sm font-medium rounded-lg cursor-pointer focus:outline-none transition-colors"
+                [ngClass]="{'text-orange-600 bg-orange-50 font-semibold': isAdminActive()}"
               >
-                🏛️ Temples &amp; Businesses
-              </a>
-              <a
-                routerLink="/admin/events"
-                (click)="closeMobileMenu()"
-                class="block px-3 py-1.5 text-sm font-medium text-gray-700 hover:text-orange-600 hover:bg-orange-50 rounded-md"
+                <span>Admin Panel</span>
+                <svg class="w-4 h-4 transition-transform duration-200" [ngClass]="{'rotate-180': isAdminDropdownOpen}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                </svg>
+              </button>
+
+              <div
+                *ngIf="isAdminDropdownOpen"
+                class="flex flex-col pl-3 space-y-1 mt-1 border-l-2 border-orange-300 ml-4 py-1"
               >
-                📅 Events
-              </a>
-              <a
-                routerLink="/admin/user-approvals"
-                (click)="closeMobileMenu()"
-                class="block px-3 py-1.5 text-sm font-medium text-gray-700 hover:text-orange-600 hover:bg-orange-50 rounded-md"
-              >
-                👥 User Approvals
-              </a>
-              <a
-                routerLink="/admin/cities"
-                (click)="closeMobileMenu()"
-                class="block px-3 py-1.5 text-sm font-medium text-gray-700 hover:text-orange-600 hover:bg-orange-50 rounded-md"
-              >
-                📍 Cities
-              </a>
-              <a
-                routerLink="/admin/deities"
-                (click)="closeMobileMenu()"
-                class="block px-3 py-1.5 text-sm font-medium text-gray-700 hover:text-orange-600 hover:bg-orange-50 rounded-md"
-              >
-                🕉️ Deities
-              </a>
-              <a
-                routerLink="/admin/blogs"
-                (click)="closeMobileMenu()"
-                class="block px-3 py-1.5 text-sm font-medium text-gray-700 hover:text-orange-600 hover:bg-orange-50 rounded-md"
-              >
-                📰 Blog Posts
-              </a>
+                <a
+                  routerLink="/business/admin/business-submissions"
+                  (click)="closeMobileMenu(); closeAdminDropdown()"
+                  routerLinkActive="bg-orange-50 text-orange-600 font-semibold"
+                  class="block px-3 py-1.5 text-sm font-medium text-gray-700 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-colors"
+                >
+                  🏛️ Temples &amp; Businesses
+                </a>
+                <a
+                  routerLink="/admin/events"
+                  (click)="closeMobileMenu(); closeAdminDropdown()"
+                  routerLinkActive="bg-orange-50 text-orange-600 font-semibold"
+                  class="block px-3 py-1.5 text-sm font-medium text-gray-700 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-colors"
+                >
+                  📅 Events
+                </a>
+                <a
+                  routerLink="/admin/user-approvals"
+                  (click)="closeMobileMenu(); closeAdminDropdown()"
+                  routerLinkActive="bg-orange-50 text-orange-600 font-semibold"
+                  class="block px-3 py-1.5 text-sm font-medium text-gray-700 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-colors"
+                >
+                  👥 User Approvals
+                </a>
+                <a
+                  routerLink="/admin/cities"
+                  (click)="closeMobileMenu(); closeAdminDropdown()"
+                  routerLinkActive="bg-orange-50 text-orange-600 font-semibold"
+                  class="block px-3 py-1.5 text-sm font-medium text-gray-700 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-colors"
+                >
+                  📍 Cities
+                </a>
+                <a
+                  routerLink="/admin/deities"
+                  (click)="closeMobileMenu(); closeAdminDropdown()"
+                  routerLinkActive="bg-orange-50 text-orange-600 font-semibold"
+                  class="block px-3 py-1.5 text-sm font-medium text-gray-700 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-colors"
+                >
+                  🕉️ Deities
+                </a>
+                <a
+                  routerLink="/admin/blogs"
+                  (click)="closeMobileMenu(); closeAdminDropdown()"
+                  routerLinkActive="bg-orange-50 text-orange-600 font-semibold"
+                  class="block px-3 py-1.5 text-sm font-medium text-gray-700 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-colors"
+                >
+                  📰 Blog Posts
+                </a>
+              </div>
             </div>
 
-            <button
-              routerLink="/dashboard"
-              class="bg-gradient-to-r from-orange-600 to-red-600 text-white px-4 py-2 rounded-full text-sm font-medium mx-3 mt-2 hover:from-orange-700 hover:to-red-700 transition-all"
-            >
-              Explore
-            </button>
-
-            <!-- Updated Login/Logout Button for Mobile -->
-            <button
-              *ngIf="!isLoggedIn; else mobileLogoutButton"
-              routerLink="/auth/login-registeration-forget"
-              (click)="closeMobileMenu()"
-              class="bg-gradient-to-r from-orange-600 to-red-600 text-white px-4 py-2 rounded-full text-sm font-medium mx-3 mt-2 hover:from-orange-700 hover:to-red-700 transition-all"
-            >
-              Login
-            </button>
-
-            <ng-template #mobileLogoutButton>
+            <!-- Mobile Action Buttons -->
+            <div class="flex flex-col space-y-2 pt-2 px-2 border-t border-gray-100">
               <button
-                (click)="onLogout(); closeMobileMenu()"
-                class="bg-gradient-to-r from-gray-600 to-gray-800 text-white px-4 py-2 rounded-full text-sm font-medium mx-3 mt-2 hover:from-gray-700 hover:to-gray-900 transition-all"
+                routerLink="/dashboard"
+                (click)="closeMobileMenu()"
+                class="w-full bg-gradient-to-r from-orange-600 to-red-600 text-white px-4 py-2.5 rounded-xl text-sm font-semibold hover:from-orange-700 hover:to-red-700 transition-all text-center shadow-sm"
               >
-                Logout
+                Explore
               </button>
-            </ng-template>
+
+              <button
+                *ngIf="!isLoggedIn; else mobileLogoutButton"
+                routerLink="/auth/login-registeration-forget"
+                (click)="closeMobileMenu()"
+                class="w-full bg-gradient-to-r from-orange-600 to-red-600 text-white px-4 py-2.5 rounded-xl text-sm font-semibold hover:from-orange-700 hover:to-red-700 transition-all text-center shadow-sm"
+              >
+                Login
+              </button>
+
+              <ng-template #mobileLogoutButton>
+                <button
+                  (click)="onLogout(); closeMobileMenu()"
+                  class="w-full bg-gradient-to-r from-gray-600 to-gray-800 text-white px-4 py-2.5 rounded-xl text-sm font-semibold hover:from-gray-700 hover:to-gray-900 transition-all text-center shadow-sm"
+                >
+                  Logout
+                </button>
+              </ng-template>
+            </div>
           </div>
         </div>
       </nav>
@@ -481,6 +598,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
     // On desktop: close open dropdowns when clicking outside their desktop containers
     const spiritualToolsContainer = this.elementRef?.nativeElement?.querySelector('.spiritual-tools-dropdown');
     const adminDropdownContainer = this.elementRef?.nativeElement?.querySelector('.admin-dropdown-container');
+    const servicesDropdownContainer = this.elementRef?.nativeElement?.querySelector('.services-dropdown-container');
 
     if (spiritualToolsContainer && !spiritualToolsContainer.contains(targetElement)) {
       this.isSpiritualToolsDropdownOpen = false;
@@ -488,6 +606,10 @@ export class HeaderComponent implements OnInit, OnDestroy {
 
     if (adminDropdownContainer && !adminDropdownContainer.contains(targetElement)) {
       this.isAdminDropdownOpen = false;
+    }
+
+    if (servicesDropdownContainer && !servicesDropdownContainer.contains(targetElement)) {
+      this.isBusinessesDropdownOpen = false;
     }
 
     // If clicked outside mobile menu while mobile menu is open, close it
@@ -498,7 +620,26 @@ export class HeaderComponent implements OnInit, OnDestroy {
 
   isSpiritualsActive(): boolean {
     const url = this.router.url;
-    return url.startsWith('/festival') || url.startsWith('/panchang') || url.startsWith('/religiouscontents');
+    return (
+      url.startsWith('/festival') ||
+      url.startsWith('/panchang') ||
+      url.startsWith('/blog') ||
+      url.startsWith('/religiouscontents')
+    );
+  }
+
+  isServicesActive(): boolean {
+    const url = this.router.url;
+    return (
+      url.startsWith('/services') ||
+      url.startsWith('/business/directory') ||
+      url.startsWith('/business/register')
+    );
+  }
+
+  isAdminActive(): boolean {
+    const url = this.router.url;
+    return url.startsWith('/admin') || url.startsWith('/business/admin');
   }
 
   private checkScroll() {
@@ -523,8 +664,10 @@ export class HeaderComponent implements OnInit, OnDestroy {
 
   toggleSpiritualToolsDropdown() {
     this.isSpiritualToolsDropdownOpen = !this.isSpiritualToolsDropdownOpen;
-    this.isBusinessesDropdownOpen = false;
-    this.isAdminDropdownOpen = false;
+    if (this.isSpiritualToolsDropdownOpen) {
+      this.isBusinessesDropdownOpen = false;
+      this.isAdminDropdownOpen = false;
+    }
   }
 
   closeSpiritualToolsDropdown() {
@@ -533,8 +676,10 @@ export class HeaderComponent implements OnInit, OnDestroy {
 
   toggleBusinessesDropdown() {
     this.isBusinessesDropdownOpen = !this.isBusinessesDropdownOpen;
-    this.isSpiritualToolsDropdownOpen = false;
-    this.isAdminDropdownOpen = false;
+    if (this.isBusinessesDropdownOpen) {
+      this.isSpiritualToolsDropdownOpen = false;
+      this.isAdminDropdownOpen = false;
+    }
   }
 
   closeBusinessesDropdown() {
@@ -543,8 +688,10 @@ export class HeaderComponent implements OnInit, OnDestroy {
 
   toggleAdminDropdown() {
     this.isAdminDropdownOpen = !this.isAdminDropdownOpen;
-    this.isSpiritualToolsDropdownOpen = false;
-    this.isBusinessesDropdownOpen = false;
+    if (this.isAdminDropdownOpen) {
+      this.isSpiritualToolsDropdownOpen = false;
+      this.isBusinessesDropdownOpen = false;
+    }
   }
 
   closeAdminDropdown() {

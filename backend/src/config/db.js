@@ -200,7 +200,16 @@ export const ensureRequiredTables = async () => {
         ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
       `);
 
-      // 8. Auto-repair any double-encoded or slash-corrupted temple services/facilities in production
+      // 8. Ensure business_business has imageUrl column
+      try {
+        await prisma.$executeRawUnsafe(`
+          ALTER TABLE \`business_business\` ADD COLUMN \`imageUrl\` VARCHAR(2048) NULL;
+        `);
+      } catch {
+        // Safe to ignore if column already exists
+      }
+
+      // 9. Auto-repair any double-encoded or slash-corrupted temple services/facilities in production
       try {
         const dirty = await prisma.$queryRawUnsafe(`
           SELECT id, service_offered, facilities_offered 

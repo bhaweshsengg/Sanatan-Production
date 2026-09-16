@@ -236,6 +236,7 @@ model Business {
   created_at     DateTime
   reviewedat     DateTime?
   reviewnotes    String?
+  imageUrl       String?  @db.VarChar(2048)
 
   @@map("business_business")
 }

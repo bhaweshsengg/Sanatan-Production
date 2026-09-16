@@ -29,6 +29,8 @@ import { adminGuard } from './Auth/admin.guard';
 import { AdminCityComponent } from './pages/admin/admin-city/admin-city.component';
 import { AdminDeityComponent } from './pages/admin/admin-deity/admin-deity.component';
 import { AdminBlogsComponent } from './pages/admin/admin-blogs/admin-blogs.component';
+import { BlogComponent } from './pages/blog/blog.component';
+import { AddServiceComponent } from './pages/services/add-service/add-service.component';
 
 export const routes: Routes = [
   { path: '', component: HomeComponent },
@@ -47,8 +49,12 @@ export const routes: Routes = [
   { path: 'festival', component: FestivalComponent },
   { path: 'religiouscontents', component: ReligiousContentsComponent },
   { path: 'religious-contents', redirectTo: '/religiouscontents' },
-  { path: 'blog', redirectTo: '/religiouscontents' },
-  { path: 'blogs', redirectTo: '/religiouscontents' },
+  { path: 'blog', component: BlogComponent },
+  { path: 'blogs', redirectTo: '/blog' },
+  { path: 'services', component: DirectoryComponent },
+  { path: 'services/directory', redirectTo: '/services' },
+  { path: 'services/add', component: AddServiceComponent },
+  { path: 'services/add-service', redirectTo: '/services/add' },
   { path: 'dateandtime', component: DateandtimeComponent },
   { path: 'about', component: AboutComponent },
   { path: 'help', component: HelppageComponent },

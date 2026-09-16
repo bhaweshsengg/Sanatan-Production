@@ -6,7 +6,7 @@ import {
   updateBusinessStatus,
   createBusiness,
 } from '../controllers/business.controller.js';
-import { authenticate, authorize } from '../middleware/auth.js';
+import { authenticate, authorize, optionalAuthenticate } from '../middleware/auth.js';
 import multer from 'multer';
 import path from 'node:path';
 import fs from 'node:fs';
@@ -42,7 +42,7 @@ router.get('/', getBusinesses);
 
 router.get('/:id', getBusinessById);
 
-router.post('/', authenticate, upload.array('images', env.maxUploadFiles), createBusiness);
+router.post('/', optionalAuthenticate, upload.any(), createBusiness);
 
 router.patch('/:id/status', authenticate, authorize('Admin', 'BusinessManager'), updateBusinessStatus);
 
