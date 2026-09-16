@@ -28,6 +28,7 @@ import { UserApprovalAdminComponent } from './pages/user-registration/user-appro
 import { adminGuard } from './Auth/admin.guard';
 import { AdminCityComponent } from './pages/admin/admin-city/admin-city.component';
 import { AdminDeityComponent } from './pages/admin/admin-deity/admin-deity.component';
+import { AdminBlogsComponent } from './pages/admin/admin-blogs/admin-blogs.component';
 
 export const routes: Routes = [
   { path: '', component: HomeComponent },
@@ -46,6 +47,8 @@ export const routes: Routes = [
   { path: 'festival', component: FestivalComponent },
   { path: 'religiouscontents', component: ReligiousContentsComponent },
   { path: 'religious-contents', redirectTo: '/religiouscontents' },
+  { path: 'blog', redirectTo: '/religiouscontents' },
+  { path: 'blogs', redirectTo: '/religiouscontents' },
   { path: 'dateandtime', component: DateandtimeComponent },
   { path: 'about', component: AboutComponent },
   { path: 'help', component: HelppageComponent },
@@ -89,6 +92,11 @@ export const routes: Routes = [
   {
     path: 'admin/deities',
     component: AdminDeityComponent,
+    canActivate: [adminGuard],
+  },
+  {
+    path: 'admin/blogs',
+    component: AdminBlogsComponent,
     canActivate: [adminGuard],
   },
   { path: 'not-found', component: NotFoundComponent },

@@ -173,6 +173,83 @@ export const ensureRequiredTables = async () => {
           INDEX \`templedevotee_reg_email_idx\` (\`email\`)
         ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
       `);
+
+      // 7. blog_post
+      await prisma.$executeRawUnsafe(`
+        CREATE TABLE IF NOT EXISTS \`blog_post\` (
+          \`id\` INT NOT NULL AUTO_INCREMENT,
+          \`title\` VARCHAR(191) NOT NULL,
+          \`slug\` VARCHAR(191) NULL,
+          \`category\` VARCHAR(191) NOT NULL,
+          \`excerpt\` TEXT NOT NULL,
+          \`content\` LONGTEXT NOT NULL,
+          \`imageUrl\` VARCHAR(2048) NULL,
+          \`author_name\` VARCHAR(191) NOT NULL,
+          \`author_id\` INT NULL,
+          \`status\` ENUM('Draft','Published','Archived') NOT NULL DEFAULT 'Draft',
+          \`tags\` TEXT NULL,
+          \`read_time\` VARCHAR(191) NULL,
+          \`published_at\` DATETIME(3) NULL,
+          \`created_at\` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+          \`updated_at\` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+          PRIMARY KEY (\`id\`),
+          UNIQUE KEY \`blog_post_slug_key\` (\`slug\`),
+          INDEX \`blog_post_status_idx\` (\`status\`),
+          INDEX \`blog_post_category_idx\` (\`category\`),
+          INDEX \`blog_post_author_id_idx\` (\`author_id\`)
+        ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+      `);
+
+      // 8. Auto-repair any double-encoded or slash-corrupted temple services/facilities in production
+      try {
+        const dirty = await prisma.$queryRawUnsafe(`
+          SELECT id, service_offered, facilities_offered 
+          FROM temple_temple 
+          WHERE service_offered LIKE '%\\\\%' 
+             OR service_offered LIKE '%[\\"[\\%'
+             OR facilities_offered LIKE '%\\\\%'
+             OR facilities_offered LIKE '%[\\"[\\%'
+             OR service_offered LIKE '"[%'
+             OR facilities_offered LIKE '"[%'
+        `);
+
+        if (Array.isArray(dirty) && dirty.length > 0) {
+          const unwrapList = (val) => {
+            const results = [];
+            const unwrap = (v) => {
+              if (v === null || v === undefined) return;
+              if (Array.isArray(v)) { v.forEach(unwrap); return; }
+              if (typeof v === 'string') {
+                const trimmed = v.trim();
+                if (!trimmed) return;
+                if ((trimmed.startsWith('[') && trimmed.endsWith(']')) || (trimmed.startsWith('"') && trimmed.endsWith('"'))) {
+                  try { unwrap(JSON.parse(trimmed)); return; } catch {}
+                }
+                const cleaned = trimmed.replace(/^[\[\]"'\\]+|[\[\]"'\\]+$/g, '').replace(/\\+["']/g, '').replace(/\\+/g, '').trim();
+                if (cleaned) {
+                  if (cleaned.includes(',')) cleaned.split(',').forEach(unwrap);
+                  else results.push(cleaned);
+                }
+              } else { results.push(String(v).trim()); }
+            };
+            unwrap(val);
+            return Array.from(new Set(results.map(s => s.trim()).filter(Boolean)));
+          };
+
+          for (const t of dirty) {
+            const cleanServices = JSON.stringify(unwrapList(t.service_offered));
+            const cleanFacilities = JSON.stringify(unwrapList(t.facilities_offered));
+            await prisma.$executeRawUnsafe(
+              'UPDATE temple_temple SET service_offered = ?, facilities_offered = ? WHERE id = ?',
+              cleanServices,
+              cleanFacilities,
+              t.id
+            );
+          }
+        }
+      } catch {
+        // Safe to ignore if table does not exist or columns not ready
+      }
     })().catch((error) => {
       requiredTablesPromise = undefined;
       throw error;

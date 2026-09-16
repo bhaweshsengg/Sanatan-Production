@@ -20,6 +20,7 @@ import userRegistrationRoutes from './routes/userRegistration.routes.js';
 import eventRoutes from './routes/event.routes.js';
 import statsRoutes from './routes/stats.routes.js';
 import communityRoutes from './routes/community.routes.js';
+import blogRoutes from './routes/blog.routes.js';
 
 import { errorHandler } from './middleware/errorHandler.js';
 
@@ -152,6 +153,7 @@ app.use('/api/v1/user-registration', userRegistrationRoutes);
 app.use('/api/v1/event', eventRoutes);
 app.use('/api/v1/stats', statsRoutes);
 app.use('/api/v1/community', communityRoutes);
+app.use('/api/v1/blog', blogRoutes);
 
 /* =========================
    PUBLIC API ROUTES
@@ -165,6 +167,7 @@ app.use('/api/v1/public/business', businessRoutes);
 app.use('/api/v1/public/user-registration', userRegistrationRoutes);
 app.use('/api/v1/public/event', eventRoutes);
 app.use('/api/v1/public/community', communityRoutes);
+app.use('/api/v1/public/blog', blogRoutes);
 
 /* =========================
    ERROR HANDLER

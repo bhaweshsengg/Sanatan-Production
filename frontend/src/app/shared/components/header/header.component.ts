@@ -125,7 +125,7 @@ import { AuthService } from 'src/app/Auth/auth.service';
                       routerLinkActive="bg-gray-100 text-orange-600"
                       class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-orange-600"
                     >
-                      Religious Contents
+                      Blog &amp; Religious Articles
                     </a>
                   </div>
                 </div>
@@ -188,6 +188,14 @@ import { AuthService } from 'src/app/Auth/auth.service';
                     >
                       🕉️ Deities
                     </a>
+                    <a
+                      routerLink="/admin/blogs"
+                      (click)="closeAdminDropdown()"
+                      routerLinkActive="bg-gray-100 text-orange-600"
+                      class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-orange-600"
+                    >
+                      📰 Blog Posts
+                    </a>
                   </div>
                 </div>
               </div>
@@ -222,7 +230,7 @@ import { AuthService } from 'src/app/Auth/auth.service';
           <div class="lg:hidden">
             <button
               (click)="toggleMobileMenu()"
-              class="text-gray-700 hover:text-orange-600 focus:outline-none focus:text-orange-600 transition-colors"
+              class="mobile-menu-toggle-button text-gray-700 hover:text-orange-600 focus:outline-none focus:text-orange-600 transition-colors"
             >
               <svg
                 class="h-6 w-6"
@@ -252,7 +260,7 @@ import { AuthService } from 'src/app/Auth/auth.service';
         <div
           *ngIf="isMobileMenuOpen"
           [@slideIn]
-          class="lg:hidden bg-white border-t border-gray-200 py-4"
+          class="lg:hidden bg-white border-t border-gray-200 py-4 mobile-menu-container"
         >
           <div class="flex flex-col space-y-2">
             <a
@@ -292,6 +300,7 @@ import { AuthService } from 'src/app/Auth/auth.service';
                 type="button"
                 (click)="toggleSpiritualToolsDropdown()"
                 class="w-full flex items-center justify-between text-gray-700 hover:text-orange-600 text-sm font-medium cursor-pointer py-2 focus:outline-none"
+                [ngClass]="{'text-orange-600': isSpiritualsActive()}"
               >
                 <span>Spirituals</span>
                 <svg class="w-4 h-4 transition-transform duration-200" [ngClass]="{'rotate-180': isSpiritualToolsDropdownOpen}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -324,7 +333,7 @@ import { AuthService } from 'src/app/Auth/auth.service';
                   routerLinkActive="bg-gray-100 text-orange-600"
                   class="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-orange-600 rounded-md"
                 >
-                  Religious Contents
+                  Blog &amp; Religious Articles
                 </a>
               </div>
             </div>
@@ -364,6 +373,13 @@ import { AuthService } from 'src/app/Auth/auth.service';
                 class="block px-3 py-1.5 text-sm font-medium text-gray-700 hover:text-orange-600 hover:bg-orange-50 rounded-md"
               >
                 🕉️ Deities
+              </a>
+              <a
+                routerLink="/admin/blogs"
+                (click)="closeMobileMenu()"
+                class="block px-3 py-1.5 text-sm font-medium text-gray-700 hover:text-orange-600 hover:bg-orange-50 rounded-md"
+              >
+                📰 Blog Posts
               </a>
             </div>
 
@@ -454,6 +470,15 @@ export class HeaderComponent implements OnInit, OnDestroy {
     }
 
     const targetElement = event.target as HTMLElement;
+    const isInsideMobileMenu = !!targetElement.closest('.mobile-menu-container');
+    const isMobileToggleButton = !!targetElement.closest('.mobile-menu-toggle-button');
+
+    // On mobile: clicks inside the mobile menu must not trigger desktop click-outside close logic
+    if (isInsideMobileMenu || isMobileToggleButton) {
+      return;
+    }
+
+    // On desktop: close open dropdowns when clicking outside their desktop containers
     const spiritualToolsContainer = this.elementRef?.nativeElement?.querySelector('.spiritual-tools-dropdown');
     const adminDropdownContainer = this.elementRef?.nativeElement?.querySelector('.admin-dropdown-container');
 
@@ -463,6 +488,11 @@ export class HeaderComponent implements OnInit, OnDestroy {
 
     if (adminDropdownContainer && !adminDropdownContainer.contains(targetElement)) {
       this.isAdminDropdownOpen = false;
+    }
+
+    // If clicked outside mobile menu while mobile menu is open, close it
+    if (this.isMobileMenuOpen) {
+      this.closeMobileMenu();
     }
   }
 

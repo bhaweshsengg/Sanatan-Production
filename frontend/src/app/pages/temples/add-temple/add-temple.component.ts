@@ -540,9 +540,7 @@ import {
                         type="checkbox"
                         [id]="service.code"
                         [value]="service.code"
-                        [checked]="
-                          temple.service_offered.includes(service.code)
-                        "
+                        [checked]="isServiceSelected(service.code)"
                         (change)="onServiceChange($event)"
                         class="peer h-4 w-4 shrink-0 rounded-sm border border-primary ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                       />
@@ -555,7 +553,6 @@ import {
                   </div>
                 </div>
 
-                <!-- Facilities Available Section -->
                 <!-- Facilities Available Section -->
                 <div class="space-y-6">
                   <h3 class="text-lg font-semibold text-gray-900 border-b pb-2">
@@ -570,9 +567,7 @@ import {
                         type="checkbox"
                         [id]="facility.code"
                         [value]="facility.code"
-                        [checked]="
-                          temple.facilities_offered.includes(facility.code)
-                        "
+                        [checked]="isFacilitySelected(facility.code)"
                         (change)="onFacilityChange($event)"
                         class="peer h-4 w-4 shrink-0 rounded-sm border border-primary ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                       />
@@ -863,6 +858,8 @@ export class AddTempleComponent implements OnInit {
         website: cleanWebsite,
         city_id: Number(temple.city_id || (temple as any).cityId || temple.city?.id || 0),
         main_deity_id: Number(temple.main_deity_id || (temple as any).mainDeityId || temple.main_deity?.id || (temple as any).mainDeity?.id || 0),
+        service_offered: this.normalizeCodes(temple.service_offered, this.servicesList),
+        facilities_offered: this.normalizeCodes(temple.facilities_offered, this.facilitiesList),
       };
       this.uploadedImages = [];
       if (temple.images && temple.images.length > 0) {
@@ -967,28 +964,77 @@ private resolveImageUrl(file: string | undefined | null): string {
     this.uploadedImages.splice(index, 1);
   }
 
+  normalizeCodes(items: any[] | undefined, validList: { code: string; name: string }[]): string[] {
+    if (!items || !Array.isArray(items)) return [];
+    const validMap = new Map<string, string>();
+    validList.forEach((item) => {
+      validMap.set(item.code.toLowerCase(), item.code);
+      validMap.set(item.name.toLowerCase(), item.code);
+      validMap.set(item.code.toLowerCase().replace(/[_\s-]+/g, ''), item.code);
+      validMap.set(item.name.toLowerCase().replace(/[_\s-]+/g, ''), item.code);
+    });
+
+    const result: string[] = [];
+    items.forEach((raw) => {
+      if (!raw) return;
+      const cleanStr = String(raw)
+        .replace(/^[\[\]"'\\]+|[\[\]"'\\]+$/g, '')
+        .replace(/\\+["']/g, '')
+        .trim();
+      if (!cleanStr) return;
+      const key = cleanStr.toLowerCase();
+      const compactKey = key.replace(/[_\s-]+/g, '');
+      const matched =
+        validMap.get(key) ||
+        validMap.get(compactKey) ||
+        cleanStr.toLowerCase().replace(/[\s-]+/g, '_');
+      if (matched && !result.includes(matched)) {
+        result.push(matched);
+      }
+    });
+    return result;
+  }
+
+  isServiceSelected(code: string): boolean {
+    if (!this.temple?.service_offered || !Array.isArray(this.temple.service_offered)) return false;
+    const target = code.toLowerCase().replace(/[_\s-]+/g, '_');
+    return this.temple.service_offered.some(
+      (s) => s.toLowerCase().replace(/[_\s-]+/g, '_') === target
+    );
+  }
+
+  isFacilitySelected(code: string): boolean {
+    if (!this.temple?.facilities_offered || !Array.isArray(this.temple.facilities_offered)) return false;
+    const target = code.toLowerCase().replace(/[_\s-]+/g, '_');
+    return this.temple.facilities_offered.some(
+      (f) => f.toLowerCase().replace(/[_\s-]+/g, '_') === target
+    );
+  }
+
   onServiceChange(event: any) {
     const service = event.target.value;
+    const normalized = service.toLowerCase().replace(/[_\s-]+/g, '_');
     if (event.target.checked) {
-      if (!this.temple.service_offered.includes(service)) {
+      if (!this.isServiceSelected(service)) {
         this.temple.service_offered.push(service);
       }
     } else {
       this.temple.service_offered = this.temple.service_offered.filter(
-        (s) => s !== service
+        (s) => s.toLowerCase().replace(/[_\s-]+/g, '_') !== normalized
       );
     }
   }
 
   onFacilityChange(event: any) {
     const facility = event.target.value;
+    const normalized = facility.toLowerCase().replace(/[_\s-]+/g, '_');
     if (event.target.checked) {
-      if (!this.temple.facilities_offered.includes(facility)) {
+      if (!this.isFacilitySelected(facility)) {
         this.temple.facilities_offered.push(facility);
       }
     } else {
       this.temple.facilities_offered = this.temple.facilities_offered.filter(
-        (f) => f !== facility
+        (f) => f.toLowerCase().replace(/[_\s-]+/g, '_') !== normalized
       );
     }
   }
@@ -1044,13 +1090,15 @@ async onSubmit() {
   // Add array fields (services and facilities)
   if (this.temple.service_offered && this.temple.service_offered.length > 0) {
     this.temple.service_offered.forEach(service => {
-      formData.append('service_offered', service);
+      const clean = String(service).replace(/^[\[\]"'\\]+|[\[\]"'\\]+$/g, '').trim();
+      if (clean) formData.append('service_offered', clean);
     });
   }
 
   if (this.temple.facilities_offered && this.temple.facilities_offered.length > 0) {
     this.temple.facilities_offered.forEach(facility => {
-      formData.append('facilities_offered', facility);
+      const clean = String(facility).replace(/^[\[\]"'\\]+|[\[\]"'\\]+$/g, '').trim();
+      if (clean) formData.append('facilities_offered', clean);
     });
   }
 

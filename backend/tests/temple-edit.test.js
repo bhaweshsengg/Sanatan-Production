@@ -157,3 +157,58 @@ test('updateTemple prunes old image and saves new image when editing', async () 
   await prisma.templeImage.deleteMany({ where: { templeId: temple.id } });
   await prisma.temple.delete({ where: { id: temple.id } });
 });
+
+test('updateTemple unwraps and cleans deeply nested escaped service_offered and facilities_offered', async () => {
+  const { prisma } = await import('../src/config/db.js');
+  const { updateTemple } = await import('../src/controllers/temple.controller.js');
+
+  const city = await prisma.city.findFirst();
+  const deity = await prisma.deity.findFirst();
+
+  const temple = await prisma.temple.create({
+
+    data: {
+      mandir_name: 'Test Nested Services Temple',
+      full_address: '456 Nested Road',
+      cityId: city.id,
+      year_established: 2005,
+      mainDeityId: deity.id,
+      description: 'Testing nested services cleanup',
+      phone_no: '+64 9 111 2222',
+      email: 'nested@example.com',
+      website: '',
+      opening_hours: '09:00 - 17:00',
+      service_offered: '["[\\"[\'\\\\\\\"daily Aarti\\\\\\\"\\\']\\"]"]',
+      facilities_offered: '["[\\"[\'\\\\\\\"parking\\\\\\\"\\\']\\"]"]',
+      your_name: 'Tester',
+      your_email: 'tester@example.com',
+      location: 'Test City',
+    }
+  });
+
+  let responseStatus = 200;
+  let responseData = null;
+  const mockRes = {
+    status(s) { responseStatus = s; return this; },
+    json(payload) { responseData = payload; return this; }
+  };
+
+  const mockReq = {
+    params: { id: String(temple.id) },
+    body: {
+      service_offered: ['["daily Aarti"]'],
+      facilities_offered: ['parking', 'kitchen'],
+    }
+  };
+
+  await updateTemple(mockReq, mockRes);
+
+  assert.equal(responseStatus, 200);
+  assert.equal(responseData?.success, true);
+  assert.deepEqual(responseData?.data?.service_offered, ['daily Aarti']);
+  assert.deepEqual(responseData?.data?.facilities_offered, ['parking', 'kitchen']);
+
+  // Cleanup
+  await prisma.temple.delete({ where: { id: temple.id } });
+});
+

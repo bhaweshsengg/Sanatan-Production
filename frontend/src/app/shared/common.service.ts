@@ -168,25 +168,68 @@ transformToAPIPayload(temple: Temple): TempleAPIPayload {
   }
 
 
- transformFromAPIResponse(apiTemple: any): Temple {
-  if (!apiTemple) return null as any;
-  const cityId = Number(apiTemple.city_id ?? apiTemple.cityId ?? apiTemple.city?.id ?? 0);
-  const mainDeityId = Number(apiTemple.main_deity_id ?? apiTemple.mainDeityId ?? apiTemple.main_deity?.id ?? apiTemple.mainDeity?.id ?? 0);
+  private parseListItems(value: any): string[] {
+    if (!value) return [];
+    const results: string[] = [];
 
-  return {
-    ...apiTemple,
-    city_id: cityId,
-    main_deity_id: mainDeityId,
-    city: apiTemple.city,
-    main_deity: apiTemple.main_deity || apiTemple.mainDeity,
-    service_offered: typeof apiTemple.service_offered === 'string' 
-      ? apiTemple.service_offered.split(', ').filter((s: string) => s.trim() !== '')
-      : apiTemple.service_offered || [],
-    facilities_offered: typeof apiTemple.facilities_offered === 'string'
-      ? apiTemple.facilities_offered.split(', ').filter((f: string) => f.trim() !== '')
-      : apiTemple.facilities_offered || [],
-  };
-}
+    const unwrap = (v: any): void => {
+      if (v === null || v === undefined) return;
+      if (Array.isArray(v)) {
+        v.forEach(unwrap);
+        return;
+      }
+      if (typeof v === 'string') {
+        const trimmed = v.trim();
+        if (!trimmed) return;
+        if (
+          (trimmed.startsWith('[') && trimmed.endsWith(']')) ||
+          (trimmed.startsWith('"') && trimmed.endsWith('"')) ||
+          (trimmed.startsWith('{') && trimmed.endsWith('}'))
+        ) {
+          try {
+            unwrap(JSON.parse(trimmed));
+            return;
+          } catch {
+            // fall through to regex cleanup
+          }
+        }
+        const cleaned = trimmed
+          .replace(/^[\[\]"'\\]+|[\[\]"'\\]+$/g, '')
+          .replace(/\\+["']/g, '')
+          .replace(/\\+/g, '')
+          .trim();
+        if (cleaned) {
+          if (cleaned.includes(',')) {
+            cleaned.split(',').forEach(unwrap);
+          } else {
+            results.push(cleaned);
+          }
+        }
+      } else {
+        results.push(String(v).trim());
+      }
+    };
+
+    unwrap(value);
+    return Array.from(new Set(results.map(s => s.trim()).filter(Boolean)));
+  }
+
+  transformFromAPIResponse(apiTemple: any): Temple {
+    if (!apiTemple) return null as any;
+    const cityId = Number(apiTemple.city_id ?? apiTemple.cityId ?? apiTemple.city?.id ?? 0);
+    const mainDeityId = Number(apiTemple.main_deity_id ?? apiTemple.mainDeityId ?? apiTemple.main_deity?.id ?? apiTemple.mainDeity?.id ?? 0);
+
+    return {
+      ...apiTemple,
+      city_id: cityId,
+      main_deity_id: mainDeityId,
+      city: apiTemple.city,
+      main_deity: apiTemple.main_deity || apiTemple.mainDeity,
+      service_offered: this.parseListItems(apiTemple.service_offered),
+      facilities_offered: this.parseListItems(apiTemple.facilities_offered),
+    };
+  }
+
 
   // Ensure URL has proper format
 ensureValidURL(url: string): string {

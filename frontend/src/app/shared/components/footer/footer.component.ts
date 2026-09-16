@@ -60,7 +60,7 @@ import { RouterModule } from '@angular/router';
                 <span class="mr-2">🕐</span> Hindu Time
               </a></li>
               <li><a routerLink="/religiouscontents" class="text-gray-400 hover:text-white transition-colors flex items-center">
-                <span class="mr-2">📿</span> Religious Contents
+                <span class="mr-2">📿</span> Blog &amp; Religious Contents
               </a></li>
               <li><a routerLink="/about" class="text-gray-400 hover:text-white transition-colors flex items-center">
                 <span class="mr-2">ℹ️</span> About Us

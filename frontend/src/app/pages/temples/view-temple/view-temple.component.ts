@@ -570,7 +570,7 @@ interface ApiTemple {
                   </div>
                   <div *ngIf="temple?.phone_no">
                     <label
-                      class="peer-disabled:cursor-not-allowed peer极速:opacity-70 text-sm font-medium text-gray-700"
+                      class="peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-sm font-medium text-gray-700"
                       >Phone</label
                     >
                     <p class="text-sm text-black-700">{{ temple?.phone_no }}</p>
@@ -586,7 +586,7 @@ interface ApiTemple {
                   </div>
                   <div *ngIf="temple?.email">
                     <label
-                      class="peer-disabled:cursor-not-allowed peer-disabled:opacity-70极速 text-sm font-medium text-gray极速"
+                      class="peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-sm font-medium text-gray-700"
                       >Email</label
                     >
                     <p class="text-sm text-black-700">
@@ -739,10 +739,32 @@ export class ViewTempleComponent implements OnInit {
   }
 
   formatServiceName(service: string): string {
-    return service.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+    if (!service) return '';
+    const cleaned = String(service)
+      .replace(/^[\[\]"'\\]+|[\[\]"'\\]+$/g, '')
+      .replace(/\\+["']/g, '')
+      .replace(/\\+/g, '')
+      .trim();
+    return cleaned
+      .replace(/[_-]+/g, ' ')
+      .split(' ')
+      .filter(Boolean)
+      .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+      .join(' ');
   }
 
   formatFacilityName(facility: string): string {
-    return facility.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+    if (!facility) return '';
+    const cleaned = String(facility)
+      .replace(/^[\[\]"'\\]+|[\[\]"'\\]+$/g, '')
+      .replace(/\\+["']/g, '')
+      .replace(/\\+/g, '')
+      .trim();
+    return cleaned
+      .replace(/[_-]+/g, ' ')
+      .split(' ')
+      .filter(Boolean)
+      .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+      .join(' ');
   }
 }

@@ -37,6 +37,12 @@ enum EventStatus {
   Completed
 }
 
+enum BlogStatus {
+  Draft
+  Published
+  Archived
+}
+
 model User {
   id            Int      @id @default(autoincrement())
   username      String   @unique
@@ -53,6 +59,7 @@ model User {
   events Event[] @relation("EventOrganizer")
   reviewedEvents Event[] @relation("EventReviewer")
   eventAttendances EventAttendee[]
+  blogPosts BlogPost[] @relation("BlogAuthor")
 }
 
 model City {
@@ -257,4 +264,29 @@ model EventAttendee {
   @@index([eventId])
   @@index([userId])
   @@map("community_event_attendee")
+}
+
+model BlogPost {
+  id          Int        @id @default(autoincrement())
+  title       String
+  slug        String?    @unique
+  category    String
+  excerpt     String     @db.Text
+  content     String     @db.LongText
+  imageUrl    String?    @db.VarChar(2048)
+  authorName  String     @map("author_name")
+  authorId    Int?       @map("author_id")
+  status      BlogStatus @default(Draft)
+  tags        String?    @db.Text
+  readTime    String?    @map("read_time")
+  publishedAt DateTime?  @map("published_at")
+  createdAt   DateTime   @default(now()) @map("created_at")
+  updatedAt   DateTime   @updatedAt @map("updated_at")
+
+  author      User?      @relation("BlogAuthor", fields: [authorId], references: [id], onDelete: SetNull)
+
+  @@index([status])
+  @@index([category])
+  @@index([authorId])
+  @@map("blog_post")
 }

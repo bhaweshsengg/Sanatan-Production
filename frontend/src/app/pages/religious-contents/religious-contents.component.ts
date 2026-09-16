@@ -1,7 +1,25 @@
-import { Component } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { HttpClient } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
+import { environment } from '../../../environments/environment';
+
+export interface PublicBlogPost {
+  id: number;
+  title: string;
+  slug?: string;
+  category: string;
+  excerpt: string;
+  content: string;
+  imageUrl?: string | null;
+  authorName: string;
+  tags?: string | null;
+  readTime?: string | null;
+  publishedAt?: string | null;
+  createdAt: string;
+  author?: { username: string };
+}
 
 export interface ReligiousContentItem {
   id: string;
@@ -31,9 +49,9 @@ export interface ReligiousContentItem {
           <div class="inline-flex items-center justify-center w-14 h-14 bg-white/15 backdrop-blur-sm rounded-full mb-4 shadow-inner text-2xl">
             🕉️
           </div>
-          <h1 class="text-3xl md:text-5xl font-extrabold mb-4 tracking-tight">Sanatan Religious Contents</h1>
+          <h1 class="text-3xl md:text-5xl font-extrabold mb-4 tracking-tight">Sanatan Blog &amp; Spiritual Wisdom</h1>
           <p class="text-lg md:text-xl text-orange-100 mb-8 max-w-3xl mx-auto font-light">
-            Explore sacred Vedic mantras, chalisas, devotional stotrams, and eternal scriptures of Sanatan Dharma
+            In-depth spiritual articles, philosophical insights, Vedic scriptures, and devotional treasures of Sanatan Dharma
           </p>
 
           <!-- Search & Filter Controls -->
@@ -41,7 +59,7 @@ export interface ReligiousContentItem {
             <div class="relative flex-grow w-full">
               <input
                 type="text"
-                placeholder="Search by mantra name, deity, Sanskrit text, or meaning..."
+                placeholder="Search articles, philosophy, scriptures, deities, or keywords..."
                 class="w-full pl-10 pr-4 py-3 rounded-lg bg-white text-gray-800 placeholder-gray-400 border border-transparent shadow-lg focus:outline-none focus:ring-2 focus:ring-orange-300 transition-colors text-sm"
                 [(ngModel)]="searchTerm"
                 (input)="filterContents()"
@@ -57,252 +75,364 @@ export interface ReligiousContentItem {
                 (change)="filterContents()"
               >
                 <option value="All">All Categories</option>
-                <option value="Mantras">Sacred Mantras</option>
-                <option value="Chalisas">Chalisas</option>
-                <option value="Stotrams">Devotional Stotrams</option>
+                <!-- Blog Categories -->
+                <option value="Philosophy">Philosophy</option>
                 <option value="Scriptures">Sacred Scriptures</option>
+                <option value="Vedic Wisdom">Vedic Wisdom</option>
+                <option value="Traditions & Rituals">Traditions &amp; Rituals</option>
+                <option value="Festival Insights">Festival Insights</option>
+                <option value="Mantras & Meditation">Mantras &amp; Meditation</option>
               </select>
             </div>
           </div>
         </div>
       </header>
 
-      <!-- Main Content Container -->
-      <main class="py-12">
+      <!-- Main Navigation Tabs & Container -->
+      <main class="py-10">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <!-- Summary & Quick Navigation -->
-          <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
-            <div>
-              <h2 class="text-2xl font-bold text-gray-900">
-                {{ filteredContents.length }} {{ filteredContents.length === 1 ? 'Sacred Text' : 'Sacred Texts' }} Available
-              </h2>
-              <p class="text-sm text-gray-500 mt-0.5">
-                Authentic scriptures, shlokas, and devotional prayers for daily recitation
-              </p>
+          <!-- View Mode Tabs -->
+          <div class="flex flex-col sm:flex-row items-center justify-between gap-4 border-b border-gray-200 pb-5 mb-8">
+            <div class="flex items-center gap-2 bg-gray-100 p-1.5 rounded-xl border border-gray-200 shadow-inner">
+              <button
+                type="button"
+                (click)="activeTab = 'blogs'"
+                class="px-5 py-2.5 rounded-lg text-sm font-semibold transition-all flex items-center gap-2"
+                [ngClass]="activeTab === 'blogs' ? 'bg-white text-orange-700 shadow-md transform scale-[1.02]' : 'text-gray-600 hover:text-gray-900'"
+              >
+                <span>📰</span>
+                <span>Articles &amp; Blog Posts ({{ filteredBlogs.length }})</span>
+              </button>
+
+              <button
+                type="button"
+                (click)="activeTab = 'devotional'"
+                class="px-5 py-2.5 rounded-lg text-sm font-semibold transition-all flex items-center gap-2"
+                [ngClass]="activeTab === 'devotional' ? 'bg-white text-orange-700 shadow-md transform scale-[1.02]' : 'text-gray-600 hover:text-gray-900'"
+              >
+                <span>📿</span>
+                <span>Sacred Devotional Wisdom ({{ filteredDevotionalItems.length }})</span>
+              </button>
             </div>
+
             <div class="flex items-center gap-2">
               <a
+                routerLink="/festival"
+                class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-white hover:bg-gray-50 text-gray-700 font-medium text-xs border border-gray-300 shadow-sm transition"
+              >
+                <span>🪔</span>
+                <span>Festivals</span>
+              </a>
+              <a
                 routerLink="/panchang"
-                class="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-orange-600 hover:bg-orange-700 text-white font-semibold text-xs transition shadow-sm"
+                class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-orange-600 hover:bg-orange-700 text-white font-semibold text-xs shadow-sm transition"
               >
                 <span>📅</span>
                 <span>Live Panchang</span>
               </a>
-              <a
-                routerLink="/festival"
-                class="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-white hover:bg-gray-100 text-gray-700 font-medium text-xs border border-gray-300 transition shadow-sm"
+            </div>
+          </div>
+
+          <!-- TAB 1: ARTICLES & BLOG POSTS -->
+          <section *ngIf="activeTab === 'blogs'">
+            <!-- Loading State -->
+            <div *ngIf="loadingBlogs" class="py-20 text-center text-gray-500">
+              <div class="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-orange-600 border-r-transparent mb-3"></div>
+              <p class="text-sm font-medium">Loading sacred blog posts...</p>
+            </div>
+
+            <!-- Blog Posts Grid -->
+            <div *ngIf="!loadingBlogs && filteredBlogs.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              <article
+                *ngFor="let post of filteredBlogs"
+                (click)="openBlogModal(post)"
+                class="group flex flex-col bg-white rounded-2xl overflow-hidden border border-gray-200/80 shadow-sm hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 cursor-pointer"
               >
-                <span>🪔</span>
-                <span>Festival Calendar</span>
-              </a>
+                <!-- Featured Image -->
+                <div class="relative h-52 w-full overflow-hidden bg-gradient-to-tr from-orange-100 to-amber-50">
+                  <img
+                    *ngIf="post.imageUrl"
+                    [src]="resolveImageUrl(post.imageUrl)"
+                    [alt]="post.title"
+                    (error)="onImageError($event)"
+                    class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                  />
+                  <div *ngIf="!post.imageUrl" class="h-full w-full flex items-center justify-center text-5xl opacity-40">
+                    🪔
+                  </div>
+                  <!-- Category Badge -->
+                  <div class="absolute top-3 left-3">
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-white/95 text-orange-800 shadow-sm backdrop-blur-sm">
+                      {{ post.category }}
+                    </span>
+                  </div>
+                </div>
+
+                <!-- Card Content -->
+                <div class="flex-1 p-6 flex flex-col justify-between">
+                  <div>
+                    <!-- Meta Info -->
+                    <div class="flex items-center gap-3 text-xs text-gray-400 mb-2">
+                      <span class="flex items-center gap-1">
+                        <span>📅</span>
+                        <span>{{ post.publishedAt ? (post.publishedAt | date:'mediumDate') : (post.createdAt | date:'mediumDate') }}</span>
+                      </span>
+                      <span>•</span>
+                      <span class="flex items-center gap-1">
+                        <span>⏱️</span>
+                        <span>{{ post.readTime || '4 min read' }}</span>
+                      </span>
+                    </div>
+
+                    <!-- Title -->
+                    <h2 class="text-xl font-bold text-gray-900 group-hover:text-orange-600 transition-colors line-clamp-2 mb-2 leading-snug">
+                      {{ post.title }}
+                    </h2>
+
+                    <!-- Excerpt -->
+                    <p class="text-sm text-gray-600 line-clamp-3 leading-relaxed">
+                      {{ post.excerpt }}
+                    </p>
+                  </div>
+
+                  <!-- Card Footer -->
+                  <div class="mt-6 pt-4 border-t border-gray-100 flex items-center justify-between">
+                    <div class="flex items-center gap-2 text-xs font-medium text-gray-700">
+                      <div class="w-6 h-6 rounded-full bg-orange-100 text-orange-700 flex items-center justify-center font-bold text-[10px]">
+                        ✍️
+                      </div>
+                      <span class="line-clamp-1">{{ post.authorName }}</span>
+                    </div>
+
+                    <span class="text-xs font-semibold text-orange-600 group-hover:translate-x-1 transition-transform flex items-center gap-1">
+                      Read More <span>→</span>
+                    </span>
+                  </div>
+                </div>
+              </article>
             </div>
-          </div>
 
-          <!-- Category Filter Pills -->
-          <div class="flex flex-wrap gap-2 mb-8">
-            <button
-              *ngFor="let cat of categories"
-              (click)="setCategory(cat)"
-              class="px-4 py-1.5 rounded-full text-xs font-semibold transition shadow-sm"
-              [ngClass]="selectedCategory === cat ? 'bg-orange-600 text-white' : 'bg-white text-gray-700 hover:bg-orange-50 border border-gray-200'"
-            >
-              {{ cat }}
-            </button>
-          </div>
-
-          <!-- Empty State -->
-          <div *ngIf="filteredContents.length === 0" class="py-16 text-center bg-white rounded-2xl border border-gray-200 shadow-sm p-8 max-w-xl mx-auto">
-            <div class="text-5xl mb-4">🕉️</div>
-            <h3 class="text-xl font-bold text-gray-800 mb-2">No Contents Found</h3>
-            <p class="text-gray-500 mb-6 text-sm">
-              No religious texts matched your search query. Try clearing your search term or selecting a different category.
-            </p>
-            <button
-              (click)="resetFilters()"
-              class="px-4 py-2 rounded-lg bg-orange-600 text-white font-medium text-sm hover:bg-orange-700 transition"
-            >
-              Reset Filters
-            </button>
-          </div>
-
-          <!-- Content Cards Grid -->
-          <div *ngIf="filteredContents.length > 0" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-8">
-            <div
-              *ngFor="let item of filteredContents"
-              class="group bg-white rounded-2xl shadow-sm hover:shadow-xl border border-gray-200 transition-all duration-300 overflow-hidden flex flex-col justify-between"
-            >
-              <div class="p-6">
-                <!-- Header with Category & Deity -->
-                <div class="flex items-center justify-between gap-2 mb-3">
-                  <span class="bg-orange-100 text-orange-800 text-xs font-semibold px-2.5 py-0.5 rounded-full border border-orange-200/70">
-                    {{ item.category }}
-                  </span>
-                  <span class="text-xs text-gray-500 font-medium truncate">
-                    {{ item.deity }}
-                  </span>
-                </div>
-
-                <!-- Title & Sanskrit Name -->
-                <h3 class="text-xl font-bold text-gray-900 group-hover:text-orange-600 transition-colors mb-1">
-                  {{ item.title }}
-                </h3>
-                <p class="text-sm font-serif text-orange-700 font-semibold mb-4">
-                  {{ item.sanskritTitle }}
-                </p>
-
-                <!-- Sanskrit Shloka Box -->
-                <div class="bg-orange-50/70 border border-orange-100 rounded-xl p-4 mb-4 text-center relative group/box">
-                  <p class="font-serif text-base text-orange-950 leading-relaxed whitespace-pre-line font-medium">
-                    {{ item.sanskritText }}
-                  </p>
-                  <button
-                    type="button"
-                    (click)="copyToClipboard(item.sanskritText, item.id)"
-                    class="absolute top-2 right-2 text-xs bg-white/80 hover:bg-white text-orange-700 border border-orange-200 px-2 py-0.5 rounded shadow-sm transition"
-                    title="Copy Sanskrit Verse"
-                  >
-                    {{ copiedId === item.id ? '✓ Copied' : '📋 Copy' }}
-                  </button>
-                </div>
-
-                <!-- Transliteration -->
-                <div class="mb-3">
-                  <h4 class="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-1">Transliteration:</h4>
-                  <p class="text-xs text-gray-600 italic leading-relaxed">
-                    {{ item.transliteration }}
-                  </p>
-                </div>
-
-                <!-- English Meaning -->
-                <div class="mb-3">
-                  <h4 class="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-1">Meaning:</h4>
-                  <p class="text-xs text-gray-700 line-clamp-3 leading-relaxed">
-                    {{ item.englishMeaning }}
-                  </p>
-                </div>
-
-                <!-- Source & Recitation Timing -->
-                <div class="pt-3 border-t border-gray-100 text-[11px] text-gray-500 flex items-center justify-between gap-2">
-                  <span class="truncate">📖 {{ item.source }}</span>
-                  <span *ngIf="item.bestTimeToChant" class="truncate text-orange-600 font-medium">
-                    ⏰ {{ item.bestTimeToChant }}
-                  </span>
-                </div>
-              </div>
-
-              <!-- Card Action -->
-              <div class="p-6 pt-0">
-                <button
-                  type="button"
-                  (click)="openModal(item)"
-                  class="w-full inline-flex items-center justify-center gap-1.5 bg-orange-600 hover:bg-orange-700 text-white font-semibold text-xs py-2.5 px-4 rounded-lg transition shadow-sm"
-                >
-                  <span>📖</span>
-                  <span>Read Full Sacred Text &amp; Significance</span>
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </main>
-
-      <!-- Detail Modal -->
-      <div
-        *ngIf="selectedItem"
-        class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto"
-        (click)="closeModal()"
-      >
-        <div
-          class="bg-white w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden my-8 relative max-h-[90vh] flex flex-col"
-          (click)="$event.stopPropagation()"
-        >
-          <!-- Modal Header -->
-          <div class="bg-gradient-to-r from-orange-600 to-amber-600 p-6 text-white flex-shrink-0 relative">
-            <button
-              type="button"
-              (click)="closeModal()"
-              class="absolute top-4 right-4 bg-black/30 hover:bg-black/50 text-white rounded-full p-2 transition focus:outline-none"
-              aria-label="Close modal"
-            >
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-              </svg>
-            </button>
-            <span class="inline-block bg-white/20 backdrop-blur-sm text-xs font-semibold px-2.5 py-0.5 rounded-full mb-2">
-              {{ selectedItem.category }} · {{ selectedItem.deity }}
-            </span>
-            <h3 class="text-2xl font-bold">{{ selectedItem.title }}</h3>
-            <p class="text-lg font-serif text-orange-100 font-semibold mt-1">{{ selectedItem.sanskritTitle }}</p>
-          </div>
-
-          <!-- Modal Body -->
-          <div class="p-6 md:p-8 overflow-y-auto space-y-6 flex-grow">
-            <!-- Sanskrit Verse Box -->
-            <div class="bg-orange-50 border border-orange-200 rounded-xl p-6 text-center relative">
-              <p class="font-serif text-lg md:text-xl text-orange-950 font-bold leading-relaxed whitespace-pre-line">
-                {{ selectedItem.sanskritText }}
+            <!-- Empty State for Blogs -->
+            <div *ngIf="!loadingBlogs && filteredBlogs.length === 0" class="py-16 text-center bg-white rounded-2xl border border-gray-200 shadow-sm p-8">
+              <div class="text-4xl mb-3">📜</div>
+              <h3 class="text-lg font-bold text-gray-900">No blog posts found</h3>
+              <p class="text-sm text-gray-500 mt-1 max-w-md mx-auto">
+                No articles matched your search or category filter. Try clearing filters to view all available spiritual articles.
               </p>
               <button
                 type="button"
-                (click)="copyToClipboard(selectedItem.sanskritText, 'modal')"
-                class="mt-4 inline-flex items-center gap-1.5 px-3 py-1.5 bg-white text-orange-700 border border-orange-300 rounded-lg text-xs font-semibold hover:bg-orange-100 transition shadow-sm"
+                (click)="resetFilters()"
+                class="mt-4 inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-orange-600 hover:bg-orange-700 text-white text-xs font-semibold shadow-sm transition"
               >
-                {{ copiedId === 'modal' ? '✓ Copied to Clipboard' : '📋 Copy Sanskrit Verse' }}
+                Reset Filters
               </button>
             </div>
+          </section>
 
-            <!-- Transliteration -->
-            <div>
-              <h4 class="text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Sanskrit Transliteration:</h4>
-              <p class="text-sm text-gray-700 italic leading-relaxed bg-gray-50 p-4 rounded-xl border border-gray-100 whitespace-pre-line">
-                {{ selectedItem.transliteration }}
-              </p>
+          <!-- TAB 2: SACRED DEVOTIONAL WISDOM (Preserved Mantras, Chalisas, Stotrams) -->
+          <section *ngIf="activeTab === 'devotional'">
+            <div *ngIf="filteredDevotionalItems.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div
+                *ngFor="let item of filteredDevotionalItems"
+                class="bg-white rounded-2xl overflow-hidden border border-gray-200/80 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between"
+              >
+                <div class="p-6">
+                  <div class="flex items-center justify-between gap-2 mb-3">
+                    <span
+                      class="px-2.5 py-0.5 rounded-full text-xs font-semibold"
+                      [ngClass]="{
+                        'bg-orange-100 text-orange-800': item.category === 'Mantras',
+                        'bg-amber-100 text-amber-800': item.category === 'Chalisas',
+                        'bg-red-100 text-red-800': item.category === 'Stotrams',
+                        'bg-emerald-100 text-emerald-800': item.category === 'Scriptures'
+                      }"
+                    >
+                      {{ item.category }}
+                    </span>
+                    <span class="text-xs text-gray-400 font-medium">{{ item.deity }}</span>
+                  </div>
+
+                  <h3 class="text-lg font-bold text-gray-900 mb-1">{{ item.title }}</h3>
+                  <div class="text-sm font-serif text-orange-700 mb-3 font-semibold">{{ item.sanskritTitle }}</div>
+                  <p class="text-xs text-gray-600 line-clamp-2 mb-4 leading-relaxed">{{ item.summary }}</p>
+
+                  <div class="bg-orange-50/70 p-3 rounded-xl border border-orange-100 mb-4 font-serif text-center text-sm text-orange-900 leading-relaxed">
+                    {{ item.sanskritText }}
+                  </div>
+
+                  <p class="text-xs text-gray-600 italic line-clamp-2 leading-relaxed">
+                    "{{ item.englishMeaning }}"
+                  </p>
+                </div>
+
+                <div class="p-4 bg-gray-50 border-t border-gray-100 flex items-center justify-between">
+                  <button
+                    type="button"
+                    (click)="copySanskrit(item)"
+                    class="text-xs text-gray-500 hover:text-orange-600 flex items-center gap-1 font-medium transition"
+                  >
+                    <span>📋</span>
+                    <span>{{ copiedId === item.id ? 'Copied Sanskrit!' : 'Copy Sanskrit' }}</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    (click)="openDevotionalModal(item)"
+                    class="text-xs font-semibold text-orange-600 hover:text-orange-700 flex items-center gap-1 transition"
+                  >
+                    <span>Read Prayer</span>
+                    <span>→</span>
+                  </button>
+                </div>
+              </div>
             </div>
+          </section>
+        </div>
+      </main>
 
-            <!-- English Meaning -->
-            <div>
-              <h4 class="text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">English Meaning &amp; Translation:</h4>
-              <p class="text-sm text-gray-700 leading-relaxed bg-gray-50 p-4 rounded-xl border border-gray-100 whitespace-pre-line">
-                {{ selectedItem.englishMeaning }}
-              </p>
+      <!-- MODAL: FULL BLOG POST READER -->
+      <div *ngIf="selectedBlog" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+        <div class="w-full max-w-3xl rounded-2xl bg-white shadow-2xl border border-gray-200 max-h-[92vh] flex flex-col overflow-hidden">
+          <!-- Modal Header / Cover Image -->
+          <div class="relative h-64 sm:h-72 w-full bg-gray-900 flex-shrink-0">
+            <img
+              *ngIf="selectedBlog.imageUrl"
+              [src]="resolveImageUrl(selectedBlog.imageUrl)"
+              [alt]="selectedBlog.title"
+              (error)="onImageError($event)"
+              class="h-full w-full object-cover opacity-85"
+            />
+            <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent"></div>
+
+            <!-- Close Button -->
+            <button
+              type="button"
+              (click)="selectedBlog = null"
+              class="absolute top-4 right-4 rounded-full bg-black/50 hover:bg-black/80 p-2 text-white transition backdrop-blur-sm"
+              title="Close Reader"
+            >
+              ✕
+            </button>
+
+            <!-- Title Overlay -->
+            <div class="absolute bottom-4 left-4 right-4 text-white">
+              <span class="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-orange-600 text-white mb-2 shadow">
+                {{ selectedBlog.category }}
+              </span>
+              <h2 class="text-xl sm:text-2xl font-extrabold leading-tight text-white drop-shadow-sm">
+                {{ selectedBlog.title }}
+              </h2>
             </div>
+          </div>
 
-            <!-- Spiritual Significance -->
-            <div>
-              <h4 class="text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Spiritual Significance &amp; Practice:</h4>
-              <p class="text-sm text-gray-700 leading-relaxed whitespace-pre-line">
-                {{ selectedItem.significance }}
-              </p>
-            </div>
+          <!-- Modal Body (Scrollable Reading Area) -->
+          <div class="flex-1 overflow-y-auto p-6 sm:p-8 space-y-6">
+            <!-- Author & Metadata Bar -->
+            <div class="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-gray-100 text-xs text-gray-500">
+              <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-full bg-orange-100 text-orange-700 flex items-center justify-center font-bold text-sm">
+                  ✍️
+                </div>
+                <div>
+                  <div class="font-semibold text-gray-900 text-sm">{{ selectedBlog.authorName }}</div>
+                  <div class="text-gray-400">Published on {{ selectedBlog.publishedAt ? (selectedBlog.publishedAt | date:'longDate') : (selectedBlog.createdAt | date:'longDate') }}</div>
+                </div>
+              </div>
 
-            <!-- Additional Verses (if any) -->
-            <div *ngIf="selectedItem.verses && selectedItem.verses.length > 0" class="space-y-4">
-              <h4 class="text-xs font-bold uppercase tracking-wider text-gray-500">Key Verses &amp; Stanzas:</h4>
-              <div *ngFor="let verse of selectedItem.verses; let i = index" class="p-4 bg-orange-50/50 rounded-xl border border-orange-100 space-y-2">
-                <p class="font-serif text-sm font-bold text-orange-950">{{ verse.sanskrit }}</p>
-                <p class="text-xs italic text-gray-600">{{ verse.transliteration }}</p>
-                <p class="text-xs text-gray-700">{{ verse.english }}</p>
+              <div class="flex items-center gap-3">
+                <span class="rounded-lg bg-gray-100 px-3 py-1.5 font-medium text-gray-700">
+                  ⏱️ {{ selectedBlog.readTime || '4 min read' }}
+                </span>
+                <button
+                  type="button"
+                  (click)="copyArticleLink()"
+                  class="rounded-lg border border-gray-300 hover:bg-gray-50 px-3 py-1.5 font-medium text-gray-700 transition"
+                >
+                  {{ isLinkCopied ? 'Link Copied! ✓' : 'Share Article 🔗' }}
+                </button>
               </div>
             </div>
 
-            <!-- Metadata Box -->
-            <div class="bg-amber-50/60 border border-amber-200/70 rounded-xl p-4 text-xs text-gray-700 flex flex-wrap items-center justify-between gap-2">
-              <div>
-                <span class="font-semibold text-gray-900">Scriptural Source:</span> {{ selectedItem.source }}
-              </div>
-              <div *ngIf="selectedItem.bestTimeToChant">
-                <span class="font-semibold text-gray-900">Auspicious Timing:</span> {{ selectedItem.bestTimeToChant }}
+            <!-- Excerpt Callout -->
+            <div class="rounded-xl bg-orange-50/80 border-l-4 border-orange-500 p-4 text-sm font-medium text-orange-950 italic">
+              "{{ selectedBlog.excerpt }}"
+            </div>
+
+            <!-- Multi-Paragraph Formatted Article Content -->
+            <div class="space-y-4 text-base text-gray-700 font-serif leading-relaxed">
+              <p *ngFor="let paragraph of getFormattedParagraphs(selectedBlog.content)">
+                {{ paragraph }}
+              </p>
+            </div>
+
+            <!-- Tags -->
+            <div *ngIf="selectedBlog.tags" class="pt-4 border-t border-gray-100">
+              <div class="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-2">Topic Tags</div>
+              <div class="flex flex-wrap gap-1.5">
+                <span *ngFor="let tag of getTagsList(selectedBlog.tags)" class="rounded-md bg-gray-100 px-2.5 py-1 text-xs text-gray-600 font-sans">
+                  #{{ tag }}
+                </span>
               </div>
             </div>
           </div>
 
           <!-- Modal Footer -->
-          <div class="p-4 bg-gray-50 border-t border-gray-100 flex items-center justify-between flex-shrink-0">
-            <span class="text-xs text-gray-500">Om Shanti Shanti Shanti 🕉️</span>
+          <div class="p-4 bg-gray-50 border-t border-gray-100 flex items-center justify-between">
+            <span class="text-xs text-gray-400 font-sans">Sanatan New Zealand Community Portal</span>
             <button
               type="button"
-              (click)="closeModal()"
-              class="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white text-xs font-semibold rounded-lg transition shadow-sm"
+              (click)="selectedBlog = null"
+              class="rounded-lg bg-gray-800 hover:bg-gray-900 text-white px-4 py-2 text-xs font-semibold transition font-sans"
+            >
+              Back to Articles
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- MODAL: DEVOTIONAL TEXT READER -->
+      <div *ngIf="selectedDevotionalItem" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+        <div class="w-full max-w-2xl rounded-2xl bg-white p-6 shadow-2xl border border-gray-200 max-h-[90vh] flex flex-col">
+          <div class="flex items-center justify-between pb-4 border-b border-gray-200">
+            <div>
+              <span class="text-xs font-semibold uppercase tracking-wider text-orange-600">{{ selectedDevotionalItem.category }}</span>
+              <h3 class="text-xl font-bold text-gray-900 mt-0.5">{{ selectedDevotionalItem.title }}</h3>
+              <div class="text-sm font-serif text-orange-700 font-semibold">{{ selectedDevotionalItem.sanskritTitle }}</div>
+            </div>
+            <button (click)="selectedDevotionalItem = null" class="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100">✕</button>
+          </div>
+
+          <div class="flex-1 overflow-y-auto py-4 space-y-4 text-sm">
+            <div class="bg-orange-50 p-4 rounded-xl border border-orange-200 text-center font-serif text-base text-orange-950 whitespace-pre-line leading-relaxed">
+              {{ selectedDevotionalItem.sanskritText }}
+            </div>
+
+            <div>
+              <h4 class="font-bold text-gray-900 mb-1">Transliteration</h4>
+              <p class="text-xs text-gray-700 italic bg-gray-50 p-3 rounded-lg border border-gray-200 leading-relaxed">
+                {{ selectedDevotionalItem.transliteration }}
+              </p>
+            </div>
+
+            <div>
+              <h4 class="font-bold text-gray-900 mb-1">English Meaning</h4>
+              <p class="text-xs text-gray-700 bg-gray-50 p-3 rounded-lg border border-gray-200 leading-relaxed">
+                {{ selectedDevotionalItem.englishMeaning }}
+              </p>
+            </div>
+
+            <div>
+              <h4 class="font-bold text-gray-900 mb-1">Spiritual Significance</h4>
+              <p class="text-xs text-gray-600 leading-relaxed">
+                {{ selectedDevotionalItem.significance }}
+              </p>
+            </div>
+          </div>
+
+          <div class="pt-4 border-t border-gray-200 flex justify-end">
+            <button
+              (click)="selectedDevotionalItem = null"
+              class="rounded-lg bg-orange-600 text-white px-4 py-2 text-xs font-semibold hover:bg-orange-700"
             >
               Close
             </button>
@@ -312,168 +442,176 @@ export interface ReligiousContentItem {
     </div>
   `,
 })
-export class ReligiousContentsComponent {
-  categories: Array<'All' | 'Mantras' | 'Chalisas' | 'Stotrams' | 'Scriptures'> = [
-    'All',
-    'Mantras',
-    'Chalisas',
-    'Stotrams',
-    'Scriptures',
-  ];
+export class ReligiousContentsComponent implements OnInit {
+  private http = inject(HttpClient);
+  private apiUrl = environment.apiBaseUrl;
 
-  selectedCategory: string = 'All';
-  searchTerm: string = '';
-  selectedItem: ReligiousContentItem | null = null;
+  activeTab: 'blogs' | 'devotional' = 'blogs';
+
+  blogs: PublicBlogPost[] = [];
+  filteredBlogs: PublicBlogPost[] = [];
+  loadingBlogs = true;
+
+  searchTerm = '';
+  selectedCategory = 'All';
+
+  selectedBlog: PublicBlogPost | null = null;
+  selectedDevotionalItem: ReligiousContentItem | null = null;
+
   copiedId: string | null = null;
+  isLinkCopied = false;
 
-  items: ReligiousContentItem[] = [
+  // Preserved authentic Sanatan Devotional Wisdom
+  devotionalItems: ReligiousContentItem[] = [
     {
       id: 'gayatri-mantra',
       title: 'Gayatri Mantra',
       sanskritTitle: 'गायत्री मन्त्र',
       category: 'Mantras',
-      deity: 'Savita / Goddess Gayatri',
-      source: 'Rigveda (Mandala 3, Sukta 62, Verse 10)',
-      summary: 'The supreme universal prayer of Sanatan Dharma for illumination of intellect and divine wisdom.',
+      deity: 'Savitr (The Divine Sun)',
+      source: 'Rigveda (Mandala 3.62.10)',
+      summary: 'The supreme Vedic illumination mantra for intellectual wisdom and divine inner light.',
       sanskritText: 'ॐ भूर्भुवः स्वः तत्सवितुर्वरेण्यं\nभर्गो देवस्य धीमहि धियो यो नः प्रचोदयात् ॥',
-      transliteration: 'Om Bhur Bhuvaḥ Svaḥ Tat Savitur Vareṇyaṁ\nBhargo Devasya Dhīmahi Dhiyo Yo Naḥ Pracodayāt ||',
-      englishMeaning: 'We meditate upon the supreme effulgent divine light of Savita (the cosmic creator and solar source). May that divine light illuminate and inspire our intellect and consciousness.',
-      significance: 'Gayatri Mantra is revered as the mother of all Vedic mantras. Regular chanting enhances mental clarity, purifies thoughts, bestows spiritual wisdom, and awakens supreme divine consciousness.',
-      bestTimeToChant: 'Brahma Muhurta (dawn), midday, and dusk (Sandhya)',
+      transliteration: 'Oṃ bhūr bhuvaḥ svaḥ tat-savitur vareṇyaṃ bhargo devasya dhīmahi dhiyo yo naḥ pracodayāt ||',
+      englishMeaning: 'We meditate upon that supreme radiant glory of the divine Sun, the illuminator of all realms. May that sacred light awaken and inspire our intellect.',
+      significance: 'Chanted at dawn (Brahma Muhurta) to dissolve darkness, purify the intellect, and attune consciousness with universal truth.',
+      bestTimeToChant: 'Sunrise (Pratah Sandhya), Midday (Madhyanha), and Sunset (Sayam Sandhya).',
     },
     {
       id: 'maha-mrityunjaya',
       title: 'Maha Mrityunjaya Mantra',
-      sanskritTitle: 'महामृत्युञ्जय मन्त्र',
+      sanskritTitle: 'महामृत्युंजय मन्त्र',
       category: 'Mantras',
-      deity: 'Lord Shiva (Mahadev)',
-      source: 'Rigveda (Mandala 7, Sukta 59, Verse 12)',
-      summary: 'The life-protecting conqueror of death mantra dedicated to the three-eyed Lord Shiva for healing and liberation.',
-      sanskritText: 'ॐ त्र्यम्बकं यजामहे सुगन्धिं पुष्टिवर्धनम् ।\nउर्वारुकमिव बन्धनान् मृत्योर्मुक्षीय मामृतात् ॥',
-      transliteration: 'Om Tryambakaṁ Yajāmahe Sugandhiṁ Puṣṭivardhanam |\nUrvārukamiva Bandhanān Mṛtyormukṣīya Māmṛtāt ||',
-      englishMeaning: 'We worship the Three-Eyed Lord Shiva, who is fragrant and nourishes all beings. Just as a ripe cucumber effortlessly detaches from the vine, may He liberate us from death and bondage to bestow immortality.',
-      significance: 'Known as the Moksha and healing mantra. Devotees chant it 108 times for physical well-being, freedom from fear, overcoming grave obstacles, and attaining spiritual liberation.',
-      bestTimeToChant: 'Early morning or during evening Shiva Puja',
+      deity: 'Lord Shiva (Tryambaka)',
+      source: 'Rigveda (Mandala 7.59.12)',
+      summary: 'The great death-conquering and healing mantra for liberation from fear, illness, and mortality.',
+      sanskritText: 'ॐ त्र्यम्बकं यजामहे सुगन्धिं पुष्टिवर्धनम् ।\nउर्वारुकमिव बन्धनान्मृत्योर्मुक्षीय मामृतात् ॥',
+      transliteration: 'Oṃ tryambakaṃ yajāmahe sugandhiṃ puṣṭi-vardhanam | urvārukam-iva bandhanān mṛtyor mukṣīya māmṛtāt ||',
+      englishMeaning: 'We worship the three-eyed Lord Shiva, who is fragrant and nourishes all beings. Just as a ripe melon is effortlessly liberated from its vine, may we be liberated from the bondage of mortality unto immortality.',
+      significance: 'Conferred by Sage Markandeya to overcome chronic suffering, fear of mortality, and spiritual bondage.',
+      bestTimeToChant: 'Early morning or during healing prayers (108 times).',
     },
     {
       id: 'hanuman-chalisa',
       title: 'Shri Hanuman Chalisa',
       sanskritTitle: 'श्री हनुमान चालीसा',
       category: 'Chalisas',
-      deity: 'Lord Hanuman (Pawanputra)',
-      source: 'Composed by Goswami Tulsidas (Awadhi/Hindi)',
-      summary: 'Forty sacred chaupais celebrating the boundless devotion, strength, intellect, and protection of Lord Hanuman.',
-      sanskritText: 'जय हनुमान ज्ञान गुन सागर । जय कपीस तिहुँ लोक उजागर ॥\nराम दूत अतुलित बल धामा । अञ्जनि पुत्र पवनसुत नामा ॥',
-      transliteration: 'Jaya Hanumāna Jñāna Guna Sāgara | Jaya Kapīsa Tihu Lok Ujāgara ||\nRāma Dūta Atulita Bala Dhāmā | Añjani Putra Pawanasuta Nāmā ||',
-      englishMeaning: 'Victory to Hanuman, ocean of divine wisdom and virtuous qualities! Victory to the lord among vanaras, who illuminates the three worlds! Messenger of Lord Rama, abode of incomparable strength, son of Anjani and known as Pawansuta.',
-      significance: 'Reciting Hanuman Chalisa dispels negativity, instills courage, removes fear of evil forces, and deepens unshakeable devotion to Lord Rama. It is recited daily by millions of devotees globally.',
-      bestTimeToChant: 'Tuesdays, Saturdays, or daily morning and evening',
-      verses: [
-        {
-          sanskrit: 'सब सुख लहै तुम्हारी सरना । तुम रक्षक काहू को डर ना ॥',
-          transliteration: 'Saba sukha lahai tumhārī saranā | Tuma rakṣaka kāhū ko ḍara nā ||',
-          english: 'All happiness and peace reside in Your shelter; when You are the protector, what fear can there ever be?'
-        },
-        {
-          sanskrit: 'संकट कटै मिटै सब पीरा । जो सुमिरै हनुमत बलबीरा ॥',
-          transliteration: 'Saṅkaṭa kaṭai miṭai saba pīrā | Jo sumirai Hanumata balabīrā ||',
-          english: 'All suffering is severed and all pain dissolves for one who remembers the valiant and heroic Hanuman.'
-        }
-      ]
+      deity: 'Lord Hanuman',
+      source: 'Goswami Tulsidas (Awadhi/Sanskrit)',
+      summary: 'The legendary 40-verse hymn invoking bravery, unwavering devotion, and protection against obstacles.',
+      sanskritText: 'जय हनुमान ज्ञान गुन सागर । जय कपीस तिहुँ लोक उजागर ॥\nराम दूत अतुलित बल धामा । अंजनि पुत्र पवनसुत नामा ॥',
+      transliteration: 'Jaya Hanumāna jñāna guna sāgara | Jaya kapīsa tihu loka ujāgara || Rāma dūta atulita bala dhāmā | Añjani-putra pavanasuta nāmā ||',
+      englishMeaning: 'Victory to Hanuman, ocean of wisdom and virtues! Victory to the lord of the Vanaras, renowned across all three worlds. You are the messenger of Lord Rama, the abode of incomparable strength, born of Anjana and hailed as the son of the Wind.',
+      significance: 'Recited millions of times across the globe on Tuesdays and Saturdays for courage, mental clarity, and overcoming negative influences.',
+      bestTimeToChant: 'Tuesdays and Saturdays, mornings and evenings.',
     },
     {
-      id: 'shiv-tandav-stotram',
+      id: 'shiva-tandava',
       title: 'Shiva Tandava Stotram',
-      sanskritTitle: 'शिव ताण्डव स्तोत्रम्',
+      sanskritTitle: 'शिवताण्डवस्तोत्रम्',
       category: 'Stotrams',
       deity: 'Lord Shiva',
-      source: 'Composed by King Ravana (Uttara Kanda tradition)',
-      summary: 'A rhythmic and poetic hymn describing the divine cosmic dance (Tandava) of Mahadev with ecstatic devotion.',
-      sanskritText: 'जटाटवीगलज्जलप्रवाहपावितस्थले\nगलेऽवलम्ब्य लम्बितां भुजङ्गतुङ्गमालिकाम् ।\nडमड्डमड्डमड्डमन्निनादवड्डमर्वयं\nचकार चण्डताण्डवं तनोतु नः शिवः शिवम् ॥',
-      transliteration: 'Jaṭāṭavīgalajjalapravāhapāvitasthale\nGale\'valambya Lambitāṁ Bhujaṅgatuṅgamālikām |\nḌamaḍḍamaḍḍamaḍḍaman-Ninādavaḍḍamarvayaṁ\nCakāra Caṇḍatāṇḍavaṁ Tanotu Naḥ Śivaḥ Śivam ||',
-      englishMeaning: 'With His sacred neck consecrated by the flow of water cascading from His dense matted hair, and adorned with a garland of serpents hanging around His neck, Lord Shiva performs His fierce Tandava to the rhythmic sound of damaru: may that Shiva bestow auspiciousness upon us!',
-      significance: 'The stotram creates powerful resonant spiritual vibrations, removes inertia, and awakens profound reverence for Lord Shiva as the cosmic regenerator and ultimate consciousness.',
-      bestTimeToChant: 'Mondays, Pradosh Vrat, and Maha Shivaratri',
+      source: 'King Ravana (Sanskrit Metre: Panchachamara)',
+      summary: 'A breathtakingly rhythmic hymn capturing the cosmic dance of creation and dissolution.',
+      sanskritText: 'जटाटवीगलज्जलप्रवाहपावितस्थले\nगलेऽवलम्ब्य लम्बितां भुजङ्गतुङ्गमालिकाम् ।\nडमड्डमड्डमड्डमन्निनादवड्डमर्वयं\nचकार चण्डताण्डवं तनोतु नः शिवः शिवम् ॥ १ ॥',
+      transliteration: 'Jaṭā-ṭavī-gala-jjala-pravāha-pāvita-sthale | gale avalambya lambitāṃ bhujaṅga-tuṅga-mālikām | ḍamad-ḍamad-ḍamad-ḍaman-nināda-vad-ḍamarvayaṃ | cakāra caṇḍa-tāṇḍavaṃ tanotu naḥ śivaḥ śivam || 1 ||',
+      englishMeaning: 'From the forest of His matted locks, where the pure Ganges flows, with the great serpent adorned around His neck, to the reverberating sound of the damaru drum, Lord Shiva performs His cosmic Tandava dance. May He bless us with eternal auspiciousness.',
+      significance: 'Energizes the nervous system and dissolves deep-seated ego through dynamic sound vibrations.',
+      bestTimeToChant: 'Pradosha and Mondays during evening twilight.',
     },
     {
-      id: 'ganesh-atharvashirsha',
-      title: 'Shri Ganesh Atharvashirsha & Shloka',
-      sanskritTitle: 'श्री गणेश अथर्वशीर्ष एवं श्लोक',
-      category: 'Mantras',
-      deity: 'Lord Ganesha (Vighnaharta)',
-      source: 'Atharvaveda (Ganapati Upanishad)',
-      summary: 'Sacred invocation to Lord Ganesha, the embodiment of wisdom, auspicious beginnings, and remover of all obstacles.',
-      sanskritText: 'वक्रतुण्ड महाकाय सूर्यकोटि समप्रभ ।\nनिर्विघ्नं कुरु मे देव सर्वकार्येषु सर्वदा ॥',
-      transliteration: 'Vakratuṇḍa Mahākāya Sūryakoṭi Samaprabha |\nNirvighnaṁ Kuru Me Deva Sarvakāryeṣu Sarvadā ||',
-      englishMeaning: 'O Lord with the curved trunk and immense cosmic form, whose brilliance equals millions of suns: please make all my endeavors free from obstacles, always and forever.',
-      significance: 'Chanted at the inception of all auspicious endeavors, ceremonies, examinations, business launches, and daily prayers to invoke clarity, blessing, and unobstructed success.',
-      bestTimeToChant: 'Every morning and before beginning any new task or voyage',
-    },
-    {
-      id: 'bhagavad-gita-teachings',
+      id: 'bhagavad-gita-core',
       title: 'Shrimad Bhagavad Gita Guide',
-      sanskritTitle: 'श्रीमद्भगवद्गीता सार',
+      sanskritTitle: 'श्रीमद्भगवद्गीता',
       category: 'Scriptures',
-      deity: 'Lord Krishna & Arjuna',
-      source: 'Mahabharata (Bhishma Parva, Chapters 23–40)',
-      summary: 'The timeless dialogue on duty, spiritual realization, selflessness, and liberation delivered by Lord Krishna on the battlefield of Kurukshetra.',
-      sanskritText: 'कर्मण्येवाधिकारस्ते मा फलेषु कदाचन ।\nमा कर्मफलहेतुर्भूर्मा ते सङ्गोऽस्त्वकर्मणि ॥',
-      transliteration: 'Karmaṇyevādhikāraste Mā Phaleṣu Kadācana |\nMā Karmaphalaheturbhūrmā Te Saṅgo\'stvakarmaṇi ||',
-      englishMeaning: 'You have a right only to perform your prescribed duty, but never to the fruits of action. Never consider yourself the cause of the results of your activities, nor be attached to inaction.',
-      significance: 'The Gita is the crest-jewel of Vedic philosophy, harmonizing Karma Yoga (selfless action), Bhakti Yoga (loving devotion), and Jnana Yoga (spiritual knowledge) to guide human life through every crisis.',
-      bestTimeToChant: 'Daily study and contemplation',
-      verses: [
-        {
-          sanskrit: 'यदा यदा हि धर्मस्य ग्लानिर्भवति भारत । अभ्युत्थानमधर्मस्य तदात्मानं सृजाम्यहम् ॥',
-          transliteration: 'Yadā yadā hi dharmasya glānirbhavati bhārata | Abhyutthānamadharmasya tadātmānaṁ sṛjāmyaham ||',
-          english: 'Whenever there is a decline in righteousness and rise in unrighteousness, O Arjuna, at that time I manifest Myself.'
-        },
-        {
-          sanskrit: 'सर्वधर्मान्परित्यज्य मामेकं शरणं व्रज । अहं त्वां सर्वपापेभ्यो मोक्षयिष्यामि मा शुचः ॥',
-          transliteration: 'Sarvadharmānparityajya māmekaṁ śaraṇaṁ vraja | Ahaṁ tvāṁ sarvapāpebhyo mokṣayiṣyāmi mā śucaḥ ||',
-          english: 'Abandon all varieties of dharmas and surrender unto Me alone. I shall deliver you from all sinful reactions; do not grieve.'
-        }
-      ]
+      deity: 'Lord Krishna',
+      source: 'Mahabharata (Bhishma Parva)',
+      summary: 'The eternal guide to Karma Yoga, Bhakti Yoga, and Jnana Yoga in daily modern life.',
+      sanskritText: 'कर्मण्येवाधिकारस्ते मा फलेषु कदाचन ।\nमा कर्मफलहेतुर्भूर्मा ते सङ्गोऽस्त्वकर्मणि ॥ २.४७ ॥',
+      transliteration: 'Karmaṇy evādhikāras te mā phaleṣu kadācana | mā karma-phala-hetur bhūr mā te saṅgo \'stv akarmaṇi || 2.47 ||',
+      englishMeaning: 'You have a right only to perform your prescribed duty, but never to the fruits of action. Never consider yourself the cause of results, nor let your mind be attached to inaction.',
+      significance: 'The cornerstone of righteous, stress-free action in professional, personal, and spiritual pursuits.',
+      bestTimeToChant: 'Daily study and contemplation before undertaking duties.',
     },
     {
       id: 'durga-stuti',
       title: 'Ya Devi Sarvabhuteshu (Durga Stuti)',
-      sanskritTitle: 'या देवी सर्वभूतेषु (दुर्गा स्तुति)',
+      sanskritTitle: 'या देवी सर्वभूतेषु',
       category: 'Stotrams',
-      deity: 'Maa Durga / Adishakti',
-      source: 'Devi Mahatmyam / Markandeya Purana (Aparajita Stuti)',
-      summary: 'Sacred hymn praising the divine mother as the supreme consciousness dwelling in all beings in various divine aspects.',
-      sanskritText: 'या देवी सर्वभूतेषु शक्ति-रूपेण संस्थिता ।\nनमस्तस्यै नमस्तस्यै नमस्तस्यै नमो नमः ॥',
-      transliteration: 'Yā Devī Sarvabhūteṣu Śakti-Rūpeṇa Saṁsthitā |\nNamastasyai Namastasyai Namastasyai Namo Namaḥ ||',
-      englishMeaning: 'To the Divine Goddess who abides in all living beings in the form of Power and Energy: salutations to Her, salutations to Her, salutations to Her, repeated salutations.',
-      significance: 'Chanted during Navratri and daily worship to honor the primordial feminine energy (Shakti) that sustains, protects, and enlightens the universe.',
-      bestTimeToChant: 'Fridays, Navratri, and evening Aarti',
+      deity: 'Maa Durga (Divine Mother)',
+      source: 'Markandeya Purana (Devi Mahatmyam / Chandi Path)',
+      summary: 'The supreme invocation to the Divine Mother present in all beings as consciousness, power, and compassion.',
+      sanskritText: 'या देवी सर्वभूतेषु शक्तिरूपेण संस्थिता ।\nनमस्तस्यै नमस्तस्यै नमस्तस्यै नमो नमः ॥',
+      transliteration: 'Yā devī sarva-bhūteṣu śakti-rūpeṇa saṃsthitā | namas tasyai namas tasyai namas tasyai namo namaḥ ||',
+      englishMeaning: 'To that Divine Goddess who abides in all living beings as the manifestation of primal Energy and Power: Salutations unto Her, salutations unto Her, salutations again and again.',
+      significance: 'Chanted especially during Navratri and Fridays for maternal protection, inner strength, and universal harmony.',
+      bestTimeToChant: 'Fridays and during Navratri celebrations.',
     }
   ];
 
-  filteredContents: ReligiousContentItem[] = [...this.items];
+  filteredDevotionalItems: ReligiousContentItem[] = [];
 
-  setCategory(cat: string): void {
-    this.selectedCategory = cat;
-    this.filterContents();
+  ngOnInit(): void {
+    this.filteredDevotionalItems = [...this.devotionalItems];
+    this.loadPublicBlogs();
+  }
+
+  loadPublicBlogs(): void {
+    this.loadingBlogs = true;
+    this.http.get<any>(`${this.apiUrl}/public/blog?limit=all`).subscribe({
+      next: (res) => {
+        this.blogs = res.data || [];
+        this.filterContents();
+        this.loadingBlogs = false;
+      },
+      error: () => {
+        // Fallback to /blog
+        this.http.get<any>(`${this.apiUrl}/blog?limit=all`).subscribe({
+          next: (res) => {
+            this.blogs = res.data || [];
+            this.filterContents();
+            this.loadingBlogs = false;
+          },
+          error: () => {
+            this.loadingBlogs = false;
+          }
+        });
+      }
+    });
   }
 
   filterContents(): void {
-    const term = this.searchTerm.toLowerCase().trim();
+    const q = this.searchTerm.trim().toLowerCase();
     const cat = this.selectedCategory;
 
-    this.filteredContents = this.items.filter((item) => {
-      const catMatch = cat === 'All' || item.category === cat;
-      const termMatch =
-        !term ||
-        item.title.toLowerCase().includes(term) ||
-        item.sanskritTitle.toLowerCase().includes(term) ||
-        item.deity.toLowerCase().includes(term) ||
-        item.sanskritText.toLowerCase().includes(term) ||
-        item.englishMeaning.toLowerCase().includes(term) ||
-        item.transliteration.toLowerCase().includes(term);
+    // Filter Blogs
+    this.filteredBlogs = this.blogs.filter((blog) => {
+      const matchesSearch =
+        !q ||
+        blog.title.toLowerCase().includes(q) ||
+        blog.excerpt.toLowerCase().includes(q) ||
+        blog.content.toLowerCase().includes(q) ||
+        blog.authorName.toLowerCase().includes(q) ||
+        (blog.tags && blog.tags.toLowerCase().includes(q));
 
-      return catMatch && termMatch;
+      const matchesCat = cat === 'All' || blog.category.toLowerCase() === cat.toLowerCase();
+
+      return matchesSearch && matchesCat;
+    });
+
+    // Filter Devotional Items
+    this.filteredDevotionalItems = this.devotionalItems.filter((item) => {
+      const matchesSearch =
+        !q ||
+        item.title.toLowerCase().includes(q) ||
+        item.sanskritTitle.toLowerCase().includes(q) ||
+        item.deity.toLowerCase().includes(q) ||
+        item.summary.toLowerCase().includes(q) ||
+        item.englishMeaning.toLowerCase().includes(q);
+
+      const matchesCat = cat === 'All' || item.category.toLowerCase() === cat.toLowerCase();
+
+      return matchesSearch && matchesCat;
     });
   }
 
@@ -483,23 +621,58 @@ export class ReligiousContentsComponent {
     this.filterContents();
   }
 
-  openModal(item: ReligiousContentItem): void {
-    this.selectedItem = item;
+  openBlogModal(blog: PublicBlogPost): void {
+    this.selectedBlog = blog;
+    this.isLinkCopied = false;
   }
 
-  closeModal(): void {
-    this.selectedItem = null;
-    this.copiedId = null;
+  openDevotionalModal(item: ReligiousContentItem): void {
+    this.selectedDevotionalItem = item;
   }
 
-  copyToClipboard(text: string, id: string): void {
-    if (navigator.clipboard) {
-      navigator.clipboard.writeText(text).then(() => {
-        this.copiedId = id;
-        setTimeout(() => {
-          if (this.copiedId === id) this.copiedId = null;
-        }, 2500);
-      });
+  getFormattedParagraphs(content: string): string[] {
+    if (!content) return [];
+    return content
+      .split(/\n\s*\n/)
+      .map((p) => p.trim())
+      .filter(Boolean);
+  }
+
+  getTagsList(tags?: string | null): string[] {
+    if (!tags) return [];
+    return tags
+      .split(/[,#\s]+/)
+      .map((t) => t.trim())
+      .filter(Boolean);
+  }
+
+  copySanskrit(item: ReligiousContentItem): void {
+    navigator.clipboard.writeText(item.sanskritText).then(() => {
+      this.copiedId = item.id;
+      setTimeout(() => (this.copiedId = null), 2500);
+    });
+  }
+
+  copyArticleLink(): void {
+    const url = window.location.href;
+    navigator.clipboard.writeText(url).then(() => {
+      this.isLinkCopied = true;
+      setTimeout(() => (this.isLinkCopied = false), 2500);
+    });
+  }
+
+  resolveImageUrl(url?: string | null): string {
+    if (!url) return '';
+    if (url.startsWith('http://') || url.startsWith('https://')) return url;
+    const backendOrigin = environment.apiBaseUrl.replace(/\/api\/v1\/?$/, '');
+    const cleanPath = url.startsWith('/') ? url : `/${url}`;
+    return `${backendOrigin}${cleanPath}`;
+  }
+
+  onImageError(event: Event): void {
+    const target = event.target as HTMLImageElement;
+    if (target) {
+      target.src = 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=800&q=80';
     }
   }
 }

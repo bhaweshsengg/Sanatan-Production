@@ -17,23 +17,64 @@ import { sendSuccess, sendError } from '../utils/response.js';
 // }
 
 const parseListField = (value) => {
-  if (Array.isArray(value)) return value;
-  if (typeof value === 'string' && value.trim() !== '') {
-    const trimmed = value.trim();
-    // Try parsing as JSON array first (e.g. ["item1","item2"])
-    if (trimmed.startsWith('[') || trimmed.startsWith('{')) {
-      try {
-        const parsed = JSON.parse(trimmed);
-        return Array.isArray(parsed) ? parsed : [String(parsed)];
-      } catch {
-        // fall through to comma-split
+  const results = [];
+
+  const unwrap = (val) => {
+    if (val === null || val === undefined) return;
+
+    if (Array.isArray(val)) {
+      for (const item of val) {
+        unwrap(item);
       }
+      return;
     }
-    // Plain comma-separated or single value (e.g. "daily_aarti" or "a,b,c")
-    return trimmed.split(',').map(item => item.trim()).filter(Boolean);
-  }
-  return [];
+
+    if (typeof val === 'string') {
+      let trimmed = val.trim();
+      if (!trimmed) return;
+
+      // Handle deeply nested JSON strings (e.g. "[\"[\'\\\"...\\\']\"]")
+      let parsed = false;
+      if (
+        (trimmed.startsWith('[') && trimmed.endsWith(']')) ||
+        (trimmed.startsWith('"') && trimmed.endsWith('"')) ||
+        (trimmed.startsWith('{') && trimmed.endsWith('}'))
+      ) {
+        try {
+          const parsedVal = JSON.parse(trimmed);
+          unwrap(parsedVal);
+          parsed = true;
+        } catch {
+          // fall through to regex cleanup
+        }
+      }
+
+      if (!parsed) {
+        // Strip escaped quotes, brackets, and redundant slashes
+        const cleaned = trimmed
+          .replace(/^[\[\]"'\\]+|[\[\]"'\\]+$/g, '')
+          .replace(/\\+["']/g, '')
+          .replace(/\\+/g, '')
+          .trim();
+
+        if (cleaned) {
+          if (cleaned.includes(',')) {
+            cleaned.split(',').forEach((part) => unwrap(part));
+          } else {
+            // Normalize service/facility name if it has spaces (e.g. "daily Aarti" -> "daily_aarti")
+            results.push(cleaned);
+          }
+        }
+      }
+    } else {
+      results.push(String(val).trim());
+    }
+  };
+
+  unwrap(value);
+  return Array.from(new Set(results.map((s) => s.trim()).filter(Boolean)));
 };
+
 
 const normalizeUploadedImagePath = (value) => {
   if (!value || typeof value !== 'string') return '';
