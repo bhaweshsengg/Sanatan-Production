@@ -343,6 +343,16 @@ interface ApiTemple {
                   </svg>
                   Call Mandir
                 </a>
+                <a
+                  [routerLink]="['/user-registration']"
+                  [queryParams]="{ mandirId: temple?.id }"
+                  class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-semibold transition-colors bg-gradient-to-r from-orange-600 to-red-600 text-white shadow-sm hover:from-orange-700 hover:to-red-700 h-10 px-4 py-2"
+                >
+                  <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                  </svg>
+                  Register as Devotee
+                </a>
               </div>
             </div>
           </div>

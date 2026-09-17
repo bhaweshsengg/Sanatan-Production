@@ -78,6 +78,14 @@ export const routes: Routes = [
     component: MandirUserRegistrationComponent,
   },
   {
+    path: 'devotee-registration',
+    redirectTo: '/user-registration',
+  },
+  {
+    path: 'register-devotee',
+    redirectTo: '/user-registration',
+  },
+  {
     path: 'admin/user-approvals',
     component: UserApprovalAdminComponent,
     canActivate: [adminGuard],

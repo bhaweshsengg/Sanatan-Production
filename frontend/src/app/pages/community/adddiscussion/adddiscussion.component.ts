@@ -105,8 +105,11 @@ export class AdddiscussionComponent implements OnInit {
     if (this.discussionForm.invalid) return;
 
     this.isLoading = true;
-    const token = localStorage.getItem('accessToken');
-    const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
+    const token = localStorage.getItem('authToken') || localStorage.getItem('accessToken');
+    let headers = new HttpHeaders();
+    if (token) {
+      headers = headers.set('Authorization', `Bearer ${token}`);
+    }
     
     const formValue = this.discussionForm.value;
     const payload = {

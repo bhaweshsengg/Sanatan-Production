@@ -60,6 +60,8 @@ model User {
   reviewedEvents Event[] @relation("EventReviewer")
   eventAttendances EventAttendee[]
   blogPosts BlogPost[] @relation("BlogAuthor")
+  createdGroups CommunityGroup[] @relation("GroupCreator")
+  groupMemberships CommunityGroupMember[] @relation("GroupMemberUser")
 }
 
 model City {
@@ -67,6 +69,7 @@ model City {
   name String @unique
   temples Temple[]
   discussions Discussion[]
+  groups CommunityGroup[]
 
   @@map("temple_city")
 }
@@ -290,4 +293,57 @@ model BlogPost {
   @@index([category])
   @@index([authorId])
   @@map("blog_post")
+}
+
+enum GroupStatus {
+  Active
+  Pending
+  Archived
+}
+
+model CommunityGroup {
+  id           Int         @id @default(autoincrement())
+  name         String
+  slug         String?     @unique
+  category     String
+  description  String      @db.Text
+  cityId       Int?        @map("city_id")
+  cityName     String?     @map("city_name")
+  meetingInfo  String?     @map("meeting_info")
+  contactEmail String?     @map("contact_email")
+  contactPhone String?     @map("contact_phone")
+  imageUrl     String?     @map("image_url") @db.VarChar(2048)
+  creatorId    Int?        @map("creator_id")
+  creatorName  String?     @map("creator_name")
+  status       GroupStatus @default(Active)
+  createdAt    DateTime    @default(now()) @map("created_at")
+  updatedAt    DateTime    @updatedAt @map("updated_at")
+
+  city         City?       @relation(fields: [cityId], references: [id], onDelete: SetNull)
+  creator      User?       @relation("GroupCreator", fields: [creatorId], references: [id], onDelete: SetNull)
+  members      CommunityGroupMember[]
+
+  @@index([status])
+  @@index([category])
+  @@index([cityId])
+  @@map("community_group")
+}
+
+model CommunityGroupMember {
+  id       Int      @id @default(autoincrement())
+  groupId  Int      @map("group_id")
+  userId   Int?     @map("user_id")
+  name     String
+  email    String
+  phone    String?
+  role     String   @default("Member")
+  joinedAt DateTime @default(now()) @map("joined_at")
+
+  group    CommunityGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user     User?          @relation("GroupMemberUser", fields: [userId], references: [id], onDelete: SetNull)
+
+  @@unique([groupId, email], name: "groupId_email")
+  @@index([groupId])
+  @@index([userId])
+  @@map("community_group_member")
 }

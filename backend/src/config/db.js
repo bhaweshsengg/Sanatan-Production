@@ -200,7 +200,143 @@ export const ensureRequiredTables = async () => {
         ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
       `);
 
-      // 8. Ensure business_business has imageUrl column
+      // 8. community_group
+      await prisma.$executeRawUnsafe(`
+        CREATE TABLE IF NOT EXISTS \`community_group\` (
+          \`id\` INT NOT NULL AUTO_INCREMENT,
+          \`name\` VARCHAR(191) NOT NULL,
+          \`slug\` VARCHAR(191) NULL,
+          \`category\` VARCHAR(191) NOT NULL,
+          \`description\` TEXT NOT NULL,
+          \`city_id\` INT NULL,
+          \`city_name\` VARCHAR(191) NULL,
+          \`meeting_info\` VARCHAR(191) NULL,
+          \`contact_email\` VARCHAR(191) NULL,
+          \`contact_phone\` VARCHAR(191) NULL,
+          \`image_url\` VARCHAR(2048) NULL,
+          \`creator_id\` INT NULL,
+          \`creator_name\` VARCHAR(191) NULL,
+          \`status\` ENUM('Active','Pending','Archived') NOT NULL DEFAULT 'Active',
+          \`created_at\` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+          \`updated_at\` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+          PRIMARY KEY (\`id\`),
+          UNIQUE KEY \`community_group_slug_key\` (\`slug\`),
+          INDEX \`community_group_status_idx\` (\`status\`),
+          INDEX \`community_group_category_idx\` (\`category\`),
+          INDEX \`community_group_city_id_idx\` (\`city_id\`)
+        ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+      `);
+
+      // 9. community_group_member
+      await prisma.$executeRawUnsafe(`
+        CREATE TABLE IF NOT EXISTS \`community_group_member\` (
+          \`id\` INT NOT NULL AUTO_INCREMENT,
+          \`group_id\` INT NOT NULL,
+          \`user_id\` INT NULL,
+          \`name\` VARCHAR(191) NOT NULL,
+          \`email\` VARCHAR(191) NOT NULL,
+          \`phone\` VARCHAR(191) NULL,
+          \`role\` VARCHAR(50) NOT NULL DEFAULT 'Member',
+          \`joined_at\` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+          PRIMARY KEY (\`id\`),
+          UNIQUE KEY \`group_email_unique\` (\`group_id\`, \`email\`),
+          INDEX \`community_group_member_group_id_idx\` (\`group_id\`),
+          INDEX \`community_group_member_user_id_idx\` (\`user_id\`)
+        ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+      `);
+
+      // Seed starter community groups if table is empty
+      try {
+        const existingCount = await prisma.$queryRawUnsafe('SELECT COUNT(*) as count FROM community_group');
+        if (Number(existingCount[0]?.count || 0) === 0) {
+          const starterGroups = [
+            {
+              name: 'Auckland Hindu Families',
+              slug: 'auckland-hindu-families',
+              category: 'Family',
+              description: 'Connect with Hindu families across Auckland for playdates, cultural events, festival celebrations, and community support.',
+              cityName: 'Auckland',
+              meetingInfo: 'Every 2nd Saturday 10:30 AM',
+              contactEmail: 'auckland.families@sanatan.org.nz',
+              contactPhone: '+64 9 888 1234',
+              creatorName: 'Auckland Community Coordinator',
+              members: [
+                { name: 'Pooja Sharma', email: 'pooja.sharma@sanatan.org.nz', role: 'Organizer' },
+                { name: 'Amit Patel', email: 'amit.patel@sanatan.org.nz', role: 'Co-organizer' },
+                { name: 'Rajesh Kumar', email: 'rajesh.k@sanatan.org.nz', role: 'Member' }
+              ]
+            },
+            {
+              name: 'Wellington Satsang & Bhajan Group',
+              slug: 'wellington-satsang-bhajan',
+              category: 'Satsang',
+              description: 'Weekly devotional gatherings for kirtan, Vedic chanting, meditation, and spiritual discourses across the Wellington region.',
+              cityName: 'Wellington',
+              meetingInfo: 'Every Sunday 4:00 PM',
+              contactEmail: 'wellington.satsang@sanatan.org.nz',
+              contactPhone: '+64 4 888 5678',
+              creatorName: 'Wellington Seva Circle',
+              members: [
+                { name: 'Sunil Rao', email: 'sunil.rao@sanatan.org.nz', role: 'Organizer' },
+                { name: 'Geeta Nair', email: 'geeta.nair@sanatan.org.nz', role: 'Member' }
+              ]
+            },
+            {
+              name: 'Christchurch Youth Dharma Circle',
+              slug: 'christchurch-youth-dharma',
+              category: 'Youth',
+              description: 'Empowering young Hindus and university students through discussions on dharma, Vedic philosophy, yoga, and cultural leadership.',
+              cityName: 'Christchurch',
+              meetingInfo: 'Fortnightly Saturdays 2:00 PM',
+              contactEmail: 'youth.chch@sanatan.org.nz',
+              contactPhone: '+64 3 888 9012',
+              creatorName: 'Youth Seva Lead',
+              members: [
+                { name: 'Aarav Mehta', email: 'aarav.m@sanatan.org.nz', role: 'Organizer' },
+                { name: 'Ananya Iyer', email: 'ananya.iyer@sanatan.org.nz', role: 'Member' }
+              ]
+            },
+            {
+              name: 'Hamilton Cultural & Seva Group',
+              slug: 'hamilton-cultural-seva',
+              category: 'Cultural & Seva',
+              description: 'Organizing community volunteer seva, language classes, classical arts, and festive celebrations throughout the Waikato district.',
+              cityName: 'Hamilton',
+              meetingInfo: 'Monthly 1st Sunday 11:00 AM',
+              contactEmail: 'hamilton.seva@sanatan.org.nz',
+              contactPhone: '+64 7 888 3456',
+              creatorName: 'Waikato Dharma Trust',
+              members: [
+                { name: 'Vikram Joshi', email: 'vikram.j@sanatan.org.nz', role: 'Organizer' },
+                { name: 'Kavita Singh', email: 'kavita.singh@sanatan.org.nz', role: 'Member' }
+              ]
+            }
+          ];
+
+          for (const g of starterGroups) {
+            await prisma.$executeRawUnsafe(`
+              INSERT INTO \`community_group\` (\`name\`, \`slug\`, \`category\`, \`description\`, \`city_name\`, \`meeting_info\`, \`contact_email\`, \`contact_phone\`, \`creator_name\`, \`status\`, \`created_at\`, \`updated_at\`)
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'Active', NOW(), NOW())
+            `, g.name, g.slug, g.category, g.description, g.cityName, g.meetingInfo, g.contactEmail, g.contactPhone, g.creatorName);
+
+            const inserted = await prisma.$queryRawUnsafe('SELECT id FROM community_group WHERE slug = ?', g.slug);
+            const groupId = inserted[0]?.id;
+            if (groupId && g.members) {
+              for (const m of g.members) {
+                await prisma.$executeRawUnsafe(`
+                  INSERT INTO \`community_group_member\` (\`group_id\`, \`name\`, \`email\`, \`role\`, \`joined_at\`)
+                  VALUES (?, ?, ?, ?, NOW())
+                `, groupId, m.name, m.email, m.role);
+              }
+            }
+          }
+        }
+      } catch (seedErr) {
+        // Logging only; do not fail startup if seeding encounters conflict
+        console.warn('Starter community groups seed check:', seedErr?.message);
+      }
+
+      // 10. Ensure business_business has imageUrl column
       try {
         await prisma.$executeRawUnsafe(`
           ALTER TABLE \`business_business\` ADD COLUMN \`imageUrl\` VARCHAR(2048) NULL;

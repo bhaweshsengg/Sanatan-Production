@@ -46,6 +46,10 @@ export const createUserRegistration = async (req, res) => {
       return sendError(res, 404, 'Selected Temple was not found.', {});
     }
 
+    if (mandir.status !== 'Approved') {
+      return sendError(res, 400, 'Selected Temple is currently not active for devotee registration.', {});
+    }
+
     // Determine Relation: use provided relationId or default to 'Temple Devotee'
     let relationId = req.body.relationId ? Number(req.body.relationId) : null;
     if (relationId) {
@@ -70,8 +74,20 @@ export const createUserRegistration = async (req, res) => {
       relationId = devoteeRelation.id;
     }
 
-    // Check for existing pending registration for this email and temple
+    // Check for existing approved or pending registration for this email and temple
     const model = getDevoteeModel();
+    const existingApproved = await model.findFirst({
+      where: {
+        email,
+        mandirId,
+        status: 'Approved',
+      },
+    });
+
+    if (existingApproved) {
+      return sendError(res, 409, 'You are already registered and approved as a Devotee for this Temple. You can log in directly.', {});
+    }
+
     const existingPending = await model.findFirst({
       where: {
         email,
@@ -215,6 +231,14 @@ const updateRegistrationStatus = async (req, res, targetStatus) => {
               passwordHash: updated.password,
               role: 'Devotee',
               isActive: true,
+            },
+          });
+        } else if (existingUser.role === 'User') {
+          await tx.user.update({
+            where: { id: existingUser.id },
+            data: {
+              role: 'Devotee',
+              ...(existingUser.passwordHash ? {} : { passwordHash: updated.password }),
             },
           });
         }

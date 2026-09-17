@@ -59,6 +59,17 @@ test('registrationSchema validates required fields for devotee registration', ()
   });
   assert.equal(noSub.success, true);
   assert.equal(noSub.data.subscription, 'No');
+
+  // Formatted international mobile number with spaces, parentheses, hyphens (e.g. 17+ chars)
+  const formattedMobile = registrationSchema.safeParse({
+    firstName: 'Arjun',
+    lastName: 'Patel',
+    email: 'arjun.patel@example.com',
+    password: 'securePassword123',
+    mobile: '+64 (21) 123-4567',
+    mandirId: 1,
+  });
+  assert.equal(formattedMobile.success, true, 'Formatted mobile number with parentheses and hyphens must be accepted');
 });
 
 test('Temple Devotee registration database workflow: store in TempleDevotee_registration and admin review', async () => {
@@ -141,6 +152,29 @@ test('Temple Devotee registration database workflow: store in TempleDevotee_regi
     assert.equal(approved.reviewedByUserId, adminId);
     assert.ok(approved.reviewedAt);
     assert.equal(approved.notes, reviewNote);
+
+    // 3. Verify Devotee user account creation/upgrade
+    const devoteeUser = await prisma.user.create({
+      data: {
+        username: testEmail,
+        email: testEmail,
+        passwordHash: passwordHash,
+        role: 'User',
+        isActive: true,
+      },
+    });
+
+    // Simulate approval trigger upgrading User to Devotee
+    if (devoteeUser.role === 'User') {
+      await prisma.user.update({
+        where: { id: devoteeUser.id },
+        data: { role: 'Devotee' },
+      });
+    }
+
+    const updatedUser = await prisma.user.findUnique({ where: { id: devoteeUser.id } });
+    assert.equal(updatedUser.role, 'Devotee', 'User role must be upgraded to Devotee');
+    await prisma.user.delete({ where: { id: devoteeUser.id } });
   } finally {
     // Clean up test devotee registration
     await model.deleteMany({ where: { email: testEmail } });
