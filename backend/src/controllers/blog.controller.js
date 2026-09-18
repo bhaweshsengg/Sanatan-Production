@@ -85,7 +85,11 @@ export const uploadBlogImage = async (req, res) => {
       return sendError(res, 500, 'Failed to store uploaded blog image');
     }
 
-    return sendSuccess(res, 201, 'Blog image uploaded successfully', { imageUrl });
+    return sendSuccess(res, 201, {
+      message: 'Blog image uploaded successfully',
+      data: { imageUrl },
+      imageUrl,
+    });
   } catch (error) {
     logger.error('uploadBlogImage error:', error);
     return sendError(res, 500, 'Failed to upload blog image', { details: error.message });
@@ -180,7 +184,10 @@ export const getPublicBlogById = async (req, res) => {
       return sendError(res, 404, 'Blog post not found');
     }
 
-    return sendSuccess(res, 200, 'Blog post retrieved successfully', blog);
+    return sendSuccess(res, 200, {
+      message: 'Blog post retrieved successfully',
+      data: blog,
+    });
   } catch (error) {
     logger.error('getPublicBlogById error:', error);
     return sendError(res, 500, 'Failed to fetch blog post', { details: error.message });
@@ -218,7 +225,10 @@ export const listAdminBlogs = async (req, res) => {
       },
     });
 
-    return sendSuccess(res, 200, 'Admin blogs retrieved successfully', blogs);
+    return sendSuccess(res, 200, {
+      message: 'Admin blogs retrieved successfully',
+      data: blogs,
+    });
   } catch (error) {
     logger.error('listAdminBlogs error:', error);
     return sendError(res, 500, 'Failed to fetch admin blogs', { details: error.message });
@@ -246,7 +256,10 @@ export const getAdminBlogById = async (req, res) => {
       return sendError(res, 404, 'Blog post not found');
     }
 
-    return sendSuccess(res, 200, 'Blog retrieved successfully', blog);
+    return sendSuccess(res, 200, {
+      message: 'Blog retrieved successfully',
+      data: blog,
+    });
   } catch (error) {
     logger.error('getAdminBlogById error:', error);
     return sendError(res, 500, 'Failed to fetch blog post', { details: error.message });
@@ -283,7 +296,10 @@ export const createBlog = async (req, res) => {
       },
     });
 
-    return sendSuccess(res, 201, 'Blog post created successfully', blog);
+    return sendSuccess(res, 201, {
+      message: 'Blog post created successfully',
+      data: blog,
+    });
   } catch (error) {
     logger.error('createBlog error:', error);
     return sendError(res, 500, 'Failed to create blog post', { details: error.message });
@@ -332,7 +348,10 @@ export const updateBlog = async (req, res) => {
       data: updateData,
     });
 
-    return sendSuccess(res, 200, 'Blog post updated successfully', updated);
+    return sendSuccess(res, 200, {
+      message: 'Blog post updated successfully',
+      data: updated,
+    });
   } catch (error) {
     logger.error('updateBlog error:', error);
     return sendError(res, 500, 'Failed to update blog post', { details: error.message });
@@ -363,7 +382,10 @@ export const updateBlogStatus = async (req, res) => {
       data: updateData,
     });
 
-    return sendSuccess(res, 200, `Blog post status updated to ${status}`, updated);
+    return sendSuccess(res, 200, {
+      message: `Blog post status updated to ${status}`,
+      data: updated,
+    });
   } catch (error) {
     logger.error('updateBlogStatus error:', error);
     return sendError(res, 500, 'Failed to update blog status', { details: error.message });
@@ -385,7 +407,10 @@ export const deleteBlog = async (req, res) => {
 
     await prisma.blogPost.delete({ where: { id } });
 
-    return sendSuccess(res, 200, 'Blog post deleted successfully', { id });
+    return sendSuccess(res, 200, {
+      message: 'Blog post deleted successfully',
+      data: { id },
+    });
   } catch (error) {
     logger.error('deleteBlog error:', error);
     return sendError(res, 500, 'Failed to delete blog post', { details: error.message });

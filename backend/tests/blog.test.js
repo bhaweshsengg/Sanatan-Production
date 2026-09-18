@@ -104,3 +104,87 @@ test('Blog database lifecycle: Draft hidden from public, Published visible, Upda
   const afterDelete = await prisma.blogPost.findUnique({ where: { id: draftBlog.id } });
   assert.equal(afterDelete, null, 'Deleted blog post must no longer exist');
 });
+
+test('sendSuccess utility formats data correctly for both object and message parameter styles', async () => {
+  const { sendSuccess } = await import('../src/utils/response.js');
+
+  const createMockRes = () => {
+    const res = {
+      statusCode: 200,
+      body: null,
+      status(s) {
+        this.statusCode = s;
+        return this;
+      },
+      json(j) {
+        this.body = j;
+        return j;
+      },
+    };
+    return res;
+  };
+
+  // 1. Standard payload object
+  const res1 = createMockRes();
+  sendSuccess(res1, 200, { data: { imageUrl: '/uploads/example.jpg' }, message: 'Success' });
+  assert.equal(res1.body.success, true);
+  assert.equal(res1.body.data.imageUrl, '/uploads/example.jpg');
+  assert.equal(res1.body.message, 'Success');
+
+  // 2. String message with 4th argument data
+  const res2 = createMockRes();
+  sendSuccess(res2, 201, 'Blog image uploaded successfully', { imageUrl: '/uploads/example2.jpg' });
+  assert.equal(res2.body.success, true);
+  assert.equal(res2.body.status, 201);
+  assert.equal(res2.body.message, 'Blog image uploaded successfully');
+  assert.equal(res2.body.data.imageUrl, '/uploads/example2.jpg');
+  assert.equal(res2.body.imageUrl, '/uploads/example2.jpg');
+
+  // 3. String message with plain object data
+  const res3 = createMockRes();
+  sendSuccess(res3, 200, 'Admin blogs retrieved', [{ id: 1, title: 'Sample' }]);
+  assert.equal(res3.body.success, true);
+  assert.equal(res3.body.message, 'Admin blogs retrieved');
+  assert.deepEqual(res3.body.data, [{ id: 1, title: 'Sample' }]);
+});
+
+test('Blog creation and update preserves imageUrl for display on public blog page', async () => {
+  await ensureRequiredTables();
+
+  const testImage = 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=800';
+  const updatedImage = 'https://images.unsplash.com/photo-1545239351-ef35f43d514b?w=800';
+
+  // 1. Create blog post with imageUrl
+  const blog = await prisma.blogPost.create({
+    data: {
+      title: `Blog With Image ${Date.now()}`,
+      category: 'Philosophy',
+      excerpt: 'Summary testing imageUrl persistence for public blog display.',
+      content: 'Complete content text for verifying that uploaded image URLs appear properly on the blog page.',
+      imageUrl: testImage,
+      authorName: 'Admin Editor',
+      status: 'Published',
+      publishedAt: new Date(),
+    },
+  });
+
+  assert.ok(blog.id);
+  assert.equal(blog.imageUrl, testImage, 'Blog must store initial imageUrl');
+
+  // 2. Query published blog - verify imageUrl is present
+  const queried = await prisma.blogPost.findUnique({
+    where: { id: blog.id },
+  });
+  assert.equal(queried.imageUrl, testImage, 'Queried blog post must retain imageUrl');
+
+  // 3. Update blog with new imageUrl
+  const updated = await prisma.blogPost.update({
+    where: { id: blog.id },
+    data: { imageUrl: updatedImage },
+  });
+  assert.equal(updated.imageUrl, updatedImage, 'Updated blog post must have new imageUrl');
+
+  // 4. Cleanup
+  await prisma.blogPost.delete({ where: { id: blog.id } });
+});
+

@@ -47,7 +47,7 @@ export interface AdminBlogPost {
 
           <div class="flex flex-wrap items-center gap-3">
             <a
-              routerLink="/religiouscontents"
+              routerLink="/blog"
               target="_blank"
               class="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 transition-colors"
             >
@@ -382,7 +382,7 @@ export interface AdminBlogPost {
                 <!-- Image Preview -->
                 <div *ngIf="formData.imageUrl" class="mt-2 flex items-center gap-3">
                   <div class="h-16 w-24 overflow-hidden rounded-lg border border-gray-200 bg-white">
-                    <img [src]="resolveImageUrl(formData.imageUrl)" alt="Preview" class="h-full w-full object-cover" />
+                    <img [src]="resolveImageUrl(formData.imageUrl)" alt="Preview" class="h-full w-full object-cover" (error)="onImageError($event)" />
                   </div>
                   <button
                     type="button"
@@ -650,14 +650,22 @@ export class AdminBlogsComponent implements OnInit {
     uploadData.append('image', file);
 
     this.isUploadingImage = true;
+    this.errorMessage = '';
     this.http.post<any>(`${this.apiUrl}/blog/upload-image`, uploadData).subscribe({
       next: (res) => {
-        this.formData.imageUrl = res?.data?.imageUrl || '';
+        const uploadedUrl = res?.data?.imageUrl || res?.imageUrl || '';
+        if (uploadedUrl) {
+          this.formData.imageUrl = uploadedUrl;
+        } else {
+          this.errorMessage = 'Image was uploaded but no URL was returned.';
+        }
         this.isUploadingImage = false;
+        input.value = '';
       },
       error: (err) => {
         this.errorMessage = err?.error?.message || 'Failed to upload blog image.';
         this.isUploadingImage = false;
+        input.value = '';
       },
     });
   }
@@ -745,15 +753,26 @@ export class AdminBlogsComponent implements OnInit {
 
   resolveImageUrl(url?: string | null): string {
     if (!url) return '';
-    if (url.startsWith('http://') || url.startsWith('https://')) return url;
+    const trimmed = url.trim();
+    if (!trimmed) return '';
+    if (trimmed.startsWith('http://') || trimmed.startsWith('https://') || trimmed.startsWith('data:')) {
+      return trimmed;
+    }
     const backendOrigin = environment.apiBaseUrl.replace(/\/api\/v1\/?$/, '');
-    const cleanPath = url.startsWith('/') ? url : `/${url}`;
-    return `${backendOrigin}${cleanPath}`;
+    const cleanPath = trimmed.replace(/\\/g, '/').replace(/^\/+/, '');
+    if (cleanPath.startsWith('assets/')) {
+      return `/${cleanPath}`;
+    }
+    const finalPath = cleanPath.startsWith('uploads/') || cleanPath.startsWith('temple_images/')
+      ? cleanPath
+      : `uploads/${cleanPath}`;
+    return `${backendOrigin}/${finalPath}`;
   }
 
   onImageError(event: Event): void {
     const target = event.target as HTMLImageElement;
     if (target) {
+      target.onerror = null;
       target.src = 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=600&q=80';
     }
   }

@@ -249,7 +249,7 @@ export interface PublicBlogPost {
       <div *ngIf="selectedBlog" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
         <div class="w-full max-w-3xl rounded-2xl bg-white shadow-2xl border border-gray-200 max-h-[92vh] flex flex-col overflow-hidden">
           <!-- Cover Image -->
-          <div class="relative h-64 sm:h-72 w-full bg-gray-900 flex-shrink-0">
+          <div class="relative h-64 sm:h-72 w-full bg-gray-900 flex-shrink-0 overflow-hidden">
             <img
               *ngIf="selectedBlog.imageUrl"
               [src]="resolveImageUrl(selectedBlog.imageUrl)"
@@ -257,6 +257,9 @@ export interface PublicBlogPost {
               (error)="onImageError($event)"
               class="h-full w-full object-cover opacity-85"
             />
+            <div *ngIf="!selectedBlog.imageUrl" class="h-full w-full flex items-center justify-center bg-gradient-to-br from-orange-700 via-amber-700 to-red-800 text-6xl text-white/30">
+              🕉️
+            </div>
             <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent"></div>
 
             <!-- Close Button -->
@@ -472,15 +475,26 @@ export class BlogComponent implements OnInit {
 
   resolveImageUrl(url?: string | null): string {
     if (!url) return '';
-    if (url.startsWith('http://') || url.startsWith('https://')) return url;
+    const trimmed = url.trim();
+    if (!trimmed) return '';
+    if (trimmed.startsWith('http://') || trimmed.startsWith('https://') || trimmed.startsWith('data:')) {
+      return trimmed;
+    }
     const backendOrigin = environment.apiBaseUrl.replace(/\/api\/v1\/?$/, '');
-    const cleanPath = url.startsWith('/') ? url : `/${url}`;
-    return `${backendOrigin}${cleanPath}`;
+    const cleanPath = trimmed.replace(/\\/g, '/').replace(/^\/+/, '');
+    if (cleanPath.startsWith('assets/')) {
+      return `/${cleanPath}`;
+    }
+    const finalPath = cleanPath.startsWith('uploads/') || cleanPath.startsWith('temple_images/')
+      ? cleanPath
+      : `uploads/${cleanPath}`;
+    return `${backendOrigin}/${finalPath}`;
   }
 
   onImageError(event: Event): void {
     const target = event.target as HTMLImageElement;
     if (target) {
+      target.onerror = null;
       target.src = 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=800&q=80';
     }
   }
