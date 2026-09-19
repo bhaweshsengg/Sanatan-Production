@@ -2,7 +2,7 @@ import { Router } from 'express';
 import rateLimit from 'express-rate-limit';
 import { login, logout, refresh, register, forgotPassword, resetPassword } from '../controllers/auth.controller.js';
 import { validate } from '../middleware/validate.js';
-import { loginSchema, logoutSchema } from '../validators/auth.validator.js';
+import { loginSchema, logoutSchema, registerSchema } from '../validators/auth.validator.js';
 
 const router = Router();
 
@@ -12,7 +12,7 @@ const authLimiter = rateLimit({
   message: 'Too many login attempts, please try again later.',
 });
 
-router.post('/register', register);
+router.post('/register', validate(registerSchema), register);
 router.post('/login', authLimiter, validate(loginSchema), login);
 router.post('/logout', validate(logoutSchema), logout);
 router.post('/refresh', refresh);

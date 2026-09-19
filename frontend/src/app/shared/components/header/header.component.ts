@@ -236,6 +236,14 @@ import { AuthService } from 'src/app/Auth/auth.service';
                 >
                   📰 Blog Posts
                 </a>
+                <a
+                  routerLink="/admin/religious-articles"
+                  (click)="closeAdminDropdown()"
+                  routerLinkActive="bg-orange-50 text-orange-600 font-semibold"
+                  class="block px-4 py-2 text-[13px] xl:text-sm text-gray-700 hover:bg-orange-50 hover:text-orange-600 transition-colors"
+                >
+                  📜 Religious Articles
+                </a>
               </div>
             </div>
 
@@ -493,6 +501,14 @@ import { AuthService } from 'src/app/Auth/auth.service';
                   class="block px-3 py-1.5 text-sm font-medium text-gray-700 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-colors"
                 >
                   📰 Blog Posts
+                </a>
+                <a
+                  routerLink="/admin/religious-articles"
+                  (click)="closeMobileMenu(); closeAdminDropdown()"
+                  routerLinkActive="bg-orange-50 text-orange-600 font-semibold"
+                  class="block px-3 py-1.5 text-sm font-medium text-gray-700 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-colors"
+                >
+                  📜 Religious Articles
                 </a>
               </div>
             </div>

@@ -31,6 +31,7 @@ export class DirectoryComponent implements OnInit {
     'Education, Yoga & Sanskrit',
     'Health & Ayurveda Wellness',
     'Community Welfare & Volunteer',
+    'Justice of Peace',
     'IT & Professional Services',
     'Other'
   ];

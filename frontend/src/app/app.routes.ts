@@ -29,6 +29,7 @@ import { adminGuard } from './Auth/admin.guard';
 import { AdminCityComponent } from './pages/admin/admin-city/admin-city.component';
 import { AdminDeityComponent } from './pages/admin/admin-deity/admin-deity.component';
 import { AdminBlogsComponent } from './pages/admin/admin-blogs/admin-blogs.component';
+import { AdminReligiousArticlesComponent } from './pages/admin/admin-religious-articles/admin-religious-articles.component';
 import { BlogComponent } from './pages/blog/blog.component';
 import { AddServiceComponent } from './pages/services/add-service/add-service.component';
 
@@ -111,6 +112,11 @@ export const routes: Routes = [
   {
     path: 'admin/blogs',
     component: AdminBlogsComponent,
+    canActivate: [adminGuard],
+  },
+  {
+    path: 'admin/religious-articles',
+    component: AdminReligiousArticlesComponent,
     canActivate: [adminGuard],
   },
   { path: 'not-found', component: NotFoundComponent },

@@ -1,22 +1,25 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
+import { HttpClient } from '@angular/common/http';
+import { environment } from 'src/environments/environment';
 
 export interface ReligiousContentItem {
-  id: string;
+  id: number | string;
   title: string;
-  sanskritTitle: string;
-  category: 'Mantras' | 'Chalisas' | 'Stotrams' | 'Scriptures';
-  deity: string;
-  source: string;
+  sanskritTitle?: string;
+  category: string;
+  deity?: string;
+  source?: string;
   summary: string;
-  sanskritText: string;
-  transliteration: string;
-  englishMeaning: string;
-  significance: string;
+  sanskritText?: string;
+  transliteration?: string;
+  englishMeaning?: string;
+  significance?: string;
   bestTimeToChant?: string;
   verses?: Array<{ sanskrit: string; transliteration: string; english: string }>;
+  status?: string;
 }
 
 @Component({
@@ -219,7 +222,7 @@ export interface ReligiousContentItem {
                 </h4>
                 <button
                   type="button"
-                  (click)="copyToClipboard(selectedItem.sanskritText, 'sanskrit')"
+                  (click)="copyToClipboard(selectedItem.sanskritText || '', 'sanskrit')"
                   class="text-xs text-gray-500 hover:text-orange-600 flex items-center gap-1 transition"
                 >
                   <span>{{ copiedId === 'sanskrit' ? 'Copied! ✓' : 'Copy Sanskrit' }}</span>
@@ -280,13 +283,15 @@ export interface ReligiousContentItem {
     </div>
   `
 })
-export class ReligiousContentsComponent {
+export class ReligiousContentsComponent implements OnInit {
   searchTerm = '';
   selectedCategory = 'All';
   selectedItem: ReligiousContentItem | null = null;
   copiedId: string | null = null;
+  loading = false;
+  apiUrl = environment.apiBaseUrl;
 
-  categories: string[] = ['All', 'Mantras', 'Chalisas', 'Stotrams', 'Scriptures'];
+  categories: string[] = ['All', 'Mantras', 'Chalisas', 'Stotrams', 'Scriptures', 'Philosophy', 'Rituals'];
 
   items: ReligiousContentItem[] = [
     {
@@ -403,6 +408,39 @@ export class ReligiousContentsComponent {
 
   filteredContents: ReligiousContentItem[] = [...this.items];
 
+  constructor(private http: HttpClient) {}
+
+  ngOnInit(): void {
+    this.loadArticles();
+  }
+
+  loadArticles(): void {
+    this.loading = true;
+    this.http.get<any>(`${this.apiUrl}/public/religious-article?limit=all`).subscribe({
+      next: (res) => {
+        if (res?.data && Array.isArray(res.data) && res.data.length > 0) {
+          this.items = res.data;
+          this.filterContents();
+        }
+        this.loading = false;
+      },
+      error: () => {
+        this.http.get<any>(`${this.apiUrl}/religious-article?limit=all`).subscribe({
+          next: (res) => {
+            if (res?.data && Array.isArray(res.data) && res.data.length > 0) {
+              this.items = res.data;
+              this.filterContents();
+            }
+            this.loading = false;
+          },
+          error: () => {
+            this.loading = false;
+          }
+        });
+      }
+    });
+  }
+
   setCategory(cat: string): void {
     this.selectedCategory = cat;
     this.filterContents();
@@ -417,11 +455,11 @@ export class ReligiousContentsComponent {
       const termMatch =
         !term ||
         item.title.toLowerCase().includes(term) ||
-        item.sanskritTitle.toLowerCase().includes(term) ||
-        item.deity.toLowerCase().includes(term) ||
-        item.sanskritText.toLowerCase().includes(term) ||
-        item.englishMeaning.toLowerCase().includes(term) ||
-        item.transliteration.toLowerCase().includes(term);
+        Boolean(item.sanskritTitle && item.sanskritTitle.toLowerCase().includes(term)) ||
+        Boolean(item.deity && item.deity.toLowerCase().includes(term)) ||
+        Boolean(item.sanskritText && item.sanskritText.toLowerCase().includes(term)) ||
+        Boolean(item.englishMeaning && item.englishMeaning.toLowerCase().includes(term)) ||
+        Boolean(item.transliteration && item.transliteration.toLowerCase().includes(term));
 
       return catMatch && termMatch;
     });

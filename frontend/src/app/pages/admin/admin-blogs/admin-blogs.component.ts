@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
@@ -27,6 +27,63 @@ export interface AdminBlogPost {
   selector: 'app-admin-blogs',
   standalone: true,
   imports: [CommonModule, FormsModule, RouterLink],
+  styles: [`
+    .blog-editor-visual:empty:before {
+      content: attr(placeholder);
+      color: #9ca3af;
+      pointer-events: none;
+      display: block;
+    }
+    .blog-editor-visual h2 {
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: #111827;
+      margin-top: 1rem;
+      margin-bottom: 0.5rem;
+    }
+    .blog-editor-visual h3 {
+      font-size: 1.15rem;
+      font-weight: 600;
+      color: #1f2937;
+      margin-top: 0.85rem;
+      margin-bottom: 0.35rem;
+    }
+    .blog-editor-visual p {
+      margin-bottom: 0.75rem;
+      line-height: 1.6;
+    }
+    .blog-editor-visual ul {
+      list-style-type: disc;
+      margin-left: 1.5rem;
+      margin-bottom: 0.75rem;
+    }
+    .blog-editor-visual ol {
+      list-style-type: decimal;
+      margin-left: 1.5rem;
+      margin-bottom: 0.75rem;
+    }
+    .blog-editor-visual li {
+      margin-bottom: 0.25rem;
+    }
+    .blog-editor-visual blockquote {
+      border-left: 4px solid #ea580c;
+      background-color: #fff7ed;
+      padding: 0.5rem 0.85rem;
+      margin: 0.85rem 0;
+      border-radius: 0.375rem;
+      font-style: italic;
+      color: #7c2d12;
+    }
+    .blog-editor-visual a {
+      color: #ea580c;
+      text-decoration: underline;
+    }
+    .blog-editor-visual hr {
+      margin: 1rem 0;
+      border: 0;
+      border-top: 1px solid #e5e7eb;
+    }
+  `],
   template: `
     <main class="min-h-screen bg-gray-50 px-4 py-10 sm:px-6 lg:px-8">
       <div class="mx-auto max-w-7xl">
@@ -329,20 +386,174 @@ export interface AdminBlogPost {
                 ></textarea>
               </div>
 
-              <!-- Full Content -->
+              <!-- Full Content with Rich Text & HTML Formatting -->
               <div>
-                <label class="block text-xs font-semibold uppercase tracking-wider text-gray-700 mb-1">
-                  Full Article Content <span class="text-red-500">*</span>
-                </label>
+                <div class="flex items-center justify-between mb-1.5">
+                  <label class="block text-xs font-semibold uppercase tracking-wider text-gray-700">
+                    Full Article Content <span class="text-red-500">*</span>
+                  </label>
+                  <div class="flex items-center gap-2">
+                    <button
+                      type="button"
+                      (click)="toggleHtmlMode()"
+                      class="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium border transition-colors shadow-sm cursor-pointer"
+                      [ngClass]="isHtmlMode ? 'bg-orange-600 text-white border-orange-600' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'"
+                      title="Switch between Visual Rich Text and Raw HTML"
+                    >
+                      <span>{{ isHtmlMode ? '👁️ Visual Editor' : 'HTML Source Code' }}</span>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Rich Text Formatting Toolbar -->
+                <div class="rounded-t-lg border border-b-0 border-gray-300 bg-gray-100 p-2 flex flex-wrap items-center gap-1 text-xs">
+                  <!-- Text Styling -->
+                  <div class="flex items-center bg-white rounded border border-gray-200 shadow-sm overflow-hidden">
+                    <button
+                      type="button"
+                      (click)="formatDoc('bold')"
+                      class="px-2.5 py-1 font-bold hover:bg-orange-50 hover:text-orange-600 transition cursor-pointer"
+                      title="Bold (Ctrl+B)"
+                    >
+                      B
+                    </button>
+                    <button
+                      type="button"
+                      (click)="formatDoc('italic')"
+                      class="px-2.5 py-1 italic font-serif hover:bg-orange-50 hover:text-orange-600 border-l border-gray-200 transition cursor-pointer"
+                      title="Italic (Ctrl+I)"
+                    >
+                      I
+                    </button>
+                    <button
+                      type="button"
+                      (click)="formatDoc('underline')"
+                      class="px-2.5 py-1 underline hover:bg-orange-50 hover:text-orange-600 border-l border-gray-200 transition cursor-pointer"
+                      title="Underline (Ctrl+U)"
+                    >
+                      U
+                    </button>
+                  </div>
+
+                  <!-- Headings & Paragraph -->
+                  <div class="flex items-center bg-white rounded border border-gray-200 shadow-sm overflow-hidden">
+                    <button
+                      type="button"
+                      (click)="formatDoc('formatBlock', '<h2>')"
+                      class="px-2.5 py-1 font-bold text-gray-800 hover:bg-orange-50 hover:text-orange-600 transition cursor-pointer"
+                      title="Heading 2"
+                    >
+                      H2
+                    </button>
+                    <button
+                      type="button"
+                      (click)="formatDoc('formatBlock', '<h3>')"
+                      class="px-2.5 py-1 font-semibold text-gray-800 hover:bg-orange-50 hover:text-orange-600 border-l border-gray-200 transition cursor-pointer"
+                      title="Heading 3"
+                    >
+                      H3
+                    </button>
+                    <button
+                      type="button"
+                      (click)="formatDoc('formatBlock', '<p>')"
+                      class="px-2.5 py-1 text-gray-700 hover:bg-orange-50 hover:text-orange-600 border-l border-gray-200 transition cursor-pointer"
+                      title="Normal Paragraph"
+                    >
+                      ¶ Body
+                    </button>
+                  </div>
+
+                  <!-- Lists & Quotes -->
+                  <div class="flex items-center bg-white rounded border border-gray-200 shadow-sm overflow-hidden">
+                    <button
+                      type="button"
+                      (click)="formatDoc('insertUnorderedList')"
+                      class="px-2.5 py-1 hover:bg-orange-50 hover:text-orange-600 transition cursor-pointer"
+                      title="Bullet List"
+                    >
+                      • List
+                    </button>
+                    <button
+                      type="button"
+                      (click)="formatDoc('insertOrderedList')"
+                      class="px-2.5 py-1 hover:bg-orange-50 hover:text-orange-600 border-l border-gray-200 transition cursor-pointer"
+                      title="Numbered List"
+                    >
+                      1. List
+                    </button>
+                    <button
+                      type="button"
+                      (click)="formatDoc('formatBlock', '<blockquote>')"
+                      class="px-2.5 py-1 italic hover:bg-orange-50 hover:text-orange-600 border-l border-gray-200 transition cursor-pointer"
+                      title="Blockquote"
+                    >
+                      “ Quote
+                    </button>
+                  </div>
+
+                  <!-- Links & Structure -->
+                  <div class="flex items-center bg-white rounded border border-gray-200 shadow-sm overflow-hidden">
+                    <button
+                      type="button"
+                      (click)="promptInsertLink()"
+                      class="px-2 py-1 hover:bg-orange-50 hover:text-orange-600 transition cursor-pointer"
+                      title="Insert Link"
+                    >
+                      🔗 Link
+                    </button>
+                    <button
+                      type="button"
+                      (click)="formatDoc('unlink')"
+                      class="px-2 py-1 hover:bg-orange-50 hover:text-orange-600 border-l border-gray-200 transition cursor-pointer"
+                      title="Remove Link"
+                    >
+                      🚫 Unlink
+                    </button>
+                    <button
+                      type="button"
+                      (click)="formatDoc('insertHorizontalRule')"
+                      class="px-2 py-1 hover:bg-orange-50 hover:text-orange-600 border-l border-gray-200 transition cursor-pointer"
+                      title="Horizontal Divider"
+                    >
+                      ― Rule
+                    </button>
+                  </div>
+
+                  <!-- Clear Format -->
+                  <button
+                    type="button"
+                    (click)="formatDoc('removeFormat')"
+                    class="px-2 py-1 rounded bg-white border border-gray-200 shadow-sm text-gray-600 hover:bg-orange-50 hover:text-orange-600 transition ml-auto cursor-pointer"
+                    title="Clear Formatting"
+                  >
+                    🧹 Clear
+                  </button>
+                </div>
+
+                <!-- Visual Mode Editable Area -->
+                <div
+                  *ngIf="!isHtmlMode"
+                  #visualEditor
+                  contenteditable="true"
+                  (input)="onVisualEditorInput($event)"
+                  (blur)="syncFromVisualEditor()"
+                  class="w-full min-h-[220px] max-h-[380px] overflow-y-auto rounded-b-lg border border-gray-300 p-4 text-sm font-sans text-gray-900 focus:outline-none focus:ring-1 focus:ring-orange-500 bg-white blog-editor-visual shadow-inner"
+                  placeholder="Type or format your article content here. Highlight text to format with bold, headings, lists, or blockquotes..."
+                ></div>
+
+                <!-- HTML Source Mode Textarea -->
                 <textarea
-                  rows="8"
+                  *ngIf="isHtmlMode"
+                  rows="10"
                   [(ngModel)]="formData.content"
-                  placeholder="Write the complete article text here. Use separate paragraphs for readability..."
-                  class="w-full rounded-lg border border-gray-300 px-3.5 py-2.5 text-sm font-sans text-gray-900 focus:border-orange-500 focus:outline-none focus:ring-1 focus:ring-orange-500"
+                  placeholder="<p>Write raw HTML content here...</p>"
+                  class="w-full rounded-b-lg border border-gray-300 p-4 text-xs font-mono text-gray-800 bg-gray-50 focus:outline-none focus:ring-1 focus:ring-orange-500 shadow-inner leading-relaxed"
                 ></textarea>
-                <span class="text-[11px] text-gray-400">
-                  Estimated read time: {{ getEstimatedReadTime() }}
-                </span>
+
+                <div class="flex items-center justify-between mt-1 text-[11px] text-gray-400">
+                  <span>{{ isHtmlMode ? 'Raw HTML editing mode active' : 'Rich Text WYSIWYG mode active' }}</span>
+                  <span>Estimated read time: {{ getEstimatedReadTime() }}</span>
+                </div>
               </div>
 
               <!-- Featured Image Upload / URL -->
@@ -533,6 +744,9 @@ export class AdminBlogsComponent implements OnInit {
   isUploadingImage = false;
   currentBlogId: number | null = null;
 
+  @ViewChild('visualEditor') visualEditorRef?: ElementRef<HTMLDivElement>;
+  isHtmlMode = false;
+
   formData = {
     title: '',
     category: 'Philosophy',
@@ -555,6 +769,54 @@ export class AdminBlogsComponent implements OnInit {
 
   get draftCount(): number {
     return this.blogs.filter((b) => b.status === 'Draft').length;
+  }
+
+  formatDoc(command: string, value: string | null = null): void {
+    if (this.isHtmlMode) return;
+    this.focusVisualEditor();
+    document.execCommand(command, false, value ?? undefined);
+    this.syncFromVisualEditor();
+  }
+
+  focusVisualEditor(): void {
+    if (this.visualEditorRef?.nativeElement) {
+      this.visualEditorRef.nativeElement.focus();
+    }
+  }
+
+  promptInsertLink(): void {
+    if (this.isHtmlMode) return;
+    const url = prompt('Enter link URL (e.g. https://example.com):');
+    if (url && url.trim()) {
+      this.formatDoc('createLink', url.trim());
+    }
+  }
+
+  onVisualEditorInput(event: Event): void {
+    const el = event.target as HTMLElement;
+    this.formData.content = el.innerHTML;
+  }
+
+  syncFromVisualEditor(): void {
+    if (this.visualEditorRef?.nativeElement) {
+      this.formData.content = this.visualEditorRef.nativeElement.innerHTML;
+    }
+  }
+
+  syncToVisualEditor(): void {
+    if (this.visualEditorRef?.nativeElement) {
+      this.visualEditorRef.nativeElement.innerHTML = this.formData.content || '';
+    }
+  }
+
+  toggleHtmlMode(): void {
+    if (!this.isHtmlMode) {
+      this.syncFromVisualEditor();
+      this.isHtmlMode = true;
+    } else {
+      this.isHtmlMode = false;
+      setTimeout(() => this.syncToVisualEditor(), 0);
+    }
   }
 
   ngOnInit(): void {
@@ -610,7 +872,9 @@ export class AdminBlogsComponent implements OnInit {
       readTime: '',
       status: 'Draft',
     };
+    this.isHtmlMode = false;
     this.showModal = true;
+    setTimeout(() => this.syncToVisualEditor(), 50);
   }
 
   openEditModal(blog: AdminBlogPost): void {
@@ -627,7 +891,9 @@ export class AdminBlogsComponent implements OnInit {
       readTime: blog.readTime || '',
       status: blog.status,
     };
+    this.isHtmlMode = false;
     this.showModal = true;
+    setTimeout(() => this.syncToVisualEditor(), 50);
   }
 
   closeModal(): void {
@@ -671,6 +937,10 @@ export class AdminBlogsComponent implements OnInit {
   }
 
   saveBlog(overrideStatus?: 'Draft' | 'Published'): void {
+    if (!this.isHtmlMode) {
+      this.syncFromVisualEditor();
+    }
+
     if (!this.formData.title.trim() || !this.formData.content.trim() || !this.formData.excerpt.trim()) {
       this.errorMessage = 'Please provide Title, Summary, and Content.';
       return;

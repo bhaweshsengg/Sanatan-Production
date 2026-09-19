@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
+import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { environment } from 'src/environments/environment';
 
 export interface PublicBlogPost {
@@ -24,6 +25,60 @@ export interface PublicBlogPost {
   selector: 'app-blog',
   standalone: true,
   imports: [CommonModule, FormsModule, RouterLink],
+  styles: [`
+    .blog-article-html h2, .blog-article-html ::ng-deep h2 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #111827;
+      margin-top: 1.5rem;
+      margin-bottom: 0.75rem;
+      line-height: 1.3;
+    }
+    .blog-article-html h3, .blog-article-html ::ng-deep h3 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: #1f2937;
+      margin-top: 1.25rem;
+      margin-bottom: 0.5rem;
+      line-height: 1.35;
+    }
+    .blog-article-html p, .blog-article-html ::ng-deep p {
+      margin-bottom: 1rem;
+      line-height: 1.75;
+    }
+    .blog-article-html ul, .blog-article-html ::ng-deep ul {
+      list-style-type: disc;
+      margin-left: 1.5rem;
+      margin-bottom: 1rem;
+    }
+    .blog-article-html ol, .blog-article-html ::ng-deep ol {
+      list-style-type: decimal;
+      margin-left: 1.5rem;
+      margin-bottom: 1rem;
+    }
+    .blog-article-html li, .blog-article-html ::ng-deep li {
+      margin-bottom: 0.35rem;
+    }
+    .blog-article-html blockquote, .blog-article-html ::ng-deep blockquote {
+      border-left: 4px solid #ea580c;
+      background-color: #fff7ed;
+      padding: 0.85rem 1.2rem;
+      margin: 1.25rem 0;
+      border-radius: 0.5rem;
+      font-style: italic;
+      color: #7c2d12;
+    }
+    .blog-article-html a, .blog-article-html ::ng-deep a {
+      color: #ea580c;
+      text-decoration: underline;
+      font-weight: 500;
+    }
+    .blog-article-html hr, .blog-article-html ::ng-deep hr {
+      margin: 1.5rem 0;
+      border: 0;
+      border-top: 1px solid #e5e7eb;
+    }
+  `],
   template: `
     <div class="min-h-screen bg-gradient-to-b from-orange-50/40 via-white to-gray-50 font-['Inter']">
       <!-- HERO HEADER -->
@@ -317,11 +372,18 @@ export interface PublicBlogPost {
             </div>
 
             <!-- Full Article Body -->
-            <div class="text-base text-gray-800 leading-relaxed space-y-4 font-normal">
-              <p *ngFor="let paragraph of getFormattedParagraphs(selectedBlog.content)">
-                {{ paragraph }}
-              </p>
-            </div>
+            <div
+              *ngIf="isHtmlContent(selectedBlog.content); else plainTextBody"
+              class="blog-article-html text-base text-gray-800 leading-relaxed"
+              [innerHTML]="getSanitizedHtml(selectedBlog.content)"
+            ></div>
+            <ng-template #plainTextBody>
+              <div class="text-base text-gray-800 leading-relaxed space-y-4 font-normal">
+                <p *ngFor="let paragraph of getFormattedParagraphs(selectedBlog.content)">
+                  {{ paragraph }}
+                </p>
+              </div>
+            </ng-template>
 
             <!-- Tags -->
             <div *ngIf="selectedBlog.tags" class="pt-4 border-t border-gray-100">
@@ -376,7 +438,10 @@ export class BlogComponent implements OnInit {
   selectedBlog: PublicBlogPost | null = null;
   isLinkCopied = false;
 
-  constructor(private http: HttpClient) {}
+  constructor(
+    private http: HttpClient,
+    private sanitizer: DomSanitizer
+  ) {}
 
   ngOnInit(): void {
     this.loadBlogs();
@@ -455,6 +520,16 @@ export class BlogComponent implements OnInit {
       .split(/\n\s*\n/)
       .map((p) => p.trim())
       .filter(Boolean);
+  }
+
+  isHtmlContent(content?: string): boolean {
+    if (!content) return false;
+    return /<[a-z][\s\S]*>/i.test(content);
+  }
+
+  getSanitizedHtml(content?: string): SafeHtml {
+    if (!content) return '';
+    return this.sanitizer.bypassSecurityTrustHtml(content);
   }
 
   getTagsList(tags?: string | null): string[] {

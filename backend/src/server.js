@@ -21,6 +21,7 @@ import eventRoutes from './routes/event.routes.js';
 import statsRoutes from './routes/stats.routes.js';
 import communityRoutes from './routes/community.routes.js';
 import blogRoutes from './routes/blog.routes.js';
+import religiousArticleRoutes from './routes/religiousArticle.routes.js';
 
 import { errorHandler } from './middleware/errorHandler.js';
 
@@ -154,6 +155,8 @@ app.use('/api/v1/event', eventRoutes);
 app.use('/api/v1/stats', statsRoutes);
 app.use('/api/v1/community', communityRoutes);
 app.use('/api/v1/blog', blogRoutes);
+app.use('/api/v1/religious-article', religiousArticleRoutes);
+app.use('/api/v1/religious-articles', religiousArticleRoutes);
 
 /* =========================
    PUBLIC API ROUTES
@@ -168,6 +171,8 @@ app.use('/api/v1/public/user-registration', userRegistrationRoutes);
 app.use('/api/v1/public/event', eventRoutes);
 app.use('/api/v1/public/community', communityRoutes);
 app.use('/api/v1/public/blog', blogRoutes);
+app.use('/api/v1/public/religious-article', religiousArticleRoutes);
+app.use('/api/v1/public/religious-articles', religiousArticleRoutes);
 
 /* =========================
    ERROR HANDLER

@@ -307,7 +307,8 @@ export class AddServiceComponent implements OnInit {
     'Health & Ayurveda Wellness',
     'Community Welfare & Volunteer',
     'IT & Professional Services',
-    'Other Community Services'
+    'Other Community Services',
+    'Justice of Peace'
   ];
 
   cities: string[] = [
@@ -331,7 +332,7 @@ export class AddServiceComponent implements OnInit {
     private commonService: CommonService,
     private http: HttpClient,
     private router: Router
-  ) {}
+  ) { }
 
   ngOnInit(): void {
     this.loadCities();

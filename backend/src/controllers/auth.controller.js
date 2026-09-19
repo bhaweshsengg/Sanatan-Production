@@ -9,8 +9,17 @@ import { sendEmail } from '../utils/email.js';
 
 export const register = async (req, res) => {
   try {
-    const { username, email, password, role: reqRole } = req.body;
-    
+    const { fullName, name, username, email, password, role: reqRole } = req.body;
+    const resolvedFullName = (fullName || name || username || '').trim();
+
+    if (!resolvedFullName) {
+      return sendError(res, 400, 'Full Name is required');
+    }
+
+    if (!email || !String(email).trim()) {
+      return sendError(res, 400, 'Valid email address is required');
+    }
+
     // Default role for self-registered users
     let role = 'User';
     if (reqRole) {
@@ -20,14 +29,18 @@ export const register = async (req, res) => {
       }
     }
 
+    const cleanEmail = email.trim().toLowerCase();
     const existingUser = await prisma.user.findFirst({
       where: {
-        OR: [{ username }, { email }]
+        OR: [{ email: cleanEmail }, { username: resolvedFullName }]
       }
     });
 
     if (existingUser) {
-      return sendError(res, 400, 'Username or email already exists');
+      if (existingUser.email?.toLowerCase() === cleanEmail) {
+        return sendError(res, 400, 'An account with this email address already exists');
+      }
+      return sendError(res, 400, 'An account with this Full Name already exists');
     }
 
     const salt = await bcrypt.genSalt(10);
@@ -35,8 +48,8 @@ export const register = async (req, res) => {
 
     const newUser = await prisma.user.create({
       data: {
-        username,
-        email,
+        username: resolvedFullName,
+        email: cleanEmail,
         passwordHash,
         role,
         isActive: true
@@ -47,6 +60,7 @@ export const register = async (req, res) => {
       message: 'User registered successfully',
       data: {
         id: newUser.id,
+        fullName: newUser.username,
         username: newUser.username,
         email: newUser.email,
         role: newUser.role
@@ -88,6 +102,7 @@ export const login = async (req, res) => {
       message: 'Login successful',
       data: {
         id: user.id,
+        fullName: user.username,
         username: user.username,
         email: user.email,
         role: roleDisplay,

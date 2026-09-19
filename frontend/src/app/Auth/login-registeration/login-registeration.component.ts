@@ -126,12 +126,12 @@ import { environment } from '../../../environments/environment';
           <div>
             <input
               type="text"
-              formControlName="name"
-              placeholder="Username"
+              formControlName="fullName"
+              placeholder="Full Name"
               class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-400 outline-none"
             />
-            <div *ngIf="registerForm.get('name')?.invalid && (registerForm.get('name')?.dirty || registerForm.get('name')?.touched)" class="text-red-500 text-sm mt-1">
-              Username is required.
+            <div *ngIf="registerForm.get('fullName')?.invalid && (registerForm.get('fullName')?.dirty || registerForm.get('fullName')?.touched)" class="text-red-500 text-sm mt-1">
+              Full Name is required (min 2 characters).
             </div>
           </div>
           <div>
@@ -262,7 +262,7 @@ export class LoginRegisterationComponent {
     });
 
     this.registerForm = this.fb.group({
-      name: ['', [Validators.required, Validators.minLength(2)]],
+      fullName: ['', [Validators.required, Validators.minLength(2)]],
       email: ['', [Validators.required, Validators.email]],
       password: ['', [Validators.required, Validators.minLength(6)]],
       confirmPassword: ['', [Validators.required]],
@@ -350,7 +350,8 @@ export class LoginRegisterationComponent {
       this.isLoading = true;
       const formData = this.registerForm.value;
       const registerData = {
-        username: formData.name,
+        fullName: formData.fullName,
+        username: formData.fullName,
         email: formData.email,
         password: formData.password,
         role: formData.role

@@ -336,7 +336,183 @@ export const ensureRequiredTables = async () => {
         console.warn('Starter community groups seed check:', seedErr?.message);
       }
 
-      // 10. Ensure business_business has imageUrl column
+      // 10. religious_article
+      await prisma.$executeRawUnsafe(`
+        CREATE TABLE IF NOT EXISTS \`religious_article\` (
+          \`id\` INT NOT NULL AUTO_INCREMENT,
+          \`title\` VARCHAR(255) NOT NULL,
+          \`sanskrit_title\` VARCHAR(255) NULL,
+          \`category\` VARCHAR(100) NOT NULL,
+          \`deity\` VARCHAR(100) NULL,
+          \`source\` VARCHAR(255) NULL,
+          \`summary\` TEXT NOT NULL,
+          \`sanskrit_text\` TEXT NULL,
+          \`transliteration\` TEXT NULL,
+          \`english_meaning\` TEXT NULL,
+          \`significance\` TEXT NULL,
+          \`best_time_to_chant\` VARCHAR(191) NULL,
+          \`verses\` JSON NULL,
+          \`status\` ENUM('Draft', 'Published', 'Archived') NOT NULL DEFAULT 'Published',
+          \`created_at\` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+          \`updated_at\` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+          PRIMARY KEY (\`id\`),
+          INDEX \`religious_article_category_idx\` (\`category\`),
+          INDEX \`religious_article_status_idx\` (\`status\`)
+        ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+      `);
+
+      // Seed starter religious articles if table is empty
+      try {
+        const existingArticlesCount = await prisma.$queryRawUnsafe('SELECT COUNT(*) as count FROM religious_article');
+        if (Number(existingArticlesCount[0]?.count || 0) === 0) {
+          const starterArticles = [
+            {
+              title: 'Maha Gayatri Mantra',
+              sanskrit_title: 'महा गायत्री मन्त्र',
+              category: 'Mantras',
+              deity: 'Savitr / Devi Gayatri (Supreme Light)',
+              source: 'Rigveda (Mandala 3, Sukta 62, Verse 10)',
+              summary: 'The mother of all Vedic mantras, illuminating the intellect and awakening divine consciousness within the practitioner.',
+              sanskrit_text: 'ॐ भूर्भुवः स्वः तत्सवितुर्वरेण्यं ।\\nभर्गो देवस्य धीमहि धियो यो नः प्रचोदयात् ॥',
+              transliteration: 'Oṁ Bhūr Bhuvaḥ Svaḥ Tat-Savitur Vareṇyaṁ |\\nBhargo Devasya Dhīmahi Dhiyo Yo Naḥ Pracodayāt ||',
+              english_meaning: 'We meditate upon that supreme adorable solar splendor of the divine creator (Savitr); may that divine light illuminate and inspire our intellect and higher consciousness.',
+              significance: 'Gayatri Mantra is considered the essence of the Vedas. Chanting it with focus calms the nervous system, stimulates the frontal cortex, dispels darkness of ignorance, and invokes profound spiritual intuition.',
+              best_time_to_chant: 'Brahma Muhurta (dawn), midday (Madhyahna), and twilight (Sandhya)',
+              verses: null,
+              status: 'Published'
+            },
+            {
+              title: 'Maha Mrityunjaya Mantra',
+              sanskrit_title: 'महा मृत्युञ्जय मन्त्र',
+              category: 'Mantras',
+              deity: 'Lord Shiva (Tryambaka)',
+              source: 'Rigveda (Mandala 7, Sukta 59, Verse 12)',
+              summary: 'The life-protecting conqueror of death mantra, seeking liberation from the fear of mortality and cyclic rebirth.',
+              sanskrit_text: 'ॐ त्र्यम्बकं यजामहे सुगन्धिं पुष्टिवर्धनम् ।\\nउर्वारुकमिव बन्धनान्मृत्योर्मुक्षीय मामृतात् ॥',
+              transliteration: 'Oṁ Tryambakaṁ Yajāmahe Sugandhiṁ Puṣṭi-Vardhanam |\\nUrvārukam-Iva Bandhanān-Mṛtyor-Mukṣīya Māmṛtāt ||',
+              english_meaning: 'We worship the Three-Eyed Lord Shiva, who is fragrant and nourishes all beings. As a ripe cucumber is severed effortlessly from its stem, so may we be liberated from the bondage of death and delusion, and anchored in immortality.',
+              significance: 'Revered across Sanatan tradition as a shield of healing, mental courage, and physical longevity. It dissolves fears, protects during crises, and leads the seeker toward self-realization.',
+              best_time_to_chant: 'Early mornings, during illness or emotional distress, and Mondays',
+              verses: null,
+              status: 'Published'
+            },
+            {
+              title: 'Shri Hanuman Chalisa',
+              sanskrit_title: 'श्री हनुमान चालीसा',
+              category: 'Chalisas',
+              deity: 'Lord Hanuman (Pavanputra)',
+              source: 'Composed by Goswami Tulsidas (Awadhi/Sanskrit roots)',
+              summary: 'A 40-verse hymn in praise of Lord Hanuman, celebrating His unmatched devotion, strength, courage, and wisdom.',
+              sanskrit_text: 'जय हनुमान ज्ञान गुन सागर । जय कपीस तिहुँ लोक उजागर ॥\\nराम दूत अतुलित बल धामा । अञ्जनि पुत्र पवनसुत नामा ॥',
+              transliteration: 'Jaya Hanumāna Jñāna Guna Sāgara | Jaya Kapīsa Tihuṁ Loka Ujāgara ||\\nRāma Dūta Atulita Bala Dhāmā | Añjani Putra Pavanasuta Nāmā ||',
+              english_meaning: 'Hail Hanuman, ocean of wisdom and virtue! Hail the King of Vanaras, who illuminates all three worlds! You are Lord Rama’s envoy, an abode of incomparable strength, born of Anjana, and praised as the Son of the Wind.',
+              significance: 'Recited by millions across the globe for overcoming fear, anxiety, obstacles, and negative influences. It instills immense spiritual willpower, humbleness, and unwavering devotion (Bhakti).',
+              best_time_to_chant: 'Tuesdays, Saturdays, Hanuman Jayanti, or whenever in need of strength',
+              verses: null,
+              status: 'Published'
+            },
+            {
+              title: 'Shiva Tandava Stotram',
+              sanskrit_title: 'शिव ताण्डव स्तोत्रम्',
+              category: 'Stotrams',
+              deity: 'Lord Shiva (Nataraja)',
+              source: 'Composed by Ravana (Uttara Kanda tradition)',
+              summary: 'A rhythmic and poetic hymn describing the divine cosmic dance (Tandava) of Mahadev with ecstatic devotion.',
+              sanskrit_text: 'जटाटवीगलज्जलप्रवाहपावितस्थले\\nगलेऽवलम्ब्य लम्बितां भुजङ्गतुङ्गमालिकाम् ।\\nडमड्डमड्डमड्डमन्निनादवड्डमर्वयं\\nचकार चण्डताण्डवं तनोतु नः शिवः शिवम् ॥',
+              transliteration: 'Jaṭāṭavīgalajjalapravāhapāvitasthale\\nGale\'valambya Lambitāṁ Bhujaṅgatuṅgamālikām |\\nḌamaḍḍamaḍḍamaḍḍaman-Ninādavaḍḍamarvayaṁ\\nCakāra Caṇḍatāṇḍavaṁ Tanotu Naḥ Śivaḥ Śivam ||',
+              english_meaning: 'With His sacred neck consecrated by the flow of water cascading from His dense matted hair, and adorned with a garland of serpents hanging around His neck, Lord Shiva performs His fierce Tandava to the rhythmic sound of damaru: may that Shiva bestow auspiciousness upon us!',
+              significance: 'The stotram creates powerful resonant spiritual vibrations, removes inertia, and awakens profound reverence for Lord Shiva as the cosmic regenerator and ultimate consciousness.',
+              best_time_to_chant: 'Mondays, Pradosh Vrat, and Maha Shivaratri',
+              verses: null,
+              status: 'Published'
+            },
+            {
+              title: 'Shri Ganesh Atharvashirsha & Shloka',
+              sanskrit_title: 'श्री गणेश अथर्वशीर्ष एवं श्लोक',
+              category: 'Mantras',
+              deity: 'Lord Ganesha (Vighnaharta)',
+              source: 'Atharvaveda (Ganapati Upanishad)',
+              summary: 'Sacred invocation to Lord Ganesha, the embodiment of wisdom, auspicious beginnings, and remover of all obstacles.',
+              sanskrit_text: 'वक्रतुण्ड महाकाय सूर्यकोटि समप्रभ ।\\nनिर्विघ्नं कुरु मे देव सर्वकार्येषु सर्वदा ॥',
+              transliteration: 'Vakratuṇḍa Mahākāya Sūryakoṭi Samaprabha |\\nNirvighnaṁ Kuru Me Deva Sarvakāryeṣu Sarvadā ||',
+              english_meaning: 'O Lord with the curved trunk and immense cosmic form, whose brilliance equals millions of suns: please make all my endeavors free from obstacles, always and forever.',
+              significance: 'Chanted at the inception of all auspicious endeavors, ceremonies, examinations, business launches, and daily prayers to invoke clarity, blessing, and unobstructed success.',
+              best_time_to_chant: 'Every morning and before beginning any new task or voyage',
+              verses: null,
+              status: 'Published'
+            },
+            {
+              title: 'Shrimad Bhagavad Gita Guide',
+              sanskrit_title: 'श्रीमद्भगवद्गीता सार',
+              category: 'Scriptures',
+              deity: 'Lord Krishna & Arjuna',
+              source: 'Mahabharata (Bhishma Parva, Chapters 23–40)',
+              summary: 'The timeless dialogue on duty, spiritual realization, selflessness, and liberation delivered by Lord Krishna on the battlefield of Kurukshetra.',
+              sanskrit_text: 'कर्मण्येवाधिकारस्ते मा फलेषु कदाचन ।\\nमा कर्मफलहेतुर्भूर्मा ते सङ्गोऽस्त्वकर्मणि ॥',
+              transliteration: 'Karmaṇyevādhikāraste Mā Phaleṣu Kadācana |\\nMā Karmaphalaheturbhūrmā Te Saṅgo\'stvakarmaṇi ||',
+              english_meaning: 'You have a right only to perform your prescribed duty, but never to the fruits of action. Never consider yourself the cause of the results of your activities, nor be attached to inaction.',
+              significance: 'The Gita is the crest-jewel of Vedic philosophy, harmonizing Karma Yoga (selfless action), Bhakti Yoga (loving devotion), and Jnana Yoga (spiritual knowledge) to guide human life through every crisis.',
+              best_time_to_chant: 'Daily study and contemplation',
+              verses: JSON.stringify([
+                {
+                  sanskrit: 'यदा यदा हि धर्मस्य ग्लानिर्भवति भारत । अभ्युत्थानमधर्मस्य तदात्मानं सृजाम्यहम् ॥',
+                  transliteration: 'Yadā yadā hi dharmasya glānirbhavati bhārata | Abhyutthānamadharmasya tadātmānaṁ sṛjāmyaham ||',
+                  english: 'Whenever there is a decline in righteousness and rise in unrighteousness, O Arjuna, at that time I manifest Myself.'
+                },
+                {
+                  sanskrit: 'सर्वधर्मान्परित्यज्य मामेकं शरणं व्रज । अहं त्वां सर्वपापेभ्यो मोक्षयिष्यामि मा शुचः ॥',
+                  transliteration: 'Sarvadharmānparityajya māmekaṁ śaraṇaṁ vraja | Ahaṁ tvāṁ sarvapāpebhyo mokṣayiṣyāmi mā śucaḥ ||',
+                  english: 'Abandon all varieties of dharmas and surrender unto Me alone. I shall deliver you from all sinful reactions; do not grieve.'
+                }
+              ]),
+              status: 'Published'
+            },
+            {
+              title: 'Ya Devi Sarvabhuteshu (Durga Stuti)',
+              sanskrit_title: 'या देवी सर्वभूतेषु (दुर्गा स्तुति)',
+              category: 'Stotrams',
+              deity: 'Maa Durga / Adishakti',
+              source: 'Devi Mahatmyam / Markandeya Purana (Aparajita Stuti)',
+              summary: 'Sacred hymn praising the divine mother as the supreme consciousness dwelling in all beings in various divine aspects.',
+              sanskrit_text: 'या देवी सर्वभूतेषु शक्ति-रूपेण संस्थिता ।\\nनमस्तस्यै नमस्तस्यै नमस्तस्यै नमो नमः ॥',
+              transliteration: 'Yā Devī Sarvabhūteṣu Śakti-Rūpeṇa Saṁsthitā |\\nNamastasyai Namastasyai Namastasyai Namo Namaḥ ||',
+              english_meaning: 'To the Divine Goddess who abides in all living beings in the form of Power and Energy: salutations to Her, salutations to Her, salutations to Her, repeated salutations.',
+              significance: 'Chanted during Navratri and daily worship to honor the primordial feminine energy (Shakti) that sustains, protects, and enlightens the universe.',
+              best_time_to_chant: 'Fridays, Navratri, and evening Aarti',
+              verses: null,
+              status: 'Published'
+            }
+          ];
+
+          for (const item of starterArticles) {
+            await prisma.$executeRawUnsafe(`
+              INSERT INTO \`religious_article\` (
+                \`title\`, \`sanskrit_title\`, \`category\`, \`deity\`, \`source\`,
+                \`summary\`, \`sanskrit_text\`, \`transliteration\`, \`english_meaning\`,
+                \`significance\`, \`best_time_to_chant\`, \`verses\`, \`status\`, \`created_at\`, \`updated_at\`
+              ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
+            `,
+              item.title,
+              item.sanskrit_title,
+              item.category,
+              item.deity,
+              item.source,
+              item.summary,
+              item.sanskrit_text,
+              item.transliteration,
+              item.english_meaning,
+              item.significance,
+              item.best_time_to_chant,
+              item.verses,
+              item.status
+            );
+          }
+        }
+      } catch (articleSeedErr) {
+        console.warn('Starter religious articles seed check:', articleSeedErr?.message);
+      }
+
+      // 11. Ensure business_business has imageUrl column
       try {
         await prisma.$executeRawUnsafe(`
           ALTER TABLE \`business_business\` ADD COLUMN \`imageUrl\` VARCHAR(2048) NULL;
