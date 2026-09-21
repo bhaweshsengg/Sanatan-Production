@@ -4,6 +4,7 @@ import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { environment } from '../../../environments/environment';
+import { TempleSearchSelectComponent } from '../../shared/components/temple-search-select/temple-search-select.component';
 
 interface TempleOption {
   id: number;
@@ -16,7 +17,7 @@ interface TempleOption {
 @Component({
   selector: 'app-mandir-user-registration',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterLink],
+  imports: [CommonModule, ReactiveFormsModule, RouterLink, TempleSearchSelectComponent],
   template: `
     <div class="min-h-screen bg-slate-50 px-3 sm:px-6 lg:px-8 py-8 sm:py-12">
       <div class="mx-auto max-w-3xl rounded-2xl bg-white shadow-xl ring-1 ring-slate-200/80 overflow-hidden">
@@ -242,23 +243,15 @@ interface TempleOption {
               </div>
             </div>
 
-            <!-- Temple Selection (Dropdown) -->
+            <!-- Temple Selection (Searchable) -->
             <div>
-              <label class="mb-1.5 block text-sm font-semibold text-slate-700">
-                Select Temple <span class="text-red-500">*</span>
-              </label>
-              <select
+              <app-temple-search-select
                 formControlName="mandirId"
-                [class.border-red-500]="form.get('mandirId')?.touched && form.get('mandirId')?.invalid"
-                class="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-200 transition cursor-pointer"
-              >
-                <option value="">
-                  {{ loadingTemples ? 'Loading temples list...' : '-- Select Temple to Join (' + temples.length + ' available) --' }}
-                </option>
-                <option *ngFor="let temple of temples" [value]="temple.id">
-                  {{ temple.mandir_name }}{{ temple.city?.name ? ' (' + temple.city?.name + ')' : '' }}
-                </option>
-              </select>
+                label="Select Temple"
+                [required]="true"
+                [temples]="temples"
+                [isInvalid]="(form.get('mandirId')?.touched && form.get('mandirId')?.invalid) ?? false"
+              ></app-temple-search-select>
               <div *ngIf="form.get('mandirId')?.touched && form.get('mandirId')?.invalid" class="mt-1 text-xs text-red-600 font-medium">
                 Please select the Mandir you wish to join.
               </div>

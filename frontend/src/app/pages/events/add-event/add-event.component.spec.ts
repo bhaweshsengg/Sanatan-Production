@@ -28,6 +28,8 @@ describe('AddEventComponent', () => {
     component = fixture.componentInstance;
     http = TestBed.inject(HttpTestingController);
     fixture.detectChanges();
+    const templeReq = http.expectOne(req => req.url.includes('/temple') && req.method === 'GET');
+    templeReq.flush({ data: [] });
   });
 
   it('should create', () => {

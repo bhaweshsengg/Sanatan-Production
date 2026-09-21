@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../../environments/environment';
+import { TempleSearchSelectComponent, TempleSelectItem } from '../../../shared/components/temple-search-select/temple-search-select.component';
 
 interface TempleOption {
   id: number;
@@ -15,7 +16,7 @@ interface TempleOption {
 @Component({
   selector: 'app-add-event',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, TempleSearchSelectComponent],
   template: `
     <div class="container mx-auto mt-20 px-4 py-12">
       <div class="max-w-4xl mx-auto">
@@ -132,75 +133,19 @@ interface TempleOption {
                   </div>
 
                   <!-- Select Temple -->
-                  <div class="space-y-3">
-                    <div>
-                      <label class="text-sm font-semibold text-gray-900" for="templeSelectSearch">Select Temple</label>
-                      <p class="text-xs text-gray-500">Associate with an existing temple so this event appears on that temple's page.</p>
-                    </div>
+                  <div class="space-y-1">
+                    <app-temple-search-select
+                      [(ngModel)]="event.templeId"
+                      name="templeId"
+                      label="Select Temple"
+                      helperText="Associate with an existing temple so this event appears on that temple's page."
+                      [allowNone]="true"
+                      noneLabel="-- None / Custom Mandir (No Temple Link) --"
+                      [temples]="temples"
+                      (templeSelected)="onTempleSelected($event)"
+                    ></app-temple-search-select>
 
-                    <!-- Selected Temple Indicator Badge -->
-                    <div *ngIf="event.templeId && selectedTempleDisplay" class="flex items-center justify-between rounded-md border border-orange-200 bg-orange-50 px-3 py-2 text-sm text-orange-900">
-                      <div class="flex items-center gap-2 truncate">
-                        <span>🛕</span>
-                        <span class="font-medium truncate">{{ selectedTempleDisplay }}</span>
-                      </div>
-                      <button
-                        type="button"
-                        (click)="clearSelectedTemple()"
-                        class="text-xs font-semibold text-orange-700 hover:text-orange-900 hover:underline ml-2 whitespace-nowrap"
-                      >
-                        Change
-                      </button>
-                    </div>
-
-                    <!-- Searchable Dropdown Selector -->
-                    <div class="relative">
-                      <div class="relative">
-                        <input
-                          id="templeSelectSearch"
-                          name="templeSearch"
-                          type="text"
-                          class="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 pr-8 text-sm focus:border-orange-500 focus:outline-none focus:ring-1 focus:ring-orange-500"
-                          [placeholder]="event.templeId ? 'Change temple selection...' : 'Search and select a temple...'"
-                          [(ngModel)]="templeSearchQuery"
-                          (focus)="isTempleDropdownOpen = true"
-                          (input)="isTempleDropdownOpen = true"
-                        />
-                        <span class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-gray-400 text-xs">
-                          ▼
-                        </span>
-                      </div>
-
-                      <!-- Dropdown overlay list -->
-                      <div
-                        *ngIf="isTempleDropdownOpen"
-                        class="absolute z-50 mt-1 max-h-56 w-full overflow-auto rounded-md border border-gray-200 bg-white py-1 shadow-lg text-sm"
-                      >
-                        <div
-                          (click)="clearSelectedTemple(); isTempleDropdownOpen = false"
-                          class="px-3 py-2 text-xs font-medium text-gray-500 hover:bg-gray-100 cursor-pointer border-b border-gray-100"
-                        >
-                          -- None / Custom Mandir (No Temple Link) --
-                        </div>
-                        <div *ngIf="filteredTemples.length === 0" class="px-3 py-4 text-center text-xs text-gray-400">
-                          No temples match "{{ templeSearchQuery }}"
-                        </div>
-                        <div
-                          *ngFor="let t of filteredTemples"
-                          (click)="selectTemple(t)"
-                          class="px-3 py-2 hover:bg-orange-50 cursor-pointer flex items-center justify-between border-b border-gray-50 last:border-0"
-                          [class.bg-orange-50]="event.templeId === t.id"
-                        >
-                          <div>
-                            <div class="font-medium text-gray-900">{{ t.mandir_name }}</div>
-                            <div class="text-xs text-gray-500">{{ t.city?.name || 'New Zealand' }}</div>
-                          </div>
-                          <span *ngIf="event.templeId === t.id" class="text-xs font-bold text-orange-600">✓ Selected</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <p *ngIf="!event.templeId" class="text-xs text-gray-400 italic">
+                    <p *ngIf="!event.templeId" class="text-xs text-gray-400 italic mt-1.5">
                       If not in the list, you can still type a custom temple name below in Location Details.
                     </p>
                   </div>
@@ -414,6 +359,20 @@ export class AddEventComponent implements OnInit {
       (t.city?.name && t.city.name.toLowerCase().includes(q)) ||
       (t.full_address && t.full_address.toLowerCase().includes(q))
     );
+  }
+
+  onTempleSelected(temple: TempleSelectItem | null): void {
+    if (temple) {
+      this.event.templeId = temple.id;
+      this.event.templeName = temple.mandir_name;
+      this.selectedTempleDisplay = temple.mandir_name + (temple.city?.name ? ` (${temple.city.name})` : '');
+      if (!this.event.address && temple.full_address) {
+        this.event.address = temple.full_address;
+      }
+    } else {
+      this.event.templeId = null;
+      this.selectedTempleDisplay = '';
+    }
   }
 
   selectTemple(temple: TempleOption): void {
