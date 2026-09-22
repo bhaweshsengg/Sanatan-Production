@@ -1,4 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 
 import { TemplesComponent } from './temples.component';
 
@@ -8,7 +11,8 @@ describe('TemplesComponent', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      imports: [TemplesComponent]
+      imports: [TemplesComponent],
+      providers: [provideRouter([]), provideHttpClient(), provideHttpClientTesting()]
     });
     fixture = TestBed.createComponent(TemplesComponent);
     component = fixture.componentInstance;

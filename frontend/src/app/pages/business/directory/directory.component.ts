@@ -3,6 +3,7 @@ import { Component, OnInit } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { CommonService } from 'src/app/shared/common.service';
+import { AuthService } from 'src/app/Auth/auth.service';
 import { environment } from 'src/environments/environment';
 
 @Component({
@@ -19,6 +20,8 @@ export class DirectoryComponent implements OnInit {
 
   searchTerm = '';
   selectedCategory = 'All';
+  selectedCity = 'All';
+
   categories: string[] = [
     'All',
     'Priest / Purohit / Pandit Services',
@@ -36,24 +39,103 @@ export class DirectoryComponent implements OnInit {
     'Other'
   ];
 
+  cities: string[] = ['All'];
+
   toastMessage = '';
   toastType: 'success' | 'error' = 'success';
   showToast = false;
 
-  constructor(private commonService: CommonService) {}
+  // Appointment Modal State
+  selectedServiceForAppointment: any = null;
+  isSubmittingAppointment = false;
+  appointmentForm = {
+    fullName: '',
+    email: '',
+    phone: '',
+    preferredDate: '',
+    preferredTime: '',
+    serviceName: '',
+    notes: '',
+  };
+
+  constructor(
+    private commonService: CommonService,
+    private authService: AuthService
+  ) {}
 
   ngOnInit(): void {
+    this.loadCities();
     this.fetchServices();
+  }
+
+  loadCities(): void {
+    this.commonService.getCities().subscribe({
+      next: (data: any[]) => {
+        const standardCities = [
+          'All',
+          'Auckland',
+          'Wellington',
+          'Christchurch',
+          'Hamilton',
+          'Tauranga',
+          'Napier-Hastings',
+          'Dunedin',
+          'Palmerston North',
+          'Nelson',
+          'Rotorua',
+          'New Plymouth',
+          'Whangarei',
+          'Invercargill',
+          'Queenstown'
+        ];
+        if (Array.isArray(data) && data.length > 0) {
+          const apiCities = data
+            .map((c) => (typeof c === 'string' ? c : c.city || c.name))
+            .filter(Boolean);
+          this.cities = Array.from(new Set([...standardCities, ...apiCities]));
+        } else {
+          this.cities = standardCities;
+        }
+      },
+      error: () => {
+        this.cities = [
+          'All',
+          'Auckland',
+          'Wellington',
+          'Christchurch',
+          'Hamilton',
+          'Tauranga',
+          'Napier-Hastings',
+          'Dunedin',
+          'Palmerston North',
+          'Nelson',
+          'Rotorua',
+          'New Plymouth',
+          'Whangarei',
+          'Invercargill',
+          'Queenstown'
+        ];
+      }
+    });
   }
 
   fetchServices(): void {
     this.loading = true;
-    this.commonService.getBusinesses().subscribe({
+    // Query approved services
+    this.commonService.getBusinesses({ status: 'Approved', limit: 'all' }).subscribe({
       next: (data) => {
         const approved = Array.isArray(data)
-          ? data.filter((business: any) => !business.status || business.status === 'Approved')
+          ? data.filter((b: any) => !b.status || b.status === 'Approved')
           : [];
         this.businesses = approved;
+
+        // Dynamically add any city found in active listings
+        approved.forEach((b: any) => {
+          if (b.city && !this.cities.includes(b.city)) {
+            this.cities.push(b.city);
+          }
+        });
+
         this.filterServices();
         this.loading = false;
       },
@@ -69,14 +151,24 @@ export class DirectoryComponent implements OnInit {
     this.filterServices();
   }
 
+  setCity(city: string): void {
+    this.selectedCity = city;
+    this.filterServices();
+  }
+
   filterServices(): void {
     const q = this.searchTerm.trim().toLowerCase();
     const cat = this.selectedCategory;
+    const city = this.selectedCity;
 
     this.filteredBusinesses = this.businesses.filter((biz) => {
       const matchesCategory =
         cat === 'All' ||
         (biz.category && biz.category.toLowerCase().includes(cat.toLowerCase()));
+
+      const matchesCity =
+        city === 'All' ||
+        (biz.city && biz.city.toLowerCase().trim() === city.toLowerCase().trim());
 
       const matchesSearch =
         !q ||
@@ -85,9 +177,72 @@ export class DirectoryComponent implements OnInit {
         (biz.category && biz.category.toLowerCase().includes(q)) ||
         (biz.description && biz.description.toLowerCase().includes(q)) ||
         (biz.city && biz.city.toLowerCase().includes(q)) ||
-        (biz.address && biz.address.toLowerCase().includes(q));
+        (biz.address && biz.address.toLowerCase().includes(q)) ||
+        (biz.services && biz.services.toLowerCase().includes(q));
 
-      return matchesCategory && matchesSearch;
+      return matchesCategory && matchesCity && matchesSearch;
+    });
+  }
+
+  resetAllFilters(): void {
+    this.searchTerm = '';
+    this.selectedCategory = 'All';
+    this.selectedCity = 'All';
+    this.filterServices();
+  }
+
+  // Appointment Modal
+  openAppointmentModal(biz: any): void {
+    this.selectedServiceForAppointment = biz;
+    const user = this.authService.getUserData();
+
+    // Calculate tomorrow's date formatted as YYYY-MM-DD
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const defaultDateStr = tomorrow.toISOString().split('T')[0];
+
+    this.appointmentForm = {
+      fullName: user ? `${user.firstName || user.name || ''} ${user.lastName || ''}`.trim() : '',
+      email: user?.email || '',
+      phone: user?.mobile || user?.phone || '',
+      preferredDate: defaultDateStr,
+      preferredTime: '10:00 AM',
+      serviceName: biz.businessName || 'General Service',
+      notes: '',
+    };
+  }
+
+  closeAppointmentModal(): void {
+    this.selectedServiceForAppointment = null;
+    this.isSubmittingAppointment = false;
+  }
+
+  submitAppointment(): void {
+    if (
+      !this.appointmentForm.fullName.trim() ||
+      !this.appointmentForm.email.trim() ||
+      !this.appointmentForm.phone.trim() ||
+      !this.appointmentForm.preferredDate.trim()
+    ) {
+      this.showToastMessage('Please fill in your name, email, phone, and preferred date.', 'error');
+      return;
+    }
+
+    this.isSubmittingAppointment = true;
+    const bizId = this.selectedServiceForAppointment.id;
+
+    this.commonService.requestAppointment(bizId, this.appointmentForm).subscribe({
+      next: (res: any) => {
+        this.isSubmittingAppointment = false;
+        const msg = res?.message || 'Appointment requested successfully! The provider will contact you shortly.';
+        this.showToastMessage(msg, 'success');
+        this.closeAppointmentModal();
+      },
+      error: (err: any) => {
+        this.isSubmittingAppointment = false;
+        const msg = err?.error?.message || err?.message || 'Failed to submit appointment request. Please try again.';
+        this.showToastMessage(msg, 'error');
+      },
     });
   }
 
@@ -115,6 +270,6 @@ export class DirectoryComponent implements OnInit {
     setTimeout(() => {
       this.showToast = false;
       this.toastMessage = '';
-    }, 3000);
+    }, 4000);
   }
 }

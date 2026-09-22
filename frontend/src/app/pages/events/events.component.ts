@@ -125,6 +125,16 @@ interface CommunityEvent {
                   {{ event.joined ? '✓ Joined' : 'Join Event' }}
                 </button>
                 <button
+                  type="button"
+                  (click)="openQrModal(event)"
+                  class="w-full mt-2 border border-orange-200 bg-orange-50/90 hover:bg-orange-100 text-orange-700 py-2 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                >
+                  <svg class="w-4 h-4 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"></path>
+                  </svg>
+                  <span>Scan to Join / QR Code</span>
+                </button>
+                <button
                   *ngIf="isAdmin"
                   type="button"
                   class="w-full mt-2 border border-red-300 text-red-700 py-2 rounded-lg text-sm font-medium hover:bg-red-50 transition-colors"
@@ -161,14 +171,26 @@ interface CommunityEvent {
                   <div>👥 {{ event.attendees }} attending</div>
                 </div>
               </div>
-              <button
-                *ngIf="isAdmin"
-                type="button"
-                class="w-full mt-4 border border-red-300 text-red-700 py-2 rounded-lg text-sm font-medium hover:bg-red-50 transition-colors"
-                (click)="confirmDeleteEvent(event)"
-              >
-                Delete Event
-              </button>
+              <div class="mt-4 flex flex-col gap-2">
+                <button
+                  type="button"
+                  (click)="openQrModal(event)"
+                  class="w-full border border-gray-200 bg-white hover:bg-gray-100 text-gray-700 py-2 rounded-lg text-xs font-medium flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                >
+                  <svg class="w-3.5 h-3.5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"></path>
+                  </svg>
+                  <span>Event QR Code</span>
+                </button>
+                <button
+                  *ngIf="isAdmin"
+                  type="button"
+                  class="w-full border border-red-300 text-red-700 py-2 rounded-lg text-sm font-medium hover:bg-red-50 transition-colors"
+                  (click)="confirmDeleteEvent(event)"
+                >
+                  Delete Event
+                </button>
+              </div>
             </div>
           </div>
           <p *ngIf="!pastEvents.length" class="rounded-lg border border-dashed p-6 text-center text-gray-600">No past events are available.</p>
@@ -191,9 +213,21 @@ interface CommunityEvent {
                 <h3 class="font-semibold text-gray-900">{{ event.title }}</h3>
                 <p class="text-sm text-gray-600">{{ event.date }} · {{ event.time }} · {{ event.venue }}</p>
               </div>
-              <button type="button" class="border border-red-300 text-red-700 px-4 py-2 rounded-md text-sm font-medium hover:bg-red-50" (click)="leaveEvent(event)">
-                Leave Event
-              </button>
+              <div class="flex items-center gap-2">
+                <button
+                  type="button"
+                  class="border border-orange-200 bg-white text-orange-700 px-3 py-2 rounded-md text-xs font-semibold hover:bg-orange-50 flex items-center gap-1.5 transition-colors cursor-pointer"
+                  (click)="openQrModal(event)"
+                >
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"></path>
+                  </svg>
+                  <span>QR Code</span>
+                </button>
+                <button type="button" class="border border-red-300 text-red-700 px-4 py-2 rounded-md text-sm font-medium hover:bg-red-50" (click)="leaveEvent(event)">
+                  Leave Event
+                </button>
+              </div>
             </div>
           </div>
           <ng-template #noJoinedEvents>
@@ -230,6 +264,98 @@ interface CommunityEvent {
           </div>
         </section>
       </div>
+
+      <!-- Event QR Code Join Modal -->
+      <div
+        *ngIf="selectedEventForQr"
+        class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs"
+      >
+        <div class="w-full max-w-md rounded-2xl bg-white shadow-2xl border border-gray-200 overflow-hidden flex flex-col">
+          <!-- Modal Header -->
+          <div class="bg-gradient-to-r from-orange-600 via-red-600 to-amber-600 p-5 text-white flex items-center justify-between">
+            <div>
+              <span class="inline-block px-2.5 py-0.5 rounded-full text-xs font-semibold bg-white/20 text-white mb-1">
+                {{ selectedEventForQr.category }}
+              </span>
+              <h3 class="text-lg font-bold leading-snug">{{ selectedEventForQr.title }}</h3>
+            </div>
+            <button
+              type="button"
+              (click)="closeQrModal()"
+              class="text-white/80 hover:text-white p-1 rounded-full hover:bg-white/10 transition-colors cursor-pointer"
+            >
+              ✕
+            </button>
+          </div>
+
+          <!-- Modal Body -->
+          <div class="p-6 text-center space-y-4">
+            <p class="text-xs text-gray-500">
+              Scan this QR code with any smartphone camera to view details and instantly join this event.
+            </p>
+
+            <!-- QR Code Image Container -->
+            <div class="inline-block p-3 bg-white rounded-2xl border-2 border-orange-200 shadow-inner">
+              <img
+                [src]="getQrCodeUrl(selectedEventForQr)"
+                [alt]="'QR Code to join ' + selectedEventForQr.title"
+                class="w-52 h-52 mx-auto rounded-lg object-contain"
+              />
+            </div>
+
+            <!-- Event Quick Metadata -->
+            <div class="bg-orange-50/70 border border-orange-100 rounded-xl p-3 text-xs text-gray-700 space-y-1 text-left">
+              <div><strong>📍 Venue:</strong> {{ selectedEventForQr.venue }}</div>
+              <div><strong>📅 Date &amp; Time:</strong> {{ selectedEventForQr.date }} at {{ selectedEventForQr.time }}</div>
+              <div><strong>👥 Attendees:</strong> {{ selectedEventForQr.attendees }} attending</div>
+            </div>
+
+            <!-- Direct URL & Copy Button -->
+            <div class="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-lg p-2 text-xs">
+              <input
+                type="text"
+                readonly
+                [value]="getJoinUrl(selectedEventForQr)"
+                class="w-full bg-transparent text-gray-600 outline-none text-[11px] truncate"
+              />
+              <button
+                type="button"
+                (click)="copyJoinUrl(selectedEventForQr)"
+                class="px-3 py-1.5 bg-orange-600 hover:bg-orange-700 text-white font-semibold rounded-md shadow-xs transition-colors flex-shrink-0 cursor-pointer"
+              >
+                Copy Link
+              </button>
+            </div>
+
+            <!-- Join Now / Close Actions -->
+            <div class="pt-2 flex gap-3">
+              <button
+                type="button"
+                (click)="closeQrModal()"
+                class="flex-1 py-2.5 px-4 rounded-xl border border-gray-300 text-gray-700 font-medium text-xs hover:bg-gray-50 transition cursor-pointer"
+              >
+                Close
+              </button>
+              <button
+                type="button"
+                *ngIf="!selectedEventForQr.joined"
+                (click)="joinEvent(selectedEventForQr); closeQrModal()"
+                class="flex-1 py-2.5 px-4 rounded-xl bg-orange-600 hover:bg-orange-700 text-white font-bold text-xs shadow transition cursor-pointer"
+              >
+                Join Event Now
+              </button>
+              <button
+                type="button"
+                *ngIf="selectedEventForQr.joined"
+                disabled
+                class="flex-1 py-2.5 px-4 rounded-xl bg-gray-100 text-gray-500 font-bold text-xs border border-gray-200 cursor-not-allowed"
+              >
+                ✓ Already Joined
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
     </section>
   `,
 })
@@ -246,6 +372,9 @@ export class EventsComponent implements OnInit {
   // Deletion Modal State
   eventToDelete: CommunityEvent | null = null;
   isDeleting = false;
+
+  // QR Code Modal State
+  selectedEventForQr: CommunityEvent | null = null;
 
   private joinedEventIds: Set<string> = new Set();
 
@@ -465,6 +594,38 @@ export class EventsComponent implements OnInit {
     if (event) {
       this.joinEvent(event);
       this.router.navigate(['/events'], { replaceUrl: true });
+    }
+  }
+
+  openQrModal(event: CommunityEvent): void {
+    this.selectedEventForQr = event;
+  }
+
+  closeQrModal(): void {
+    this.selectedEventForQr = null;
+  }
+
+  getJoinUrl(event: CommunityEvent): string {
+    if (!event) return '';
+    const origin = typeof window !== 'undefined' ? window.location.origin : 'https://sanatan.org.nz';
+    return `${origin}/events?joinEvent=${encodeURIComponent(event.id)}`;
+  }
+
+  getQrCodeUrl(event: CommunityEvent): string {
+    const joinUrl = this.getJoinUrl(event);
+    return `https://api.qrserver.com/v1/create-qr-code/?size=260x260&margin=10&data=${encodeURIComponent(joinUrl)}`;
+  }
+
+  copyJoinUrl(event: CommunityEvent): void {
+    const joinUrl = this.getJoinUrl(event);
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      navigator.clipboard.writeText(joinUrl).then(() => {
+        this.showToast('Event join link copied to clipboard!', 'success');
+      }).catch(() => {
+        this.showToast('Link: ' + joinUrl, 'info');
+      });
+    } else {
+      this.showToast('Link: ' + joinUrl, 'info');
     }
   }
 }

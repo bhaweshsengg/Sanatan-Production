@@ -78,6 +78,16 @@ export interface PublicBlogPost {
       border: 0;
       border-top: 1px solid #e5e7eb;
     }
+    .blog-article-html img, .blog-article-html ::ng-deep img {
+      max-height: 320px;
+      width: auto;
+      max-width: 100%;
+      object-fit: cover;
+      border-radius: 0.75rem;
+      margin: 1.25rem auto;
+      display: block;
+      box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+    }
   `],
   template: `
     <div class="min-h-screen bg-gradient-to-b from-orange-50/40 via-white to-gray-50 font-['Inter']">
@@ -168,9 +178,9 @@ export interface PublicBlogPost {
         <div
           *ngIf="!loading && featuredBlog && selectedCategory === 'All' && !searchTerm"
           (click)="openBlogModal(featuredBlog)"
-          class="mb-10 group cursor-pointer bg-white rounded-3xl overflow-hidden border border-gray-200 shadow-sm hover:shadow-xl transition-all duration-300 grid grid-cols-1 lg:grid-cols-12"
+          class="max-w-5xl mx-auto mb-10 group cursor-pointer bg-white rounded-3xl overflow-hidden border border-gray-200 shadow-sm hover:shadow-xl transition-all duration-300 grid grid-cols-1 lg:grid-cols-12"
         >
-          <div class="lg:col-span-7 relative h-64 lg:h-96 overflow-hidden bg-gray-100">
+          <div class="lg:col-span-5 relative h-64 lg:h-96  overflow-hidden bg-gray-100">
             <img
               *ngIf="featuredBlog.imageUrl"
               [src]="resolveImageUrl(featuredBlog.imageUrl)"
@@ -187,7 +197,7 @@ export interface PublicBlogPost {
               </span>
             </div>
           </div>
-          <div class="lg:col-span-5 p-6 sm:p-8 flex flex-col justify-between">
+          <div class="lg:col-span-7 p-6 sm:p-8 flex flex-col justify-between">
             <div>
               <div class="flex items-center gap-2 text-xs text-orange-600 font-semibold uppercase tracking-wider mb-2">
                 <span>{{ featuredBlog.category }}</span>
@@ -441,7 +451,7 @@ export class BlogComponent implements OnInit {
   constructor(
     private http: HttpClient,
     private sanitizer: DomSanitizer
-  ) {}
+  ) { }
 
   ngOnInit(): void {
     this.loadBlogs();

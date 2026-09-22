@@ -56,6 +56,8 @@ export const routes: Routes = [
   { path: 'services/directory', redirectTo: '/services' },
   { path: 'services/add', component: AddServiceComponent },
   { path: 'services/add-service', redirectTo: '/services/add' },
+  { path: 'services/:id', component: ViewdirectoryComponent },
+  { path: 'services/view/:id', redirectTo: '/services/:id' },
   { path: 'dateandtime', component: DateandtimeComponent },
   { path: 'about', component: AboutComponent },
   { path: 'help', component: HelppageComponent },

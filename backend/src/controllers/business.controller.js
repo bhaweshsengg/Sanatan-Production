@@ -4,6 +4,7 @@ import { put } from '@vercel/blob';
 import { env } from '../config/env.js';
 import { logger } from '../utils/logger.js';
 import { prisma, ensureRequiredTables } from '../config/db.js';
+import { sendEmail } from '../utils/email.js';
 
 const normalizeUploadedImagePath = (value) => {
   if (!value || typeof value !== 'string') return '';
@@ -74,15 +75,48 @@ const isMissingBusinessTable = (error) =>
 export const getBusinesses = async (req, res) => {
   try {
     await ensureRequiredTables();
-    const { page, limit, category } = req.query;
+    const { page, limit, category, city, status, search } = req.query;
     const isPaginated = page !== undefined || (limit !== undefined && limit !== 'all');
     const pageNum = isPaginated ? Math.max(1, Number(page || 1)) : 1;
     const limitNum = isPaginated ? Math.max(1, Number(limit || 50)) : undefined;
     const skip = isPaginated ? (pageNum - 1) * limitNum : undefined;
 
     const where = {};
-    if (category && category !== 'All') {
+
+    // Filter by Category
+    if (category && category !== 'All' && category !== 'all') {
       where.category = { contains: category };
+    }
+
+    // Filter by City
+    if (city && city !== 'All' && city !== 'all') {
+      where.city = { contains: city };
+    }
+
+    // Filter by Status:
+    // If 'all' is passed (e.g. from Admin review panel), do not filter by status.
+    // If specific status (e.g. 'Pending', 'Approved', 'Rejected') is passed, filter by it.
+    // If no status is specified (e.g. public directory), default to 'Approved'.
+    if (status) {
+      if (String(status).toLowerCase() !== 'all') {
+        where.status = status;
+      }
+    } else {
+      where.status = 'Approved';
+    }
+
+    // Filter by Search Query
+    if (search && typeof search === 'string' && search.trim()) {
+      const q = search.trim();
+      where.OR = [
+        { businessName: { contains: q } },
+        { description: { contains: q } },
+        { category: { contains: q } },
+        { ownerName: { contains: q } },
+        { city: { contains: q } },
+        { address: { contains: q } },
+        { services: { contains: q } },
+      ];
     }
 
     const [businesses, total] = await Promise.all([
@@ -103,6 +137,8 @@ export const getBusinesses = async (req, res) => {
       data: businesses.map((business) => ({
         ...business,
         id: business.id.toString(),
+        linkedInUrl: business.linkedInUrl || null,
+        fee: business.fee || null,
         images: business.imageUrl ? [{ file: business.imageUrl }] : [],
       })),
       pagination: {
@@ -156,6 +192,8 @@ export const getBusinessById = async (req, res) => {
       data: {
         ...business,
         id: business.id.toString(),
+        linkedInUrl: business.linkedInUrl || null,
+        fee: business.fee || null,
         images: business.imageUrl ? [{ file: business.imageUrl }] : [],
       },
     });
@@ -266,6 +304,8 @@ export const createBusiness = async (req, res) => {
       facebookUrl,
       instagramUrl,
       twitterUrl,
+      linkedInUrl,
+      fee,
     } = req.body;
 
     const resolvedOwnerName = (
@@ -292,7 +332,11 @@ export const createBusiness = async (req, res) => {
       uploadedImageUrl = await uploadNewImage(file, 'businesses');
     }
 
-    const status = req.body.status || 'Approved';
+    // Approval status workflow:
+    // Only authenticated admins can directly set status (e.g. 'Approved').
+    // All public community submissions default to 'Pending' so admins can review.
+    const isAdminUser = req.user && req.user.role === 'Admin';
+    const status = (isAdminUser && req.body.status) ? req.body.status : (req.body.status === 'Approved' && isAdminUser ? 'Approved' : 'Pending');
 
     const business = await prisma.business.create({
       data: {
@@ -313,6 +357,8 @@ export const createBusiness = async (req, res) => {
         facebookUrl: facebookUrl || null,
         instagramUrl: instagramUrl || null,
         twitterUrl: twitterUrl || null,
+        linkedInUrl: linkedInUrl || null,
+        fee: fee || null,
         status,
         imageUrl: uploadedImageUrl,
         created_at: new Date(),
@@ -322,10 +368,14 @@ export const createBusiness = async (req, res) => {
     res.status(201).json({
       success: true,
       status: 201,
-      message: 'Service registered successfully',
+      message: status === 'Pending' 
+        ? 'Service submitted successfully for approval. It will appear publicly once approved by an administrator.'
+        : 'Service registered successfully',
       data: {
         ...business,
         id: business.id.toString(),
+        linkedInUrl: business.linkedInUrl || null,
+        fee: business.fee || null,
         images: business.imageUrl ? [{ file: business.imageUrl }] : [],
       },
     });
@@ -338,6 +388,144 @@ export const createBusiness = async (req, res) => {
       data: {
         details: error.message,
       },
+    });
+  }
+};
+
+export const createAppointmentRequest = async (req, res) => {
+  try {
+    await ensureRequiredTables();
+    const bizId = businessId(req.params.id);
+
+    const business = await prisma.business.findUnique({
+      where: { id: bizId },
+    });
+
+    if (!business) {
+      return res.status(404).json({
+        success: false,
+        status: 404,
+        message: 'Service provider not found',
+      });
+    }
+
+    const {
+      fullName,
+      name,
+      email,
+      phone,
+      mobile,
+      preferredDate,
+      date,
+      preferredTime,
+      time,
+      notes,
+      serviceName
+    } = req.body;
+
+    const clientName = (fullName || name || '').trim();
+    const clientEmail = (email || '').trim();
+    const clientPhone = (phone || mobile || '').trim();
+    const clientDate = (preferredDate || date || '').trim();
+    const clientTime = (preferredTime || time || '').trim();
+    const clientNotes = (notes || '').trim();
+    const selectedService = (serviceName || business.businessName || 'General Community Service').trim();
+
+    if (!clientName || !clientEmail || !clientPhone || !clientDate) {
+      return res.status(400).json({
+        success: false,
+        status: 400,
+        message: 'Name, email, phone number, and preferred date are required for appointment booking',
+      });
+    }
+
+    // Save appointment request record in service_appointment table
+    await prisma.$executeRawUnsafe(
+      `INSERT INTO service_appointment (business_id, name, email, phone, preferred_date, preferred_time, notes, service_name, status, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'Pending', NOW())`,
+      bizId,
+      clientName,
+      clientEmail,
+      clientPhone,
+      clientDate,
+      clientTime || null,
+      clientNotes || null,
+      selectedService
+    );
+
+    // Notify service provider via email
+    const providerEmail = business.email || business.ownerEmail;
+    if (providerEmail) {
+      try {
+        await sendEmail({
+          to: providerEmail,
+          subject: `New Service Appointment Request: ${clientName} for ${business.businessName}`,
+          html: `
+            <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #fed7aa; border-radius: 12px; background: #fffaf0;">
+              <h2 style="color: #ea580c; margin-top: 0;">🕉️ New Appointment Request</h2>
+              <p>You have received a new appointment booking request for <strong>${business.businessName}</strong>.</p>
+              <div style="background: white; padding: 16px; border-radius: 8px; margin: 16px 0; border: 1px solid #e5e7eb;">
+                <p style="margin: 6px 0;"><strong>Client Name:</strong> ${clientName}</p>
+                <p style="margin: 6px 0;"><strong>Email:</strong> <a href="mailto:${clientEmail}">${clientEmail}</a></p>
+                <p style="margin: 6px 0;"><strong>Phone:</strong> <a href="tel:${clientPhone}">${clientPhone}</a></p>
+                <p style="margin: 6px 0;"><strong>Requested Date:</strong> ${clientDate}</p>
+                <p style="margin: 6px 0;"><strong>Requested Time:</strong> ${clientTime || 'Flexible / Any time'}</p>
+                <p style="margin: 6px 0;"><strong>Service:</strong> ${selectedService}</p>
+                ${clientNotes ? `<p style="margin: 6px 0;"><strong>Notes / Requirements:</strong> ${clientNotes}</p>` : ''}
+              </div>
+              <p style="color: #6b7280; font-size: 13px;">Please contact the client promptly at ${clientPhone} or ${clientEmail} to confirm your appointment.</p>
+            </div>
+          `,
+        });
+      } catch (mailErr) {
+        logger.warn('Failed to send email to provider:', mailErr.message);
+      }
+    }
+
+    // Send confirmation email to client
+    try {
+      await sendEmail({
+        to: clientEmail,
+        subject: `Appointment Request Received: ${business.businessName}`,
+        html: `
+          <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #fed7aa; border-radius: 12px; background: #fffaf0;">
+            <h2 style="color: #ea580c; margin-top: 0;">🕉️ Appointment Request Received</h2>
+            <p>Dear ${clientName},</p>
+            <p>Your appointment request for <strong>${business.businessName}</strong> has been received by the service provider.</p>
+            <div style="background: white; padding: 16px; border-radius: 8px; margin: 16px 0; border: 1px solid #e5e7eb;">
+              <p style="margin: 6px 0;"><strong>Provider:</strong> ${business.ownerName || business.businessName}</p>
+              <p style="margin: 6px 0;"><strong>Provider Phone:</strong> ${business.phone || business.ownerPhone || 'N/A'}</p>
+              <p style="margin: 6px 0;"><strong>Requested Date:</strong> ${clientDate}</p>
+              <p style="margin: 6px 0;"><strong>Requested Time:</strong> ${clientTime || 'Flexible / Any time'}</p>
+              ${business.fee ? `<p style="margin: 6px 0;"><strong>Fee / Dakshina:</strong> ${business.fee}</p>` : ''}
+            </div>
+            <p style="color: #6b7280; font-size: 13px;">The provider will contact you shortly to confirm the appointment.</p>
+          </div>
+        `,
+      });
+    } catch (mailErr) {
+      logger.warn('Failed to send confirmation to client:', mailErr.message);
+    }
+
+    return res.status(201).json({
+      success: true,
+      status: 201,
+      message: 'Appointment request sent successfully! The service provider has been notified.',
+      data: {
+        businessId: business.id.toString(),
+        businessName: business.businessName,
+        clientName,
+        clientDate,
+        clientTime,
+      },
+    });
+  } catch (error) {
+    logger.error('Could not create appointment request:', error);
+    return res.status(500).json({
+      success: false,
+      status: 500,
+      message: 'Could not submit appointment request',
+      data: { details: error.message },
     });
   }
 };

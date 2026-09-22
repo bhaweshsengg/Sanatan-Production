@@ -1,126 +1,408 @@
-<div class="p-6 md:p-12 min-h-screen bg-gray-50 mt-10">
-  <div class="mb-6">
+<div class="p-4 sm:p-6 md:p-12 min-h-screen bg-gray-50 pt-24 pb-16">
+  <!-- Toast Notification -->
+  <div
+    *ngIf="showToast"
+    class="fixed top-20 right-5 z-50 px-5 py-3 rounded-lg shadow-xl text-white font-medium flex items-center gap-2 transition-all transform animate-bounce"
+    [ngClass]="toastType === 'success' ? 'bg-emerald-600' : 'bg-red-600'"
+  >
+    <svg *ngIf="toastType === 'success'" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+    </svg>
+    <svg *ngIf="toastType === 'error'" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+    </svg>
+    <span>{{ toastMessage }}</span>
+  </div>
+
+  <!-- Back Navigation -->
+  <div class="max-w-4xl mx-auto mb-6 flex items-center justify-between">
     <a
-      routerLink="business/register"
-      class="inline-flex items-center text-gray-700 hover:text-gray-900 transition-colors duration-300"
+      routerLink="/services"
+      class="inline-flex items-center text-sm font-medium text-amber-700 hover:text-amber-900 bg-amber-50 hover:bg-amber-100 border border-amber-200 px-3 py-1.5 rounded-lg transition-all shadow-sm"
     >
       <svg
         xmlns="http://www.w3.org/2000/svg"
-        class="h-5 w-5 mr-2"
+        class="h-4 w-4 mr-1.5"
         fill="none"
         viewBox="0 0 24 24"
         stroke="currentColor"
         stroke-width="2"
       >
-        <path
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          d="M10 19l-7-7m0 0l7-7m-7 7h18"
-        />
+        <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
       </svg>
-      Back to Directory
+      Back to Services
     </a>
   </div>
 
-  <div *ngIf="isLoading" class="text-center text-gray-500 py-10">
-    <svg class="animate-spin h-8 w-8 text-gray-400 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+  <!-- Loading State -->
+  <div *ngIf="isLoading" class="text-center text-gray-500 py-16">
+    <svg class="animate-spin h-10 w-10 text-amber-600 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
       <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
       <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
     </svg>
-    <p class="mt-2">Loading details...</p>
+    <p class="mt-3 text-sm text-gray-600 font-medium">Loading service details...</p>
   </div>
 
-  <div *ngIf="businessData" class="bg-white rounded-xl shadow-lg overflow-hidden p-6 md:p-10 border border-gray-200 max-w-4xl mx-auto">
-    <div class="text-center mb-8">
+  <!-- Main Business Details Card -->
+  <div *ngIf="!isLoading && businessData" class="bg-white rounded-2xl shadow-xl overflow-hidden p-6 md:p-10 border border-gray-100 max-w-4xl mx-auto">
+    <!-- Header: Avatar, Name, Category, Fee, and Action -->
+    <div class="flex flex-col md:flex-row items-center md:items-start gap-6 pb-8 border-b border-gray-100">
       <img
-        [src]="businessData.images && businessData.images.length > 0 ? businessData.images[0].file : 'https://via.placeholder.com/150'"
+        [src]="resolveImageUrl(businessData.images?.[0] || businessData.imageUrl)"
+        (error)="onImageError($event)"
         alt="Business Logo"
-        class="w-32 h-32 rounded-full object-cover mx-auto mb-4 border border-gray-300 shadow-md"
+        class="w-28 h-28 sm:w-32 sm:h-32 rounded-2xl object-cover border-2 border-amber-200 shadow-md flex-shrink-0"
       />
-      <h1 class="text-3xl font-bold text-gray-900">{{ businessData.businessName }}</h1>
-      <p class="text-lg text-gray-500">{{ businessData.category }}</p>
+      <div class="flex-1 text-center md:text-left">
+        <div class="flex flex-wrap items-center justify-center md:justify-start gap-2 mb-2">
+          <span class="px-2.5 py-1 text-xs font-semibold uppercase tracking-wider rounded-full bg-amber-100 text-amber-800">
+            {{ businessData.category || 'Service' }}
+          </span>
+          <span
+            *ngIf="businessData.fee"
+            class="inline-flex items-center px-2.5 py-1 text-xs font-bold rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200"
+          >
+            <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            Fee: {{ businessData.fee }}
+          </span>
+          <span
+            *ngIf="businessData.status && businessData.status !== 'Approved'"
+            class="px-2.5 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800 border border-yellow-200"
+          >
+            Status: {{ businessData.status }}
+          </span>
+        </div>
+
+        <h1 class="text-2xl sm:text-3xl font-extrabold text-gray-900 leading-tight">
+          {{ businessData.businessName }}
+        </h1>
+        <p class="text-gray-500 mt-1 flex items-center justify-center md:justify-start text-sm">
+          <svg class="h-4 w-4 text-gray-400 mr-1 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+          </svg>
+          {{ businessData.city || 'Community Service' }}
+        </p>
+
+        <!-- CTA Buttons -->
+        <div class="mt-4 flex flex-wrap gap-3 justify-center md:justify-start">
+          <button
+            (click)="openAppointmentModal()"
+            type="button"
+            class="inline-flex items-center px-4 py-2 text-sm font-semibold rounded-lg text-white bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 shadow hover:shadow-md transition-all"
+          >
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+            </svg>
+            Book Appointment
+          </button>
+          <a
+            *ngIf="businessData.phone"
+            [href]="'tel:' + businessData.phone"
+            class="inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg text-gray-700 bg-gray-100 hover:bg-gray-200 transition-colors"
+          >
+            <svg class="w-4 h-4 mr-2 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path>
+            </svg>
+            Call Now
+          </a>
+        </div>
+      </div>
     </div>
 
-    <div class="mb-8 p-4 bg-gray-50 rounded-lg">
-      <h2 class="text-xl font-semibold text-gray-800 mb-2">Description</h2>
-      <p class="text-base text-gray-700">{{ businessData.description }}</p>
+    <!-- Description -->
+    <div *ngIf="businessData.description" class="my-8 p-5 bg-amber-50/50 border border-amber-100 rounded-xl">
+      <h2 class="text-base font-semibold text-gray-900 mb-2 flex items-center">
+        <svg class="w-4 h-4 text-amber-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+        </svg>
+        About This Service
+      </h2>
+      <p class="text-sm sm:text-base text-gray-700 leading-relaxed whitespace-pre-line">{{ businessData.description }}</p>
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-      <div>
-        <h2 class="text-xl font-semibold text-gray-800 mb-4">Contact Information</h2>
-        <div class="space-y-4 text-gray-700">
-          <div class="flex items-start">
-            <svg class="h-6 w-6 text-gray-500 mr-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A11.002 11.002 0 0112 15a11.002 11.002 0 016.879 2.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm-3-4a6 6 0 100 12 6 6 0 000-12z"></path></svg>
-            <span class="text-base">{{ businessData.ownerName }}</span>
+    <!-- Details Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-8 my-6">
+      <!-- Contact Information -->
+      <div class="bg-gray-50/70 p-5 rounded-xl border border-gray-100">
+        <h2 class="text-base font-bold text-gray-900 mb-4 pb-2 border-b border-gray-200 flex items-center">
+          <svg class="w-4 h-4 text-amber-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8m-2 4v7a2 2 0 01-2 2H5a2 2 0 01-2-2v-7"></path>
+          </svg>
+          Contact Information
+        </h2>
+        <div class="space-y-3.5 text-sm text-gray-700">
+          <div *ngIf="businessData.ownerName" class="flex items-start">
+            <span class="w-24 text-gray-500 font-medium">Provider:</span>
+            <span class="font-semibold text-gray-800">{{ businessData.ownerName }}</span>
           </div>
 
-          <div class="flex items-start">
-            <svg class="h-6 w-6 text-gray-500 mr-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-            <span class="text-base">{{ businessData.address }}, {{ businessData.city }}</span>
+          <div *ngIf="businessData.address || businessData.city" class="flex items-start">
+            <span class="w-24 text-gray-500 font-medium">Location:</span>
+            <span class="text-gray-800">{{ businessData.address }}<span *ngIf="businessData.address && businessData.city">, </span>{{ businessData.city }}</span>
           </div>
 
-          <div class="flex items-start">
-            <svg class="h-6 w-6 text-gray-500 mr-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
-            <span class="text-base">{{ businessData.phone }}</span>
+          <div *ngIf="businessData.phone" class="flex items-start">
+            <span class="w-24 text-gray-500 font-medium">Phone:</span>
+            <a [href]="'tel:' + businessData.phone" class="text-amber-700 font-medium hover:underline">{{ businessData.phone }}</a>
           </div>
 
-          <div class="flex items-start">
-            <svg class="h-6 w-6 text-gray-500 mr-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8m-2 4v7a2 2 0 01-2 2H5a2 2 0 01-2-2v-7"/></svg>
-            <span class="text-base">{{ businessData.email }}</span>
+          <div *ngIf="businessData.email" class="flex items-start">
+            <span class="w-24 text-gray-500 font-medium">Email:</span>
+            <a [href]="'mailto:' + businessData.email" class="text-amber-700 hover:underline break-all">{{ businessData.email }}</a>
           </div>
 
-          <div class="flex items-start">
-            <svg class="h-6 w-6 text-gray-500 mr-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.887a4 4 0 00-5.656-5.656l-4 4a4 4 0 005.656 5.656l1.102-1.101zM16 4h2a2 2 0 012 2v2M4 16h2a2 2 0 002-2V8m4-4h2a2 2 0 012 2v2m-4 4h2a2 2 0 012 2v2m-4 4h2a2 2 0 012 2v2"/></svg>
-            <a [href]="businessData.website" target="_blank" class="text-base text-blue-600 hover:underline">{{ businessData.website }}</a>
+          <div *ngIf="businessData.website" class="flex items-start">
+            <span class="w-24 text-gray-500 font-medium">Website:</span>
+            <a [href]="businessData.website" target="_blank" rel="noopener noreferrer" class="text-amber-700 hover:underline break-all">{{ businessData.website }}</a>
           </div>
         </div>
       </div>
 
-      <div>
-        <h2 class="text-xl font-semibold text-gray-800 mb-4">Additional Details</h2>
-        <div class="space-y-4 text-gray-700">
-          <div class="flex items-start">
-            <svg class="h-6 w-6 text-gray-500 mr-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M15 15h.01"></path></svg>
-            <span class="text-base font-medium">Services:</span> <span class="ml-2">{{ businessData.services }}</span>
+      <!-- Additional Details -->
+      <div class="bg-gray-50/70 p-5 rounded-xl border border-gray-100">
+        <h2 class="text-base font-bold text-gray-900 mb-4 pb-2 border-b border-gray-200 flex items-center">
+          <svg class="w-4 h-4 text-amber-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M15 15h.01"></path>
+          </svg>
+          Additional Details
+        </h2>
+        <div class="space-y-3.5 text-sm text-gray-700">
+          <div *ngIf="businessData.fee" class="flex items-start">
+            <span class="w-32 text-gray-500 font-medium">Service Fee:</span>
+            <span class="font-bold text-emerald-700">{{ businessData.fee }}</span>
           </div>
 
-          <div class="flex items-start">
-            <svg class="h-6 w-6 text-gray-500 mr-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-            <span class="text-base font-medium">Operating Hours:</span> <span class="ml-2">{{ businessData.operatingHours }}</span>
+          <div *ngIf="businessData.services" class="flex items-start">
+            <span class="w-32 text-gray-500 font-medium">Services:</span>
+            <span class="text-gray-800">{{ businessData.services }}</span>
           </div>
 
-          <div class="flex items-start">
-            <svg class="h-6 w-6 text-gray-500 mr-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9l-1.414 1.414L15.172 12l-1.414 1.414L12 15.172l-1.414-1.414L9.828 12l-1.414-1.414L7 9m4 0a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-            <span class="text-base font-medium">Special Offers:</span> <span class="ml-2">{{ businessData.specialOffers }}</span>
+          <div *ngIf="businessData.operatingHours" class="flex items-start">
+            <span class="w-32 text-gray-500 font-medium">Hours:</span>
+            <span class="text-gray-800">{{ businessData.operatingHours }}</span>
+          </div>
+
+          <div *ngIf="businessData.specialOffers" class="flex items-start">
+            <span class="w-32 text-gray-500 font-medium">Special Offers:</span>
+            <span class="text-amber-800 bg-amber-50 px-2 py-0.5 rounded border border-amber-200 font-medium">{{ businessData.specialOffers }}</span>
+          </div>
+
+          <div *ngIf="!businessData.fee && !businessData.services && !businessData.operatingHours && !businessData.specialOffers" class="text-gray-400 italic">
+            No additional details listed.
           </div>
         </div>
       </div>
     </div>
-    
-<div class="mt-8 relative group"> <h2 class="text-xl font-semibold text-gray-800 mb-4">Social Media</h2>
-  
-<div class="flex space-x-4 text-xl">
-  <a *ngIf="businessData.linkedInUrl" [href]="businessData.linkedInUrl" target="_blank"
-     class="text-blue-700 hover:text-blue-900 transition-colors duration-300">
-    <i class="fab fa-linkedin"></i>
-  </a>
-  <a *ngIf="businessData.facebookUrl" [href]="businessData.facebookUrl" target="_blank"
-     class="text-blue-600 hover:text-blue-800 transition-colors duration-300">
-    <i class="fab fa-facebook"></i>
-  </a>
 
-  <a *ngIf="businessData.instagramUrl" [href]="businessData.instagramUrl" target="_blank"
-     class="text-pink-600 hover:text-pink-800 transition-colors duration-300">
-    <i class="fab fa-instagram"></i>
-  </a>
+    <!-- Social Media Section with Inline SVGs -->
+    <div class="mt-8 pt-6 border-t border-gray-100">
+      <h2 class="text-base font-bold text-gray-900 mb-3 flex items-center">
+        <svg class="w-4 h-4 text-amber-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.887a4 4 0 00-5.656-5.656l-4 4a4 4 0 005.656 5.656l1.102-1.101zM16 4h2a2 2 0 012 2v2M4 16h2a2 2 0 002-2V8m4-4h2a2 2 0 012 2v2m-4 4h2a2 2 0 012 2v2m-4 4h2a2 2 0 012 2v2"></path>
+        </svg>
+        Social Media & Online Presence
+      </h2>
 
-  <a *ngIf="businessData.twitterUrl" [href]="businessData.twitterUrl" target="_blank"
-     class="text-sky-600 hover:text-sky-800 transition-colors duration-300">
-    <i class="fab fa-twitter"></i>
-  </a>
-</div>
+      <div
+        *ngIf="businessData.linkedInUrl || businessData.facebookUrl || businessData.instagramUrl || businessData.twitterUrl; else noSocial"
+        class="flex flex-wrap gap-3"
+      >
+        <!-- LinkedIn -->
+        <a
+          *ngIf="businessData.linkedInUrl"
+          [href]="businessData.linkedInUrl"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg bg-[#0077b5]/10 hover:bg-[#0077b5]/20 text-[#0077b5] font-medium text-xs sm:text-sm border border-[#0077b5]/30 transition-all hover:scale-105"
+        >
+          <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24">
+            <path d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14m-.5 15.5v-5.3a3.26 3.26 0 0 0-3.26-3.26c-.85 0-1.84.52-2.28 1.3v-1.11h-2.79v8.37h2.79v-4.93c0-.77.62-1.4 1.39-1.4a1.4 1.4 0 0 1 1.4 1.4v4.93h2.75M6.46 10.9v8.37H9.2V10.9H6.46M7.83 6.2a1.66 1.66 0 0 0-1.67 1.66c0 .92.75 1.67 1.67 1.67a1.67 1.67 0 0 0 1.67-1.67c0-.91-.75-1.66-1.67-1.66z"/>
+          </svg>
+          <span>LinkedIn</span>
+        </a>
 
-</div>
+        <!-- Facebook -->
+        <a
+          *ngIf="businessData.facebookUrl"
+          [href]="businessData.facebookUrl"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg bg-[#1877f2]/10 hover:bg-[#1877f2]/20 text-[#1877f2] font-medium text-xs sm:text-sm border border-[#1877f2]/30 transition-all hover:scale-105"
+        >
+          <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24">
+            <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+          </svg>
+          <span>Facebook</span>
+        </a>
+
+        <!-- Instagram -->
+        <a
+          *ngIf="businessData.instagramUrl"
+          [href]="businessData.instagramUrl"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg bg-[#E1306C]/10 hover:bg-[#E1306C]/20 text-[#E1306C] font-medium text-xs sm:text-sm border border-[#E1306C]/30 transition-all hover:scale-105"
+        >
+          <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24">
+            <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+          </svg>
+          <span>Instagram</span>
+        </a>
+
+        <!-- Twitter / X -->
+        <a
+          *ngIf="businessData.twitterUrl"
+          [href]="businessData.twitterUrl"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg bg-gray-900/10 hover:bg-gray-900/20 text-gray-900 font-medium text-xs sm:text-sm border border-gray-900/30 transition-all hover:scale-105"
+        >
+          <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24">
+            <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+          </svg>
+          <span>X / Twitter</span>
+        </a>
+      </div>
+
+      <ng-template #noSocial>
+        <p class="text-xs text-gray-400 italic">No social media links provided for this service.</p>
+      </ng-template>
+    </div>
+  </div>
+
+  <!-- Appointment Modal -->
+  <div
+    *ngIf="isAppointmentModalOpen"
+    class="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 transition-opacity"
+  >
+    <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden border border-gray-200">
+      <!-- Modal Header -->
+      <div class="bg-gradient-to-r from-amber-600 to-orange-600 p-5 text-white flex items-center justify-between">
+        <div>
+          <h3 class="text-lg font-bold">Book Service Appointment</h3>
+          <p class="text-xs text-amber-100 mt-0.5">{{ businessData?.businessName }}</p>
+        </div>
+        <button
+          (click)="closeAppointmentModal()"
+          class="text-white/80 hover:text-white p-1 rounded-full hover:bg-white/10 transition-colors"
+        >
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Modal Body -->
+      <form (ngSubmit)="submitAppointment()" class="p-6 space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-gray-700 uppercase mb-1">Your Full Name *</label>
+          <input
+            type="text"
+            [(ngModel)]="appointmentForm.fullName"
+            name="fullName"
+            required
+            placeholder="e.g., Rajesh Sharma"
+            class="w-full px-3.5 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none"
+          />
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-gray-700 uppercase mb-1">Email *</label>
+            <input
+              type="email"
+              [(ngModel)]="appointmentForm.email"
+              name="email"
+              required
+              placeholder="you@example.com"
+              class="w-full px-3.5 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none"
+            />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-700 uppercase mb-1">Phone *</label>
+            <input
+              type="tel"
+              [(ngModel)]="appointmentForm.phone"
+              name="phone"
+              required
+              placeholder="+1 234 567 8900"
+              class="w-full px-3.5 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none"
+            />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-gray-700 uppercase mb-1">Preferred Date *</label>
+            <input
+              type="date"
+              [(ngModel)]="appointmentForm.preferredDate"
+              name="preferredDate"
+              required
+              class="w-full px-3.5 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none"
+            />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-700 uppercase mb-1">Preferred Time</label>
+            <select
+              [(ngModel)]="appointmentForm.preferredTime"
+              name="preferredTime"
+              class="w-full px-3.5 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none bg-white"
+            >
+              <option value="Morning (9:00 AM - 12:00 PM)">Morning (9:00 AM - 12:00 PM)</option>
+              <option value="Afternoon (12:00 PM - 4:00 PM)">Afternoon (12:00 PM - 4:00 PM)</option>
+              <option value="Evening (4:00 PM - 8:00 PM)">Evening (4:00 PM - 8:00 PM)</option>
+              <option value="Flexible">Flexible</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-gray-700 uppercase mb-1">Service or Request Details</label>
+          <input
+            type="text"
+            [(ngModel)]="appointmentForm.serviceName"
+            name="serviceName"
+            placeholder="e.g. Satyanarayan Puja, Consultation"
+            class="w-full px-3.5 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none"
+          />
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-gray-700 uppercase mb-1">Notes / Additional Requests</label>
+          <textarea
+            [(ngModel)]="appointmentForm.notes"
+            name="notes"
+            rows="2"
+            placeholder="Describe your location, special ritual requirements, or preferred arrangements..."
+            class="w-full px-3.5 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none"
+          ></textarea>
+        </div>
+
+        <div class="pt-2 flex justify-end gap-3">
+          <button
+            (click)="closeAppointmentModal()"
+            type="button"
+            class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            [disabled]="isSubmittingAppointment"
+            class="inline-flex items-center px-5 py-2 text-sm font-semibold rounded-lg text-white bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 disabled:opacity-50 transition-all shadow"
+          >
+            <svg *ngIf="isSubmittingAppointment" class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            {{ isSubmittingAppointment ? 'Submitting...' : 'Confirm Request' }}
+          </button>
+        </div>
+      </form>
+    </div>
   </div>
 </div>

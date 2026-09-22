@@ -1,6 +1,6 @@
 // temple.service.ts
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { catchError, Observable, of, map, throwError } from 'rxjs';
 import { environment } from '../../environments/environment';
 
@@ -86,6 +86,10 @@ export interface Business {
   facebookUrl?: string;
   instagramUrl?: string;
   twitterUrl?: string;
+  linkedInUrl?: string;
+
+  // Fee / Pricing
+  fee?: string;
 
   // Status
   status: string; // e.g., "Pending"
@@ -376,9 +380,18 @@ addBusiness(businessData: Business | FormData): Observable<any> {
     })
   );
 }
-getBusinesses(): Observable<any[]> {
+getBusinesses(params?: { status?: string; city?: string; category?: string; search?: string; limit?: string | number }): Observable<any[]> {
+  let httpParams = new HttpParams();
+  if (params) {
+    if (params.status) httpParams = httpParams.set('status', params.status);
+    if (params.city && params.city !== 'All') httpParams = httpParams.set('city', params.city);
+    if (params.category && params.category !== 'All') httpParams = httpParams.set('category', params.category);
+    if (params.search) httpParams = httpParams.set('search', params.search);
+    if (params.limit) httpParams = httpParams.set('limit', params.limit.toString());
+  }
+
   return this.http
-    .get<any>(`${this.apiUrl}/business`)
+    .get<any>(`${this.apiUrl}/business`, { params: httpParams })
     .pipe(
       map((response: any) => {
         const businesses = this.unwrapResponse<any[]>(response) ?? [];
@@ -388,6 +401,16 @@ getBusinesses(): Observable<any[]> {
       }),
       catchError(this.handleError<any[]>('getBusinesses', []))
     );
+}
+
+requestAppointment(businessId: string | number, appointmentData: any): Observable<any> {
+  return this.http.post<any>(`${this.apiUrl}/business/${businessId}/appointment`, appointmentData).pipe(
+    catchError(error => {
+      console.error('Error requesting appointment:', error);
+      const msg = error?.error?.message || error?.message || 'Failed to submit appointment request. Please try again.';
+      return throwError(() => new Error(msg));
+    })
+  );
 }
 
 }

@@ -234,6 +234,8 @@ model Business {
   facebookUrl    String?
   instagramUrl   String?
   twitterUrl     String?
+  linkedInUrl    String?
+  fee            String?
   status         String
   approvedat     DateTime?
   created_at     DateTime

@@ -250,6 +250,185 @@ import { environment } from 'src/environments/environment';
               <p class="text-xs text-gray-500 mt-1">Provide helpful details so community devotees can understand your offerings.</p>
             </div>
 
+            <!-- SERVICE FEE / PRICING -->
+            <div class="bg-orange-50/50 rounded-2xl p-5 border border-orange-200/60">
+              <label class="block text-sm font-bold text-gray-900 mb-1.5">
+                Service Fee / Dakshina <span class="text-xs font-normal text-gray-500">(Optional / Recommended)</span>
+              </label>
+              <div class="relative">
+                <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-500 font-semibold text-sm">
+                  🏷️
+                </span>
+                <input
+                  type="text"
+                  [(ngModel)]="fee"
+                  name="fee"
+                  placeholder="e.g. $51 NZD, $101, or Dakshina / Voluntary"
+                  class="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-300 bg-white text-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition shadow-sm"
+                />
+              </div>
+              <p class="text-xs text-gray-500 mt-1.5">
+                Specify your standard honorarium/fee or indicate voluntary Dakshina.
+              </p>
+              <!-- Quick Fee Suggestions -->
+              <div class="mt-2.5 flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  (click)="fee = 'Dakshina / Voluntary'"
+                  class="px-2.5 py-1 text-xs font-medium rounded-lg bg-white hover:bg-orange-100 text-orange-800 border border-orange-200 transition"
+                >
+                  🙏 Voluntary Dakshina
+                </button>
+                <button
+                  type="button"
+                  (click)="fee = '$51 NZD'"
+                  class="px-2.5 py-1 text-xs font-medium rounded-lg bg-white hover:bg-orange-100 text-orange-800 border border-orange-200 transition"
+                >
+                  $51 NZD
+                </button>
+                <button
+                  type="button"
+                  (click)="fee = '$101 NZD'"
+                  class="px-2.5 py-1 text-xs font-medium rounded-lg bg-white hover:bg-orange-100 text-orange-800 border border-orange-200 transition"
+                >
+                  $101 NZD
+                </button>
+                <button
+                  type="button"
+                  (click)="fee = '$151 NZD'"
+                  class="px-2.5 py-1 text-xs font-medium rounded-lg bg-white hover:bg-orange-100 text-orange-800 border border-orange-200 transition"
+                >
+                  $151 NZD
+                </button>
+                <button
+                  type="button"
+                  (click)="fee = 'Free Community Service'"
+                  class="px-2.5 py-1 text-xs font-medium rounded-lg bg-white hover:bg-orange-100 text-orange-800 border border-orange-200 transition"
+                >
+                  Free / Seva
+                </button>
+              </div>
+            </div>
+
+            <!-- ADDITIONAL DETAILS (Services offered, Operating Hours, Special Offers) -->
+            <div class="pt-2 border-t border-gray-100 space-y-5">
+              <h3 class="text-base font-bold text-gray-900 flex items-center gap-2">
+                <span>📋</span>
+                <span>Additional Details</span>
+              </h3>
+
+              <!-- Specific Services Offered -->
+              <div>
+                <label class="block text-sm font-semibold text-gray-800 mb-1.5">
+                  Specific Services Offered
+                </label>
+                <input
+                  type="text"
+                  [(ngModel)]="services"
+                  name="services"
+                  placeholder="e.g. Satyanarayan Puja, Griha Pravesh, Vivah Samskara, Havan, Kundali"
+                  class="w-full px-4 py-3 rounded-xl border border-gray-300 bg-white text-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition shadow-sm"
+                />
+                <p class="text-xs text-gray-500 mt-1">Comma-separated list of rituals or offerings.</p>
+              </div>
+
+              <!-- Operating Hours & Availability -->
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                <div>
+                  <label class="block text-sm font-semibold text-gray-800 mb-1.5">
+                    Operating Hours / Availability
+                  </label>
+                  <input
+                    type="text"
+                    [(ngModel)]="operatingHours"
+                    name="operatingHours"
+                    placeholder="e.g. Mon - Sun: 7:00 AM - 8:00 PM / By Appointment"
+                    class="w-full px-4 py-3 rounded-xl border border-gray-300 bg-white text-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition shadow-sm"
+                  />
+                </div>
+
+                <div>
+                  <label class="block text-sm font-semibold text-gray-800 mb-1.5">
+                    Special Offers / Community Notes
+                  </label>
+                  <input
+                    type="text"
+                    [(ngModel)]="specialOffers"
+                    name="specialOffers"
+                    placeholder="e.g. 10% discount for seniors; Free initial phone consultation"
+                    class="w-full px-4 py-3 rounded-xl border border-gray-300 bg-white text-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition shadow-sm"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <!-- SOCIAL MEDIA & ONLINE PRESENCE -->
+            <div class="pt-2 border-t border-gray-100 space-y-4">
+              <h3 class="text-base font-bold text-gray-900 flex items-center gap-2">
+                <span>🌐</span>
+                <span>Social Media &amp; Online Links <span class="text-xs font-normal text-gray-500">(Optional)</span></span>
+              </h3>
+
+              <!-- Website URL -->
+              <div>
+                <label class="block text-xs font-semibold text-gray-700 mb-1">Website URL</label>
+                <input
+                  type="url"
+                  [(ngModel)]="website"
+                  name="website"
+                  placeholder="https://example.org"
+                  class="w-full px-4 py-2.5 rounded-xl border border-gray-300 bg-white text-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition shadow-sm"
+                />
+              </div>
+
+              <!-- Social Links Grid -->
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-xs font-semibold text-gray-700 mb-1">LinkedIn Profile</label>
+                  <input
+                    type="url"
+                    [(ngModel)]="linkedInUrl"
+                    name="linkedInUrl"
+                    placeholder="https://linkedin.com/in/username"
+                    class="w-full px-4 py-2.5 rounded-xl border border-gray-300 bg-white text-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition shadow-sm"
+                  />
+                </div>
+
+                <div>
+                  <label class="block text-xs font-semibold text-gray-700 mb-1">Facebook Page</label>
+                  <input
+                    type="url"
+                    [(ngModel)]="facebookUrl"
+                    name="facebookUrl"
+                    placeholder="https://facebook.com/yourpage"
+                    class="w-full px-4 py-2.5 rounded-xl border border-gray-300 bg-white text-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition shadow-sm"
+                  />
+                </div>
+
+                <div>
+                  <label class="block text-xs font-semibold text-gray-700 mb-1">Instagram Profile</label>
+                  <input
+                    type="url"
+                    [(ngModel)]="instagramUrl"
+                    name="instagramUrl"
+                    placeholder="https://instagram.com/yourhandle"
+                    class="w-full px-4 py-2.5 rounded-xl border border-gray-300 bg-white text-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition shadow-sm"
+                  />
+                </div>
+
+                <div>
+                  <label class="block text-xs font-semibold text-gray-700 mb-1">Twitter / X Profile</label>
+                  <input
+                    type="url"
+                    [(ngModel)]="twitterUrl"
+                    name="twitterUrl"
+                    placeholder="https://x.com/username"
+                    class="w-full px-4 py-2.5 rounded-xl border border-gray-300 bg-white text-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition shadow-sm"
+                  />
+                </div>
+              </div>
+            </div>
+
             <!-- SUBMIT BUTTON -->
             <div class="pt-4 border-t border-gray-100 flex flex-col sm:flex-row items-center justify-between gap-4">
               <a
@@ -262,13 +441,13 @@ import { environment } from 'src/environments/environment';
               <button
                 type="submit"
                 [disabled]="isSubmitting || !serviceForm.form.valid"
-                class="w-full sm:w-auto px-8 py-3.5 rounded-full bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 text-white font-bold text-sm shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                class="w-full sm:w-auto px-8 py-3.5 rounded-full bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 text-white font-bold text-sm shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer"
               >
                 <svg *ngIf="isSubmitting" class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
                   <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                   <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
-                <span>{{ isSubmitting ? 'Registering Service...' : 'Publish Service to Directory' }}</span>
+                <span>{{ isSubmitting ? 'Submitting for Approval...' : 'Submit Service for Approval' }}</span>
               </button>
             </div>
           </form>
@@ -287,6 +466,15 @@ export class AddServiceComponent implements OnInit {
   mobile = '';
   phoneNo = '';
   description = '';
+  fee = '';
+  services = '';
+  operatingHours = '';
+  specialOffers = '';
+  website = '';
+  linkedInUrl = '';
+  facebookUrl = '';
+  instagramUrl = '';
+  twitterUrl = '';
 
   selectedImage: File | null = null;
   imagePreview: string | null = null;
@@ -404,7 +592,16 @@ export class AddServiceComponent implements OnInit {
     formData.append('phoneNo', this.phoneNo.trim() || this.mobile.trim());
     formData.append('ownerPhone', this.mobile.trim());
     formData.append('description', this.description.trim());
-    formData.append('status', 'Approved');
+    formData.append('fee', this.fee.trim());
+    formData.append('services', this.services.trim());
+    formData.append('operatingHours', this.operatingHours.trim());
+    formData.append('specialOffers', this.specialOffers.trim());
+    formData.append('website', this.website.trim());
+    formData.append('linkedInUrl', this.linkedInUrl.trim());
+    formData.append('facebookUrl', this.facebookUrl.trim());
+    formData.append('instagramUrl', this.instagramUrl.trim());
+    formData.append('twitterUrl', this.twitterUrl.trim());
+    formData.append('status', 'Pending');
 
     if (this.selectedImage) {
       formData.append('image', this.selectedImage, this.selectedImage.name);
@@ -414,10 +611,11 @@ export class AddServiceComponent implements OnInit {
     this.commonService.addBusiness(formData).subscribe({
       next: (res: any) => {
         this.isSubmitting = false;
-        this.showToast('Service listed successfully! Redirecting to directory...', 'success');
+        const successMsg = res?.message || 'Service submitted successfully for approval! It will appear in the directory once reviewed by an admin.';
+        this.showToast(successMsg, 'success');
         setTimeout(() => {
           this.router.navigate(['/services']);
-        }, 1500);
+        }, 2200);
       },
       error: (err: any) => {
         this.isSubmitting = false;

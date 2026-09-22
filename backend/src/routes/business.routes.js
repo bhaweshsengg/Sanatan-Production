@@ -5,6 +5,7 @@ import {
   getBusinessById,
   updateBusinessStatus,
   createBusiness,
+  createAppointmentRequest,
 } from '../controllers/business.controller.js';
 import { authenticate, authorize, optionalAuthenticate } from '../middleware/auth.js';
 import multer from 'multer';
@@ -45,5 +46,7 @@ router.get('/:id', getBusinessById);
 router.post('/', optionalAuthenticate, upload.any(), createBusiness);
 
 router.patch('/:id/status', authenticate, authorize('Admin', 'BusinessManager'), updateBusinessStatus);
+
+router.post('/:id/appointment', createAppointmentRequest);
 
 export default router;

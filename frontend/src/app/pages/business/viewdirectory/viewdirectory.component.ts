@@ -1,61 +1,165 @@
-import { Component, OnInit } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
+import { Component, OnInit, OnDestroy } from '@angular/core';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { HttpClient, HttpClientModule } from '@angular/common/http';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { Subscription } from 'rxjs';
 import { environment } from '../../../../environments/environment';
+import { CommonService } from 'src/app/shared/common.service';
+import { AuthService } from 'src/app/Auth/auth.service';
 
 @Component({
   selector: 'app-viewdirectory',
   standalone: true,
-  imports: [CommonModule, HttpClientModule],
+  imports: [CommonModule, HttpClientModule, RouterLink, FormsModule],
   templateUrl: './viewdirectory.component.html',
   styleUrl: './viewdirectory.component.css'
 })
-export class ViewdirectoryComponent implements OnInit {
-  toastMessage: any;
-  toastType: any;
-  showToast: any;
-  businessId: any;
-  businessData: any = null; // Property to store the API response data
-  isLoading: boolean = true; // Loading indicator
+export class ViewdirectoryComponent implements OnInit, OnDestroy {
+  toastMessage = '';
+  toastType: 'success' | 'error' = 'success';
+  showToast = false;
+  businessId: string | null = null;
+  businessData: any = null;
+  isLoading: boolean = true;
+  private routeSub?: Subscription;
 
-  constructor(private route: ActivatedRoute, private http: HttpClient) {}
+  // Appointment Modal State
+  isAppointmentModalOpen = false;
+  isSubmittingAppointment = false;
+  appointmentForm = {
+    fullName: '',
+    email: '',
+    phone: '',
+    preferredDate: '',
+    preferredTime: '',
+    serviceName: '',
+    notes: '',
+  };
+
+  constructor(
+    private route: ActivatedRoute,
+    private http: HttpClient,
+    private commonService: CommonService,
+    private authService: AuthService
+  ) {}
 
   ngOnInit(): void {
-    // Retrieve the ID from the route snapshot
-    this.businessId = this.route.snapshot.paramMap.get('id');
+    this.routeSub = this.route.paramMap.subscribe((params) => {
+      this.businessId = params.get('id');
+      if (this.businessId) {
+        this.fetchBusinessDetails(this.businessId);
+      }
+    });
+  }
 
-    if (this.businessId) {
-      this.fetchBusinessDetails(this.businessId);
-    }
+  ngOnDestroy(): void {
+    this.routeSub?.unsubscribe();
   }
 
   fetchBusinessDetails(id: string): void {
     this.isLoading = true;
     const apiUrl = `${environment.apiBaseUrl}/business/${id}`;
-    
+
     this.http.get<any>(apiUrl).subscribe({
       next: (response) => {
         if (response?.success && response?.data) {
-          this.businessData = { ...response.data, images: response.data.images ?? [] };
-          console.log('Fetched Business Data:', this.businessData);
+          this.businessData = {
+            ...response.data,
+            images: response.data.images ?? (response.data.imageUrl ? [{ file: response.data.imageUrl }] : [])
+          };
         } else {
-          // Handle error if success is false
-          console.error('API returned an error:', response.message);
           this.showToastMessage('Failed to fetch business details.', 'error');
         }
         this.isLoading = false;
       },
       error: (error) => {
-        console.error('There was an error fetching the data:', error);
-        this.showToastMessage('An error occurred. Please try again later.', 'error');
+        console.error('Error fetching service details:', error);
+        this.showToastMessage('An error occurred loading service details.', 'error');
         this.isLoading = false;
       }
     });
   }
 
-  private showToastMessage(message: string, type: 'success' | 'error' = 'error') {
-    // Implementation of toast message logic
-    // (You can leave this as is if it works for your project)
+  resolveImageUrl(imgCandidate: any): string {
+    if (!imgCandidate) return 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=600&q=80';
+    const candidate = typeof imgCandidate === 'string' ? imgCandidate : imgCandidate?.file;
+    if (!candidate) return 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=600&q=80';
+    if (candidate.startsWith('http://') || candidate.startsWith('https://')) return candidate;
+    const backendOrigin = environment.apiBaseUrl.replace(/\/api\/v1\/?$/, '');
+    const cleanPath = candidate.startsWith('/') ? candidate : `/${candidate}`;
+    return `${backendOrigin}${cleanPath}`;
+  }
+
+  onImageError(event: Event): void {
+    const target = event.target as HTMLImageElement;
+    if (target) {
+      target.src = 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=600&q=80';
+    }
+  }
+
+  openAppointmentModal(): void {
+    if (!this.businessData) return;
+    const user = this.authService.getUserData();
+
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const defaultDateStr = tomorrow.toISOString().split('T')[0];
+
+    this.appointmentForm = {
+      fullName: user ? `${user.firstName || user.name || ''} ${user.lastName || ''}`.trim() : '',
+      email: user?.email || '',
+      phone: user?.mobile || user?.phone || '',
+      preferredDate: defaultDateStr,
+      preferredTime: '10:00 AM',
+      serviceName: this.businessData.businessName || 'General Community Service',
+      notes: '',
+    };
+    this.isAppointmentModalOpen = true;
+  }
+
+  closeAppointmentModal(): void {
+    this.isAppointmentModalOpen = false;
+    this.isSubmittingAppointment = false;
+  }
+
+  submitAppointment(): void {
+    if (
+      !this.appointmentForm.fullName.trim() ||
+      !this.appointmentForm.email.trim() ||
+      !this.appointmentForm.phone.trim() ||
+      !this.appointmentForm.preferredDate.trim()
+    ) {
+      this.showToastMessage('Please fill in your name, email, phone, and preferred date.', 'error');
+      return;
+    }
+
+    if (!this.businessId) return;
+
+    this.isSubmittingAppointment = true;
+    this.commonService.requestAppointment(this.businessId, this.appointmentForm).subscribe({
+      next: (res: any) => {
+        this.isSubmittingAppointment = false;
+        const msg = res?.message || 'Appointment requested successfully! The provider will contact you.';
+        this.showToastMessage(msg, 'success');
+        this.closeAppointmentModal();
+      },
+      error: (err: any) => {
+        this.isSubmittingAppointment = false;
+        const msg = err?.error?.message || err?.message || 'Failed to submit appointment request. Please try again.';
+        this.showToastMessage(msg, 'error');
+      }
+    });
+  }
+
+  showToastMessage(message: string, type: 'success' | 'error' = 'error') {
+    this.toastMessage = message;
+    this.toastType = type;
+    this.showToast = true;
+
+    setTimeout(() => {
+      this.showToast = false;
+      this.toastMessage = '';
+    }, 4000);
   }
 }

@@ -505,7 +505,7 @@ this.loadData()
   // API Methods
   getBusinesses(): Observable<any[]> {
     return this.http
-      .get<any>(`${this.apiUrl}/business?limit=all`)
+      .get<any>(`${this.apiUrl}/business?limit=all&status=all`)
       .pipe(
         map((response: any) => {
           const businessData = Array.isArray(response) ? response : response?.data ?? [];

@@ -1,4 +1,17 @@
 <div class="min-h-screen bg-gray-50 font-['Inter'] text-gray-800">
+  <!-- FLOATING TOAST NOTIFICATION -->
+  <div
+    *ngIf="showToast"
+    class="fixed top-24 left-1/2 -translate-x-1/2 py-3.5 px-6 rounded-2xl shadow-2xl z-50 text-white text-sm font-semibold transition-all duration-300 flex items-center gap-3"
+    [ngClass]="{
+      'bg-emerald-600': toastType === 'success',
+      'bg-rose-600': toastType === 'error'
+    }"
+  >
+    <span class="text-base">{{ toastType === 'success' ? '✅' : '⚠️' }}</span>
+    <span>{{ toastMessage }}</span>
+  </div>
+
   <!-- HERO HEADER -->
   <header class="relative overflow-hidden bg-gradient-to-r from-orange-600 via-red-600 to-amber-600 text-white py-14 px-4 sm:px-6 shadow-md">
     <div class="absolute inset-0 opacity-10 pointer-events-none bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:16px_16px]"></div>
@@ -18,39 +31,59 @@
       <div class="mt-6 flex flex-wrap items-center justify-center gap-3">
         <a
           routerLink="/services/add"
-          class="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-white text-orange-700 font-bold text-sm shadow-lg hover:shadow-xl hover:bg-orange-50 transition-all duration-200 transform hover:scale-105"
+          class="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-white text-orange-700 font-bold text-sm shadow-lg hover:shadow-xl hover:bg-orange-50 transition-all duration-200 transform hover:scale-105 cursor-pointer"
         >
           <span>➕</span>
           <span>Add Service</span>
         </a>
         <a
           routerLink="/temples"
-          class="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-orange-700/80 hover:bg-orange-800 text-white font-semibold text-sm border border-white/20 shadow-md transition-all"
+          class="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-orange-700/80 hover:bg-orange-800 text-white font-semibold text-sm border border-white/20 shadow-md transition-all cursor-pointer"
         >
           <span>🕉️</span>
           <span>Find Temples</span>
         </a>
       </div>
 
-      <!-- SEARCH BAR -->
-      <div class="mt-8 max-w-xl mx-auto">
-        <div class="relative flex items-center shadow-lg rounded-2xl bg-white overflow-hidden border border-orange-200">
+      <!-- SEARCH & CITY SELECTOR BAR -->
+      <div class="mt-8 max-w-2xl mx-auto flex flex-col sm:flex-row items-center gap-3">
+        <!-- Search Input -->
+        <div class="relative flex-1 w-full flex items-center shadow-lg rounded-2xl bg-white overflow-hidden border border-orange-200">
           <span class="pl-4 text-gray-400 text-lg">🔍</span>
           <input
             type="text"
             [(ngModel)]="searchTerm"
             (ngModelChange)="filterServices()"
-            placeholder="Search by service name, priest, category, city, or keyword..."
+            placeholder="Search by priest, service, city, or keyword..."
             class="w-full py-3.5 pl-3 pr-10 text-sm text-gray-800 placeholder-gray-400 focus:outline-none bg-transparent"
           />
           <button
             *ngIf="searchTerm"
             type="button"
             (click)="searchTerm = ''; filterServices()"
-            class="pr-4 text-gray-400 hover:text-gray-600 text-sm font-bold"
+            class="pr-4 text-gray-400 hover:text-gray-600 text-sm font-bold cursor-pointer"
           >
             ✕
           </button>
+        </div>
+
+        <!-- City Dropdown Filter -->
+        <div class="w-full sm:w-56 shrink-0 relative shadow-lg rounded-2xl bg-white border border-orange-200 overflow-hidden">
+          <div class="relative flex items-center">
+            <span class="pl-3.5 text-gray-400 text-sm">📍</span>
+            <select
+              [(ngModel)]="selectedCity"
+              (ngModelChange)="filterServices()"
+              class="w-full py-3.5 pl-2 pr-8 text-sm font-semibold text-gray-800 bg-transparent focus:outline-none cursor-pointer appearance-none"
+              aria-label="Filter by City"
+            >
+              <option value="All">All Cities (NZ-wide)</option>
+              <option *ngFor="let c of cities" [value]="c" [hidden]="c === 'All'">
+                {{ c }}
+              </option>
+            </select>
+            <span class="absolute right-3 pointer-events-none text-xs text-gray-400">▼</span>
+          </div>
         </div>
       </div>
     </div>
@@ -58,6 +91,51 @@
 
   <!-- MAIN CONTAINER -->
   <main class="max-w-6xl mx-auto px-4 sm:px-6 py-10">
+    <!-- CITY FILTER PILLS BAR -->
+    <div class="mb-6 pb-4 border-b border-gray-200">
+      <div class="flex items-center justify-between gap-2 mb-3">
+        <span class="text-xs font-bold uppercase tracking-wider text-gray-500 flex items-center gap-1.5">
+          <span>📍</span>
+          <span>Filter by City:</span>
+        </span>
+        <button
+          *ngIf="selectedCity !== 'All'"
+          type="button"
+          (click)="setCity('All')"
+          class="text-xs font-semibold text-orange-600 hover:text-orange-800 transition cursor-pointer"
+        >
+          Reset to All Cities ✕
+        </button>
+      </div>
+
+      <div class="flex flex-wrap items-center gap-2">
+        <button
+          type="button"
+          (click)="setCity('All')"
+          class="px-3 py-1.5 rounded-full text-xs font-semibold transition-all duration-200 cursor-pointer"
+          [ngClass]="{
+            'bg-orange-600 text-white shadow-sm': selectedCity === 'All',
+            'bg-white text-gray-600 hover:bg-orange-50 hover:text-orange-600 border border-gray-200': selectedCity !== 'All'
+          }"
+        >
+          🌍 All Cities
+        </button>
+        <button
+          *ngFor="let city of cities"
+          [hidden]="city === 'All'"
+          type="button"
+          (click)="setCity(city)"
+          class="px-3 py-1.5 rounded-full text-xs font-semibold transition-all duration-200 cursor-pointer"
+          [ngClass]="{
+            'bg-orange-600 text-white shadow-sm': selectedCity === city,
+            'bg-white text-gray-600 hover:bg-orange-50 hover:text-orange-600 border border-gray-200': selectedCity !== city
+          }"
+        >
+          {{ city }}
+        </button>
+      </div>
+    </div>
+
     <!-- CATEGORY FILTER PILLS -->
     <div class="flex flex-wrap items-center justify-between gap-4 mb-8 pb-4 border-b border-gray-200">
       <div class="flex flex-wrap items-center gap-2">
@@ -65,7 +143,7 @@
           *ngFor="let cat of categories"
           type="button"
           (click)="setCategory(cat)"
-          class="px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all duration-200"
+          class="px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all duration-200 cursor-pointer"
           [ngClass]="{
             'bg-orange-600 text-white shadow-sm': selectedCategory === cat,
             'bg-white text-gray-600 hover:bg-orange-50 hover:text-orange-600 border border-gray-200': selectedCategory !== cat
@@ -77,18 +155,29 @@
 
       <a
         routerLink="/services/add"
-        class="inline-flex items-center gap-1.5 text-xs font-bold text-orange-600 hover:text-orange-700 bg-orange-50 hover:bg-orange-100 px-3.5 py-2 rounded-xl border border-orange-200 transition"
+        class="inline-flex items-center gap-1.5 text-xs font-bold text-orange-600 hover:text-orange-700 bg-orange-50 hover:bg-orange-100 px-3.5 py-2 rounded-xl border border-orange-200 transition cursor-pointer"
       >
         <span>➕</span>
         <span>List Your Service</span>
       </a>
     </div>
 
-    <!-- SERVICES COUNT & LOADING -->
-    <div class="flex items-center justify-between mb-6">
+    <!-- SERVICES COUNT & ACTIVE FILTERS -->
+    <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
       <p class="text-sm font-medium text-gray-600">
-        Showing <span class="font-bold text-gray-900">{{ filteredBusinesses.length }}</span> services in New Zealand
+        Showing <span class="font-bold text-gray-900">{{ filteredBusinesses.length }}</span> approved services
+        <span *ngIf="selectedCity !== 'All'"> in <strong class="text-orange-600">{{ selectedCity }}</strong></span>
+        <span *ngIf="selectedCategory !== 'All'"> under <strong class="text-orange-600">{{ selectedCategory }}</strong></span>
       </p>
+
+      <button
+        *ngIf="selectedCity !== 'All' || selectedCategory !== 'All' || searchTerm"
+        type="button"
+        (click)="resetAllFilters()"
+        class="text-xs font-semibold text-gray-500 hover:text-orange-600 transition flex items-center gap-1 cursor-pointer"
+      >
+        <span>Clear all filters ✕</span>
+      </button>
     </div>
 
     <!-- LOADING STATE -->
@@ -101,7 +190,7 @@
     <div *ngIf="!loading && filteredBusinesses.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       <div
         *ngFor="let biz of filteredBusinesses"
-        class="bg-white rounded-2xl border border-gray-200 shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden flex flex-col justify-between"
+        class="bg-white rounded-2xl border border-gray-200 shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden flex flex-col justify-between"
       >
         <div>
           <!-- Card Image / Header -->
@@ -113,7 +202,7 @@
               class="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
             />
             <span class="absolute top-3 right-3 bg-white/95 text-orange-800 text-xs font-bold px-2.5 py-1 rounded-full shadow-sm backdrop-blur-sm">
-              {{ biz.city || 'New Zealand' }}
+              📍 {{ biz.city || 'New Zealand' }}
             </span>
             <span class="absolute top-3 left-3 bg-orange-600 text-white text-[11px] font-bold px-2.5 py-0.5 rounded-full shadow-sm">
               {{ biz.category }}
@@ -122,15 +211,40 @@
 
           <!-- Card Content -->
           <div class="p-5">
-            <h3 class="text-lg font-bold text-gray-900 mb-1 leading-snug">
-              {{ biz.businessName }}
-            </h3>
+            <div class="flex items-start justify-between gap-2 mb-1">
+              <h3 class="text-lg font-bold text-gray-900 leading-snug">
+                {{ biz.businessName }}
+              </h3>
+            </div>
 
             <!-- Provider Name -->
-            <p *ngIf="biz.ownerName" class="text-xs font-semibold text-orange-600 mb-3 flex items-center gap-1.5">
+            <p *ngIf="biz.ownerName" class="text-xs font-semibold text-orange-600 mb-2.5 flex items-center gap-1.5">
               <span>👤</span>
               <span>{{ biz.ownerName }}</span>
             </p>
+
+            <!-- SERVICE FEE BADGE -->
+            <div class="mb-3">
+              <span
+                *ngIf="biz.fee"
+                class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-bold"
+              >
+                <span>🏷️ Fee:</span>
+                <span>{{ biz.fee }}</span>
+              </span>
+              <span
+                *ngIf="!biz.fee"
+                class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-gray-50 text-gray-600 border border-gray-200 text-xs font-medium"
+              >
+                <span>🏷️ Dakshina / Inquire</span>
+              </span>
+            </div>
+
+            <!-- Specific Rituals / Services Offered (if provided) -->
+            <div *ngIf="biz.services" class="mb-3 p-2.5 bg-orange-50/50 rounded-xl border border-orange-100 text-xs text-orange-950">
+              <span class="font-bold text-orange-800">Offered:</span>
+              <span class="ml-1 line-clamp-1">{{ biz.services }}</span>
+            </div>
 
             <!-- Description -->
             <p class="text-sm text-gray-600 line-clamp-3 mb-4 leading-relaxed">
@@ -151,25 +265,41 @@
                 <span class="text-gray-400">✉️</span>
                 <span class="truncate">{{ biz.email }}</span>
               </div>
+              <div *ngIf="biz.operatingHours" class="flex items-center gap-2 text-gray-500">
+                <span class="text-gray-400">🕒</span>
+                <span class="truncate">{{ biz.operatingHours }}</span>
+              </div>
             </div>
           </div>
         </div>
 
-        <!-- Card Footer Actions -->
-        <div class="p-4 bg-gray-50/80 border-t border-gray-100 flex items-center justify-between gap-2">
-          <a
-            *ngIf="biz.phone || biz.ownerPhone"
-            [href]="'tel:' + (biz.phone || biz.ownerPhone)"
-            class="flex-1 text-center py-2 px-3 rounded-xl bg-white hover:bg-orange-50 text-orange-600 font-bold text-xs border border-orange-200 transition"
+        <!-- Card Footer Actions (Includes Appointment Button) -->
+        <div class="p-4 bg-gray-50/80 border-t border-gray-100 space-y-2">
+          <!-- Prominent Appointment Booking Button -->
+          <button
+            type="button"
+            (click)="openAppointmentModal(biz)"
+            class="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 text-white font-bold text-xs shadow-sm hover:shadow transition-all duration-200 flex items-center justify-center gap-1.5 cursor-pointer"
           >
-            Call Now
-          </a>
-          <a
-            [routerLink]="['/business/register', biz.id]"
-            class="flex-1 text-center py-2 px-3 rounded-xl bg-orange-600 hover:bg-orange-700 text-white font-bold text-xs shadow-sm transition"
-          >
-            View Details
-          </a>
+            <span>📅</span>
+            <span>Book Appointment</span>
+          </button>
+
+          <div class="flex items-center gap-2">
+            <a
+              *ngIf="biz.phone || biz.ownerPhone"
+              [href]="'tel:' + (biz.phone || biz.ownerPhone)"
+              class="flex-1 text-center py-2 px-3 rounded-xl bg-white hover:bg-orange-50 text-orange-600 font-bold text-xs border border-orange-200 transition"
+            >
+              📞 Call Now
+            </a>
+            <a
+              [routerLink]="['/services', biz.id]"
+              class="flex-1 text-center py-2 px-3 rounded-xl bg-white hover:bg-gray-100 text-gray-800 font-bold text-xs border border-gray-200 shadow-sm transition"
+            >
+              View Details
+            </a>
+          </div>
         </div>
       </div>
     </div>
@@ -179,19 +309,21 @@
       <div class="text-5xl mb-3">🏛️</div>
       <h3 class="text-xl font-bold text-gray-900">No services found</h3>
       <p class="text-sm text-gray-500 mt-2 max-w-md mx-auto leading-relaxed">
-        No services matched your search or category filter. Be the first to register a service in this category!
+        No approved services matched your criteria
+        <span *ngIf="selectedCity !== 'All'"> in <strong>{{ selectedCity }}</strong></span>.
+        Try resetting your filters or list a new service for this city!
       </p>
       <div class="mt-6 flex flex-wrap justify-center gap-3">
         <button
           type="button"
-          (click)="searchTerm = ''; selectedCategory = 'All'; filterServices()"
-          class="px-4 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-800 text-xs font-semibold transition"
+          (click)="resetAllFilters()"
+          class="px-4 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-800 text-xs font-semibold transition cursor-pointer"
         >
-          Reset Filters
+          Reset All Filters
         </button>
         <a
           routerLink="/services/add"
-          class="px-5 py-2 rounded-xl bg-orange-600 hover:bg-orange-700 text-white text-xs font-bold shadow-sm transition"
+          class="px-5 py-2 rounded-xl bg-orange-600 hover:bg-orange-700 text-white text-xs font-bold shadow-sm transition cursor-pointer"
         >
           Add Service Now
         </a>
@@ -206,11 +338,175 @@
       </p>
       <a
         routerLink="/services/add"
-        class="inline-flex items-center gap-2 px-8 py-3.5 rounded-full bg-white text-orange-700 font-bold text-sm shadow-lg hover:shadow-xl hover:bg-orange-50 transition-all duration-200 transform hover:scale-105"
+        class="inline-flex items-center gap-2 px-8 py-3.5 rounded-full bg-white text-orange-700 font-bold text-sm shadow-lg hover:shadow-xl hover:bg-orange-50 transition-all duration-200 transform hover:scale-105 cursor-pointer"
       >
         <span>➕</span>
         <span>Register Your Service</span>
       </a>
     </div>
   </main>
+
+  <!-- APPOINTMENT REQUEST MODAL -->
+  <div
+    *ngIf="selectedServiceForAppointment"
+    class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-fade-in"
+  >
+    <div class="w-full max-w-lg rounded-3xl bg-white shadow-2xl border border-gray-200 overflow-hidden flex flex-col max-h-[92vh]">
+      <!-- Modal Header -->
+      <div class="bg-gradient-to-r from-orange-600 via-red-600 to-amber-600 px-6 py-5 text-white flex items-center justify-between">
+        <div>
+          <div class="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-orange-200 mb-1">
+            <span>📅</span>
+            <span>Request Service Appointment</span>
+          </div>
+          <h3 class="text-xl font-extrabold text-white leading-tight">
+            {{ selectedServiceForAppointment.businessName }}
+          </h3>
+          <p class="text-xs text-orange-100 mt-0.5" *ngIf="selectedServiceForAppointment.ownerName">
+            Provider: {{ selectedServiceForAppointment.ownerName }}
+          </p>
+        </div>
+        <button
+          type="button"
+          (click)="closeAppointmentModal()"
+          class="rounded-full bg-white/20 hover:bg-white/30 p-2 text-white transition cursor-pointer"
+          title="Close Modal"
+        >
+          ✕
+        </button>
+      </div>
+
+      <!-- Modal Body Form -->
+      <form (ngSubmit)="submitAppointment()" #apptForm="ngForm" class="p-6 overflow-y-auto space-y-4">
+        <!-- Fee indicator if set -->
+        <div *ngIf="selectedServiceForAppointment.fee" class="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-900 flex items-center justify-between">
+          <span class="font-semibold">Standard Fee / Dakshina:</span>
+          <span class="font-bold text-emerald-800">{{ selectedServiceForAppointment.fee }}</span>
+        </div>
+
+        <!-- Full Name -->
+        <div>
+          <label class="block text-xs font-bold text-gray-700 mb-1">
+            Your Full Name <span class="text-red-500">*</span>
+          </label>
+          <input
+            type="text"
+            [(ngModel)]="appointmentForm.fullName"
+            name="fullName"
+            required
+            placeholder="e.g. Ramesh Patel"
+            class="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 bg-white text-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 transition shadow-sm"
+          />
+        </div>
+
+        <!-- Contact Row: Email & Phone -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-gray-700 mb-1">
+              Email Address <span class="text-red-500">*</span>
+            </label>
+            <input
+              type="email"
+              [(ngModel)]="appointmentForm.email"
+              name="email"
+              required
+              placeholder="ramesh@example.com"
+              class="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 bg-white text-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 transition shadow-sm"
+            />
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-gray-700 mb-1">
+              Mobile Phone <span class="text-red-500">*</span>
+            </label>
+            <input
+              type="tel"
+              [(ngModel)]="appointmentForm.phone"
+              name="phone"
+              required
+              placeholder="+64 21 000 0000"
+              class="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 bg-white text-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 transition shadow-sm"
+            />
+          </div>
+        </div>
+
+        <!-- Date & Time Row -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-gray-700 mb-1">
+              Preferred Date <span class="text-red-500">*</span>
+            </label>
+            <input
+              type="date"
+              [(ngModel)]="appointmentForm.preferredDate"
+              name="preferredDate"
+              required
+              class="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 bg-white text-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 transition shadow-sm cursor-pointer"
+            />
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-gray-700 mb-1">
+              Preferred Time
+            </label>
+            <input
+              type="text"
+              [(ngModel)]="appointmentForm.preferredTime"
+              name="preferredTime"
+              placeholder="e.g. 10:00 AM or Morning"
+              class="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 bg-white text-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 transition shadow-sm"
+            />
+          </div>
+        </div>
+
+        <!-- Requested Ritual / Service -->
+        <div>
+          <label class="block text-xs font-bold text-gray-700 mb-1">
+            Service / Ritual Required
+          </label>
+          <input
+            type="text"
+            [(ngModel)]="appointmentForm.serviceName"
+            name="serviceName"
+            placeholder="e.g. Satyanarayan Puja, Griha Pravesh, Havan"
+            class="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 bg-white text-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 transition shadow-sm"
+          />
+        </div>
+
+        <!-- Notes / Special Requests -->
+        <div>
+          <label class="block text-xs font-bold text-gray-700 mb-1">
+            Additional Notes or Location Details
+          </label>
+          <textarea
+            [(ngModel)]="appointmentForm.notes"
+            name="notes"
+            rows="3"
+            placeholder="Specify puja items, family members, location address, or special requirements..."
+            class="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 bg-white text-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 transition shadow-sm"
+          ></textarea>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="pt-3 border-t border-gray-100 flex items-center justify-end gap-3">
+          <button
+            type="button"
+            (click)="closeAppointmentModal()"
+            class="px-5 py-2.5 rounded-xl border border-gray-300 text-gray-700 font-semibold text-xs hover:bg-gray-50 transition cursor-pointer"
+          >
+            Cancel
+          </button>
+
+          <button
+            type="submit"
+            [disabled]="isSubmittingAppointment || !apptForm.form.valid"
+            class="px-6 py-2.5 rounded-xl bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 text-white font-bold text-xs shadow-md transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 cursor-pointer"
+          >
+            <span *ngIf="isSubmittingAppointment">Submitting...</span>
+            <span *ngIf="!isSubmittingAppointment">Confirm Request ✉️</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
 </div>

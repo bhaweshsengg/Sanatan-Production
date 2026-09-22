@@ -512,13 +512,53 @@ export const ensureRequiredTables = async () => {
         console.warn('Starter religious articles seed check:', articleSeedErr?.message);
       }
 
-      // 11. Ensure business_business has imageUrl column
+      // 11. Ensure business_business has imageUrl, linkedInUrl, fee columns
       try {
         await prisma.$executeRawUnsafe(`
           ALTER TABLE \`business_business\` ADD COLUMN \`imageUrl\` VARCHAR(2048) NULL;
         `);
       } catch {
         // Safe to ignore if column already exists
+      }
+
+      try {
+        await prisma.$executeRawUnsafe(`
+          ALTER TABLE \`business_business\` ADD COLUMN \`linkedInUrl\` VARCHAR(2048) NULL;
+        `);
+      } catch {
+        // Safe to ignore if column already exists
+      }
+
+      try {
+        await prisma.$executeRawUnsafe(`
+          ALTER TABLE \`business_business\` ADD COLUMN \`fee\` VARCHAR(191) NULL;
+        `);
+      } catch {
+        // Safe to ignore if column already exists
+      }
+
+      // 12. Ensure service_appointment table exists
+      try {
+        await prisma.$executeRawUnsafe(`
+          CREATE TABLE IF NOT EXISTS \`service_appointment\` (
+            \`id\` INT NOT NULL AUTO_INCREMENT,
+            \`business_id\` BIGINT NOT NULL,
+            \`name\` VARCHAR(191) NOT NULL,
+            \`email\` VARCHAR(191) NOT NULL,
+            \`phone\` VARCHAR(191) NOT NULL,
+            \`preferred_date\` VARCHAR(191) NOT NULL,
+            \`preferred_time\` VARCHAR(191) NULL,
+            \`notes\` TEXT NULL,
+            \`service_name\` VARCHAR(255) NULL,
+            \`status\` ENUM('Pending', 'Confirmed', 'Cancelled', 'Completed') NOT NULL DEFAULT 'Pending',
+            \`created_at\` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+            PRIMARY KEY (\`id\`),
+            INDEX \`service_appointment_biz_idx\` (\`business_id\`),
+            INDEX \`service_appointment_status_idx\` (\`status\`)
+          ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+        `);
+      } catch (appointmentErr) {
+        console.warn('service_appointment table check:', appointmentErr?.message);
       }
 
       // 9. Auto-repair any double-encoded or slash-corrupted temple services/facilities in production

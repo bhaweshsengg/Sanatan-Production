@@ -660,6 +660,7 @@ export class AddbuisnessComponent {
   linkedInUrl = signal('');
   instagramUrl = signal('');
   twitterUrl = signal('');
+  fee = signal('');
 
   images: File[] = [];
   selectedImageCount = signal(0);
@@ -795,6 +796,7 @@ export class AddbuisnessComponent {
       formData.append('linkedInUrl', this.linkedInUrl());
       formData.append('instagramUrl', this.instagramUrl());
       formData.append('twitterUrl', this.twitterUrl());
+      formData.append('fee', this.fee());
 
       // ✅ Send status along with form
       formData.append('status', 'Pending');
