@@ -148,6 +148,20 @@ export const ensureRequiredTables = async () => {
         ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
       `);
 
+      // Seed default mandir relationships if table was freshly created or missing entries
+      const defaultRelations = ['Temple Admin', 'Temples Coordinator', 'Temple Devotee'];
+      for (const rel of defaultRelations) {
+        try {
+          await prisma.$executeRawUnsafe(`
+            INSERT INTO \`relation_to_mandir\` (\`relationship_name\`, \`is_active\`)
+            VALUES (?, 1)
+            ON DUPLICATE KEY UPDATE \`is_active\` = 1;
+          `, rel);
+        } catch {
+          // Safe to ignore duplicate or table concurrency
+        }
+      }
+
       // 6. TempleDevotee_registration
       await prisma.$executeRawUnsafe(`
         CREATE TABLE IF NOT EXISTS \`TempleDevotee_registration\` (

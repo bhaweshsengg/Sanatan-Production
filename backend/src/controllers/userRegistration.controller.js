@@ -20,12 +20,71 @@ const normalizeRegistration = (registration) => {
   };
 };
 
+export const getOrCreateDevoteeRelation = async () => {
+  // 1. Try finding 'Temple Devotee' (isActive: true)
+  let devoteeRelation = await prisma.relationToMandir.findFirst({
+    where: { relationshipName: 'Temple Devotee', isActive: true },
+  });
+
+  // 2. Try relationship containing 'Devotee' (isActive: true)
+  if (!devoteeRelation) {
+    devoteeRelation = await prisma.relationToMandir.findFirst({
+      where: {
+        relationshipName: { contains: 'Devotee' },
+        isActive: true,
+      },
+    });
+  }
+
+  // 3. Try any active relation
+  if (!devoteeRelation) {
+    devoteeRelation = await prisma.relationToMandir.findFirst({
+      where: { isActive: true },
+    });
+  }
+
+  // 4. If none found or all inactive, reactivate or create 'Temple Devotee'
+  if (!devoteeRelation) {
+    try {
+      devoteeRelation = await prisma.relationToMandir.upsert({
+        where: { relationshipName: 'Temple Devotee' },
+        update: { isActive: true },
+        create: { relationshipName: 'Temple Devotee', isActive: true },
+      });
+    } catch {
+      try {
+        await prisma.$executeRawUnsafe(`
+          INSERT INTO \`relation_to_mandir\` (\`relationship_name\`, \`is_active\`)
+          VALUES ('Temple Devotee', 1)
+          ON DUPLICATE KEY UPDATE \`is_active\` = 1;
+        `);
+        devoteeRelation = await prisma.relationToMandir.findFirst({
+          where: { relationshipName: 'Temple Devotee' },
+        });
+      } catch (err) {
+        logger.error('Failed to get or create devotee relation:', err);
+      }
+    }
+  }
+
+  return devoteeRelation;
+};
+
 export const listRelationOptions = async (_req, res) => {
   try {
-    const relations = await prisma.relationToMandir.findMany({
+    let relations = await prisma.relationToMandir.findMany({
       where: { isActive: true },
       orderBy: { relationshipName: 'asc' },
     });
+
+    if (!relations || relations.length === 0) {
+      await ensureRequiredTables();
+      await getOrCreateDevoteeRelation();
+      relations = await prisma.relationToMandir.findMany({
+        where: { isActive: true },
+        orderBy: { relationshipName: 'asc' },
+      });
+    }
 
     return sendSuccess(res, 200, { data: relations });
   } catch (error) {
@@ -62,7 +121,7 @@ export const createUserRegistration = async (req, res) => {
     }
 
     // Determine Relation: use provided relationId or default to 'Temple Devotee'
-    let relationId = req.body.relationId ? Number(req.body.relationId) : null;
+    let relationId = (req.body.relationId && Number(req.body.relationId) > 0) ? Number(req.body.relationId) : null;
     if (relationId) {
       const relation = await prisma.relationToMandir.findUnique({
         where: { id: relationId },
@@ -71,14 +130,7 @@ export const createUserRegistration = async (req, res) => {
         return sendError(res, 400, 'Selected relation is invalid or inactive.', {});
       }
     } else {
-      let devoteeRelation = await prisma.relationToMandir.findFirst({
-        where: { relationshipName: 'Temple Devotee', isActive: true },
-      });
-      if (!devoteeRelation) {
-        devoteeRelation = await prisma.relationToMandir.findFirst({
-          where: { isActive: true },
-        });
-      }
+      const devoteeRelation = await getOrCreateDevoteeRelation();
       if (!devoteeRelation) {
         return sendError(res, 500, 'No active registration relationship available.', {});
       }

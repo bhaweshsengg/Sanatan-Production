@@ -8,7 +8,10 @@ export const registrationSchema = z.object({
   mobile: z.string().trim().min(8, 'Mobile number is required').max(25, 'Mobile number is too long').regex(/^[+()\d\s-]+$/, 'Mobile number contains invalid characters'),
   mandirId: z.coerce.number().int('Temple is required').positive('Temple is required'),
   subscription: z.enum(['Yes', 'No']).default('No'),
-  relationId: z.coerce.number().int().positive().optional(),
+  relationId: z.preprocess(
+    (val) => (val === '' || val === null || val === undefined ? undefined : val),
+    z.coerce.number().int().positive().optional()
+  ),
   termsAccepted: z.preprocess(
     val => (val === true || val === 'true' || val === 1 || val === '1'),
     z.literal(true, {

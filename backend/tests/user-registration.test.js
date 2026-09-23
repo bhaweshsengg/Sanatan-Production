@@ -9,6 +9,7 @@ import {
 } from '../src/utils/mandirApproval.js';
 import { registrationSchema } from '../src/validators/userRegistration.validator.js';
 import { prisma, ensureRequiredTables } from '../src/config/db.js';
+import { getOrCreateDevoteeRelation } from '../src/controllers/userRegistration.controller.js';
 
 test('Temple Admin relation detection is case-insensitive and stable', () => {
   assert.equal(isTempleAdminRelation('Temple Admin'), true);
@@ -187,5 +188,15 @@ test('Temple Devotee registration database workflow: store in TempleDevotee_regi
     // Clean up test devotee registration
     await model.deleteMany({ where: { email: testEmail } });
   }
+});
+
+test('getOrCreateDevoteeRelation guarantees an active devotee relation exists and self-heals', async () => {
+  await ensureRequiredTables();
+
+  const rel = await getOrCreateDevoteeRelation();
+  assert.ok(rel, 'A devotee relation must be returned');
+  assert.ok(rel.id > 0, 'Devotee relation must have a valid positive ID');
+  assert.equal(rel.isActive, true, 'Devotee relation must be active');
+  assert.ok(rel.relationshipName.toLowerCase().includes('devotee'), 'Relation name should reflect devotee');
 });
 

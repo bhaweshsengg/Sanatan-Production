@@ -92,6 +92,20 @@ async function main() {
       ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
     `);
 
+    // Seed default relations
+    const defaultRelations = ['Temple Admin', 'Temples Coordinator', 'Temple Devotee'];
+    for (const rel of defaultRelations) {
+      try {
+        await prisma.$executeRawUnsafe(`
+          INSERT INTO \`relation_to_mandir\` (\`relationship_name\`, \`is_active\`)
+          VALUES (?, 1)
+          ON DUPLICATE KEY UPDATE \`is_active\` = 1;
+        `, rel);
+      } catch {
+        // Safe to ignore
+      }
+    }
+
     await prisma.$executeRawUnsafe(`
       CREATE TABLE IF NOT EXISTS \`TempleDevotee_registration\` (
         \`id\` INT NOT NULL AUTO_INCREMENT,
