@@ -20,6 +20,8 @@ interface Submission {
   tags: string[];
   type: 'business' | 'temple';
   description: string;
+  termsAccepted?: boolean;
+  termsAcceptedAt?: Date | null;
 }
 
 @Component({
@@ -355,7 +357,15 @@ interface Submission {
                           </span>
                         }
                       </div>
-                      <div class="flex gap-1 flex-wrap">
+                      <div class="flex gap-1.5 flex-wrap items-center">
+                        @if (item.termsAccepted) {
+                          <div class="inline-flex items-center rounded-full border px-2.5 py-0.5 font-semibold border-transparent bg-emerald-100 text-emerald-800 text-xs">
+                            ✓ Terms Accepted
+                          </div>
+                        }
+                        @if (item.termsAcceptedAt) {
+                          <span class="text-xs text-slate-500 font-medium">Consent: {{ item.termsAcceptedAt | date:'short' }}</span>
+                        }
                         @for (tag of item.tags; track tag) {
                           <div class="inline-flex items-center rounded-full border px-2.5 py-0.5 font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent bg-gray-100 text-gray-800 hover:bg-gray-200 text-xs">{{ tag }}</div>
                         }
@@ -573,7 +583,9 @@ this.loadData()
       status: this.mapStatus(business.status),
       tags: this.extractBusinessTags(business),
       type: 'business',
-      description: business.description
+      description: business.description,
+      termsAccepted: business.termsAccepted !== undefined ? Boolean(business.termsAccepted) : undefined,
+      termsAcceptedAt: business.termsAcceptedAt ? new Date(business.termsAcceptedAt) : null,
     };
   }
 

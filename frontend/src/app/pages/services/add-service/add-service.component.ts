@@ -5,12 +5,21 @@ import { RouterLink, Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { CommonService } from 'src/app/shared/common.service';
 import { environment } from 'src/environments/environment';
+import { TermsConditionsModalComponent } from 'src/app/shared/components/terms-conditions-modal/terms-conditions-modal.component';
 
 @Component({
   selector: 'app-add-service',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [CommonModule, FormsModule, RouterLink, TermsConditionsModalComponent],
   template: `
+    <!-- Terms & Conditions Modal -->
+    <app-terms-conditions-modal
+      [isOpen]="isTermsModalOpen"
+      termsType="service"
+      (closed)="isTermsModalOpen = false"
+      (accepted)="termsAccepted = true"
+    ></app-terms-conditions-modal>
+
     <div class="min-h-screen bg-gradient-to-b from-orange-50/40 via-white to-gray-50 font-['Inter'] py-12 px-4 sm:px-6 lg:px-8">
       <div class="max-w-3xl mx-auto">
         <!-- Breadcrumb / Back Link -->
@@ -429,6 +438,33 @@ import { environment } from 'src/environments/environment';
               </div>
             </div>
 
+            <!-- TERMS AND CONDITIONS CONSENT -->
+            <div class="pt-2 border-t border-gray-100 space-y-2">
+              <div class="flex items-start gap-3 p-4 rounded-2xl border border-orange-200/80 bg-orange-50/50">
+                <input
+                  id="serviceTermsAccepted"
+                  name="serviceTermsAccepted"
+                  type="checkbox"
+                  [(ngModel)]="termsAccepted"
+                  class="mt-1 h-4 w-4 rounded border-gray-300 text-orange-600 focus:ring-orange-500 cursor-pointer"
+                />
+                <label for="serviceTermsAccepted" class="text-xs sm:text-sm text-gray-700 leading-snug cursor-pointer select-none">
+                  I agree to the
+                  <button
+                    type="button"
+                    (click)="isTermsModalOpen = true"
+                    class="text-orange-600 font-semibold underline hover:text-orange-700 cursor-pointer focus:outline-none"
+                  >
+                    Community Service Provider Terms and Conditions
+                  </button>
+                  and agree to deliver services respectfully and ethically.
+                </label>
+              </div>
+              <p *ngIf="submittedAttempt && !termsAccepted" class="text-xs text-red-600 font-medium pl-1">
+                You must accept the Service Provider Terms before submitting.
+              </p>
+            </div>
+
             <!-- SUBMIT BUTTON -->
             <div class="pt-4 border-t border-gray-100 flex flex-col sm:flex-row items-center justify-between gap-4">
               <a
@@ -440,7 +476,7 @@ import { environment } from 'src/environments/environment';
 
               <button
                 type="submit"
-                [disabled]="isSubmitting || !serviceForm.form.valid"
+                [disabled]="isSubmitting || !serviceForm.form.valid || !termsAccepted"
                 class="w-full sm:w-auto px-8 py-3.5 rounded-full bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 text-white font-bold text-sm shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer"
               >
                 <svg *ngIf="isSubmitting" class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
@@ -463,6 +499,11 @@ export class AddServiceComponent implements OnInit {
   email = '';
   address = '';
   city = '';
+
+  // Terms and Conditions State
+  termsAccepted = false;
+  isTermsModalOpen = false;
+  submittedAttempt = false;
   mobile = '';
   phoneNo = '';
   description = '';
@@ -496,7 +537,8 @@ export class AddServiceComponent implements OnInit {
     'Community Welfare & Volunteer',
     'IT & Professional Services',
     'Other Community Services',
-    'Justice of Peace'
+    'Justice of Peace',
+    'Career Development'
   ];
 
   cities: string[] = [
@@ -562,6 +604,7 @@ export class AddServiceComponent implements OnInit {
   }
 
   onSubmit(): void {
+    this.submittedAttempt = true;
     if (
       !this.category ||
       !this.firstName.trim() ||
@@ -576,8 +619,15 @@ export class AddServiceComponent implements OnInit {
       return;
     }
 
+    if (!this.termsAccepted) {
+      this.showToast('Please accept the Terms and Conditions before submitting', 'error');
+      return;
+    }
+
     this.isSubmitting = true;
     const formData = new FormData();
+    formData.append('termsAccepted', 'true');
+    formData.append('termsAcceptedAt', new Date().toISOString());
     formData.append('category', this.category);
     formData.append('firstName', this.firstName.trim());
     formData.append('lastName', this.lastName.trim());

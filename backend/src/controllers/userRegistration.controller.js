@@ -1,6 +1,6 @@
 import bcrypt from 'bcryptjs';
 import { logger } from '../utils/logger.js';
-import { prisma } from '../config/db.js';
+import { prisma, ensureRequiredTables } from '../config/db.js';
 import { sendSuccess, sendError } from '../utils/response.js';
 import { validateApprovalLimit, isTempleAdminRelation } from '../utils/mandirApproval.js';
 
@@ -14,6 +14,8 @@ const normalizeRegistration = (registration) => {
     relationId: Number(registration.relationId),
     mandirId: Number(registration.mandirId),
     subscription: registration.subscription || 'No',
+    termsAccepted: registration.termsAccepted !== undefined ? Boolean(registration.termsAccepted) : true,
+    termsAcceptedAt: registration.termsAcceptedAt || null,
     reviewedByUserId: registration.reviewedByUserId ? Number(registration.reviewedByUserId) : null,
   };
 };
@@ -33,9 +35,18 @@ export const listRelationOptions = async (_req, res) => {
 
 export const createUserRegistration = async (req, res) => {
   try {
+    await ensureRequiredTables();
     const email = req.body.email.toLowerCase().trim();
     const mandirId = Number(req.body.mandirId);
     const subscription = req.body.subscription === 'Yes' ? 'Yes' : 'No';
+
+    const isTermsAccepted = req.body.termsAccepted === true || req.body.termsAccepted === 'true' || req.body.termsAccepted === 1 || req.body.termsAccepted === '1';
+    if (!isTermsAccepted) {
+      return sendError(res, 400, 'You must agree to the Terms and Conditions to register as a devotee.', {});
+    }
+
+    const consentDate = req.body.termsAcceptedAt ? new Date(req.body.termsAcceptedAt) : new Date();
+    const validConsentDate = isNaN(consentDate.getTime()) ? new Date() : consentDate;
 
     // Verify Temple exists
     const mandir = await prisma.temple.findUnique({
@@ -118,6 +129,8 @@ export const createUserRegistration = async (req, res) => {
         relationId,
         mandirId,
         status: 'Pending',
+        termsAccepted: true,
+        termsAcceptedAt: validConsentDate,
       },
       include: {
         relation: true,

@@ -255,6 +255,8 @@ export const createTemple = async (req, res) => {
       location: req.body.location,
       status: req.body.status || 'Pending',
       role: req.body.role || 'devotee',
+      termsAccepted: true,
+      termsAcceptedAt: new Date(),
     };
 
     const temple = await prisma.temple.create({

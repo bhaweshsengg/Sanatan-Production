@@ -20,6 +20,13 @@ export const registerSchema = z.object({
   email: z.string().trim().email('Valid email address is required'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
   role: z.string().optional(),
+  termsAccepted: z.preprocess(
+    val => (val === true || val === 'true' || val === 1 || val === '1'),
+    z.literal(true, {
+      errorMap: () => ({ message: 'You must agree to the Terms and Conditions to register' })
+    })
+  ),
+  termsAcceptedAt: z.string().optional().nullable(),
 }).refine(data => Boolean(data.fullName || data.name || data.username), {
   message: 'Full Name is required',
   path: ['fullName'],

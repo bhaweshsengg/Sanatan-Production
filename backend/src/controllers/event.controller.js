@@ -204,6 +204,8 @@ export const createEvent = async (req, res) => {
       data: {
         ...toEventData(req.body),
         organizerId: req.user?.id ?? null,
+        termsAccepted: true,
+        termsAcceptedAt: new Date(),
       },
     });
     return sendSuccess(res, 201, { data: event, message: 'Event submitted for admin approval' });

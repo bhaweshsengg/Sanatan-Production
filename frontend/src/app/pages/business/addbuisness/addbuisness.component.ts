@@ -9,11 +9,12 @@ import { FormsModule } from '@angular/forms'; // Import FormsModule for ngModel
 import { Business, CommonService } from 'src/app/shared/common.service';
 import { Router } from '@angular/router';
 import { catchError, of } from 'rxjs';
+import { TermsConditionsModalComponent } from '../../../shared/components/terms-conditions-modal/terms-conditions-modal.component';
 
 @Component({
   selector: 'app-addbuisness',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, TermsConditionsModalComponent],
   template: `
     <div
       class="rounded-lg border bg-card text-card-foreground max-w-2xl mx-auto shadow-lg font-['Inter']"
@@ -556,22 +557,34 @@ import { catchError, of } from 'rxjs';
               directory.
             </p>
           </div>
-          <div class="flex items-center space-x-2 mt-4">
-            <input
-              type="checkbox"
-              id="terms"
-              class="h-4 w-4 text-orange-600 focus:ring-orange-500 border-gray-300 rounded"
-              [(ngModel)]="agreedToTerms"
-            />
-            <label
-              for="terms"
-              class="text-sm font-medium leading-none text-gray-700"
-              >I have read and agree to the
-              <a href="#" class="text-blue-500 hover:underline"
-                >disclaimer and terms</a
+          <div class="mt-4 p-3.5 bg-orange-50/50 rounded-xl border border-orange-200/60">
+            <div class="flex items-start space-x-2.5">
+              <input
+                type="checkbox"
+                id="businessTerms"
+                class="mt-1 h-4 w-4 text-orange-600 focus:ring-orange-500 border-gray-300 rounded cursor-pointer"
+                [ngModel]="agreedToTerms()"
+                (ngModelChange)="agreedToTerms.set($event)"
+              />
+              <label
+                for="businessTerms"
+                class="text-sm font-medium leading-relaxed text-gray-700 cursor-pointer select-none"
               >
-              regarding business listings.</label
-            >
+                I have read and agree to the
+                <button
+                  type="button"
+                  (click)="openTermsModal($event)"
+                  class="font-bold text-orange-600 hover:text-orange-700 underline focus:outline-none"
+                >
+                  Terms and Conditions
+                </button>
+                regarding business listings, community directory guidelines, and consumer compliance.
+                <span class="text-red-500 font-bold ml-0.5">*</span>
+              </label>
+            </div>
+            <div *ngIf="!agreedToTerms()" class="text-xs text-amber-700 mt-1.5 pl-6 font-medium">
+              Please accept the Terms and Conditions to submit your business listing.
+            </div>
           </div>
           <div class="flex justify-between mt-6">
             <button
@@ -602,6 +615,14 @@ import { catchError, of } from 'rxjs';
 <div *ngIf="showToast" [ngClass]="toastType === 'success' ? 'toast-success' : 'toast-error'" class="toast">
   {{ toastMessage }}
 </div>
+
+<!-- Terms and Conditions Modal -->
+<app-terms-conditions-modal
+  [isOpen]="isTermsModalOpen()"
+  termsType="business"
+  (closed)="closeTermsModal()"
+  (accepted)="onTermsAccepted()"
+></app-terms-conditions-modal>
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: [
@@ -666,6 +687,7 @@ export class AddbuisnessComponent {
   selectedImageCount = signal(0);
   agreedToTerms = signal(false);
   isSubmitting = signal(false);
+  isTermsModalOpen = signal(false);
 
   // Signals for dropdown state
   isCategoryDropdownOpen = signal(false);
@@ -800,6 +822,8 @@ export class AddbuisnessComponent {
 
       // ✅ Send status along with form
       formData.append('status', 'Pending');
+      formData.append('termsAccepted', 'true');
+      formData.append('termsAcceptedAt', new Date().toISOString());
 
       // ✅ Attach images
       this.images.forEach((file) => {
@@ -828,7 +852,25 @@ export class AddbuisnessComponent {
           this.showToastMessage(message, 'error');
         },
       });
+    } else {
+      this.showToastMessage('You must agree to the Terms and Conditions before submitting.', 'error');
     }
+  }
+
+  openTermsModal(event?: Event) {
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+    this.isTermsModalOpen.set(true);
+  }
+
+  closeTermsModal() {
+    this.isTermsModalOpen.set(false);
+  }
+
+  onTermsAccepted() {
+    this.agreedToTerms.set(true);
   }
 
   showToastMessage(message: string, type: 'success' | 'error' = 'error') {

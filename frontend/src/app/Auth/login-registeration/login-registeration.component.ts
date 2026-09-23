@@ -1,4 +1,3 @@
-// login-registeration.component.ts
 import { CommonModule } from '@angular/common';
 import { Component } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
@@ -6,12 +5,12 @@ import { HttpClient} from '@angular/common/http';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AuthService } from '../auth.service';
 import { environment } from '../../../environments/environment';
-
+import { TermsConditionsModalComponent } from '../../shared/components/terms-conditions-modal/terms-conditions-modal.component';
 
 @Component({
   selector: 'app-login-registeration',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterLink],
+  imports: [CommonModule, ReactiveFormsModule, RouterLink, TermsConditionsModalComponent],
   template: `
     <div class="flex justify-center items-center min-h-screen bg-gray-100">
       <div class="bg-white rounded-2xl shadow-lg w-full max-w-md p-6">
@@ -175,10 +174,40 @@ import { environment } from '../../../environments/environment';
               Role is required.
             </div>
           </div>
+
+          <!-- Terms & Conditions Checkbox -->
+          <div class="pt-1">
+            <div class="flex items-start gap-2.5">
+              <input
+                type="checkbox"
+                id="userTermsAccepted"
+                formControlName="termsAccepted"
+                class="mt-1 h-4 w-4 rounded border-gray-300 text-orange-600 focus:ring-orange-500 cursor-pointer"
+              />
+              <label for="userTermsAccepted" class="text-xs sm:text-sm text-slate-700 leading-normal select-none cursor-pointer">
+                I agree to the
+                <button
+                  type="button"
+                  (click)="openTermsModal($event)"
+                  class="font-semibold text-orange-600 hover:text-orange-700 underline focus:outline-none"
+                >
+                  Terms and Conditions
+                </button>
+                <span class="text-red-500 font-bold ml-0.5">*</span>
+              </label>
+            </div>
+            <div
+              *ngIf="registerForm.get('termsAccepted')?.invalid && (registerForm.get('termsAccepted')?.dirty || registerForm.get('termsAccepted')?.touched)"
+              class="text-red-500 text-xs sm:text-sm mt-1"
+            >
+              You must agree to the Terms and Conditions to register.
+            </div>
+          </div>
+
           <button
             type="submit"
             [disabled]="isLoading || registerForm.invalid"
-            class="w-full bg-orange-500 hover:bg-orange-600 disabled:bg-orange-300 text-white py-2 rounded-lg transition flex justify-center items-center"
+            class="w-full bg-orange-500 hover:bg-orange-600 disabled:bg-orange-300 text-white py-2 rounded-lg transition flex justify-center items-center font-medium"
           >
             {{ isLoading ? 'Registering...' : 'Register' }}
           </button>
@@ -224,6 +253,14 @@ import { environment } from '../../../environments/environment';
     >
       {{ toastMessage }}
     </div>
+
+    <!-- Terms and Conditions Modal -->
+    <app-terms-conditions-modal
+      [isOpen]="isTermsModalOpen"
+      termsType="user"
+      (closed)="closeTermsModal()"
+      (accepted)="onTermsAccepted()"
+    ></app-terms-conditions-modal>
   `,
   styles: [],
 })
@@ -233,6 +270,7 @@ export class LoginRegisterationComponent {
   toastMessage: string = '';
   toastType: 'success' | 'error' = 'error';
   isLoading: boolean = false;
+  isTermsModalOpen: boolean = false;
 
   loginForm!: FormGroup;
   registerForm!: FormGroup;
@@ -267,6 +305,7 @@ export class LoginRegisterationComponent {
       password: ['', [Validators.required, Validators.minLength(6)]],
       confirmPassword: ['', [Validators.required]],
       role: ['', [Validators.required]],
+      termsAccepted: [false, [Validators.requiredTrue]],
     });
 
     this.forgotForm = this.fb.group({
@@ -354,7 +393,9 @@ export class LoginRegisterationComponent {
         username: formData.fullName,
         email: formData.email,
         password: formData.password,
-        role: formData.role
+        role: formData.role,
+        termsAccepted: true,
+        termsAcceptedAt: new Date().toISOString()
       };
       
       this.http.post<any>(`${environment.apiBaseUrl}/public/users/register`, registerData).subscribe({
@@ -410,5 +451,23 @@ export class LoginRegisterationComponent {
       this.showToast = false;
       this.toastMessage = '';
     }, 3000);
+  }
+
+  openTermsModal(event?: Event) {
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+    this.isTermsModalOpen = true;
+  }
+
+  closeTermsModal() {
+    this.isTermsModalOpen = false;
+  }
+
+  onTermsAccepted() {
+    this.registerForm.patchValue({ termsAccepted: true });
+    this.registerForm.get('termsAccepted')?.markAsTouched();
+    this.registerForm.get('termsAccepted')?.updateValueAndValidity();
   }
 }

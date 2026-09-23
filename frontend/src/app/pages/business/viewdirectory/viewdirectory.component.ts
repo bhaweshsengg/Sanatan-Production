@@ -7,11 +7,12 @@ import { Subscription } from 'rxjs';
 import { environment } from '../../../../environments/environment';
 import { CommonService } from 'src/app/shared/common.service';
 import { AuthService } from 'src/app/Auth/auth.service';
+import { TermsConditionsModalComponent } from 'src/app/shared/components/terms-conditions-modal/terms-conditions-modal.component';
 
 @Component({
   selector: 'app-viewdirectory',
   standalone: true,
-  imports: [CommonModule, HttpClientModule, RouterLink, FormsModule],
+  imports: [CommonModule, HttpClientModule, RouterLink, FormsModule, TermsConditionsModalComponent],
   templateUrl: './viewdirectory.component.html',
   styleUrl: './viewdirectory.component.css'
 })
@@ -27,6 +28,8 @@ export class ViewdirectoryComponent implements OnInit, OnDestroy {
   // Appointment Modal State
   isAppointmentModalOpen = false;
   isSubmittingAppointment = false;
+  isTermsModalOpen = false;
+  isAppointmentSubmittedAttempt = false;
   appointmentForm = {
     fullName: '',
     email: '',
@@ -35,6 +38,7 @@ export class ViewdirectoryComponent implements OnInit, OnDestroy {
     preferredTime: '',
     serviceName: '',
     notes: '',
+    termsAccepted: false,
   };
 
   constructor(
@@ -106,6 +110,7 @@ export class ViewdirectoryComponent implements OnInit, OnDestroy {
     tomorrow.setDate(tomorrow.getDate() + 1);
     const defaultDateStr = tomorrow.toISOString().split('T')[0];
 
+    this.isAppointmentSubmittedAttempt = false;
     this.appointmentForm = {
       fullName: user ? `${user.firstName || user.name || ''} ${user.lastName || ''}`.trim() : '',
       email: user?.email || '',
@@ -114,6 +119,7 @@ export class ViewdirectoryComponent implements OnInit, OnDestroy {
       preferredTime: '10:00 AM',
       serviceName: this.businessData.businessName || 'General Community Service',
       notes: '',
+      termsAccepted: false,
     };
     this.isAppointmentModalOpen = true;
   }
@@ -124,6 +130,7 @@ export class ViewdirectoryComponent implements OnInit, OnDestroy {
   }
 
   submitAppointment(): void {
+    this.isAppointmentSubmittedAttempt = true;
     if (
       !this.appointmentForm.fullName.trim() ||
       !this.appointmentForm.email.trim() ||
@@ -134,10 +141,21 @@ export class ViewdirectoryComponent implements OnInit, OnDestroy {
       return;
     }
 
+    if (!this.appointmentForm.termsAccepted) {
+      this.showToastMessage('You must agree to the Terms and Conditions to book an appointment.', 'error');
+      return;
+    }
+
     if (!this.businessId) return;
 
     this.isSubmittingAppointment = true;
-    this.commonService.requestAppointment(this.businessId, this.appointmentForm).subscribe({
+    const payload = {
+      ...this.appointmentForm,
+      termsAccepted: true,
+      termsAcceptedAt: new Date().toISOString(),
+    };
+
+    this.commonService.requestAppointment(this.businessId, payload).subscribe({
       next: (res: any) => {
         this.isSubmittingAppointment = false;
         const msg = res?.message || 'Appointment requested successfully! The provider will contact you.';

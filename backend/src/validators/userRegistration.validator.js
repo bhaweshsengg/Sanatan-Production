@@ -9,6 +9,13 @@ export const registrationSchema = z.object({
   mandirId: z.coerce.number().int('Temple is required').positive('Temple is required'),
   subscription: z.enum(['Yes', 'No']).default('No'),
   relationId: z.coerce.number().int().positive().optional(),
+  termsAccepted: z.preprocess(
+    val => (val === true || val === 'true' || val === 1 || val === '1'),
+    z.literal(true, {
+      errorMap: () => ({ message: 'You must agree to the Terms and Conditions to register as a devotee' })
+    })
+  ),
+  termsAcceptedAt: z.string().optional().nullable(),
 });
 
 export const registrationStatusSchema = z.object({

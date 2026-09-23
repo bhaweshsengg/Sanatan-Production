@@ -537,6 +537,113 @@ export const ensureRequiredTables = async () => {
         // Safe to ignore if column already exists
       }
 
+      // 12. Ensure terms_accepted and terms_accepted_at columns exist for registration forms
+      try {
+        await prisma.$executeRawUnsafe(`
+          ALTER TABLE \`User\` ADD COLUMN \`terms_accepted\` TINYINT(1) NOT NULL DEFAULT 1;
+        `);
+      } catch {
+        try {
+          await prisma.$executeRawUnsafe(`
+            ALTER TABLE \`user\` ADD COLUMN \`terms_accepted\` TINYINT(1) NOT NULL DEFAULT 1;
+          `);
+        } catch {
+          // Safe to ignore if column already exists
+        }
+      }
+
+      try {
+        await prisma.$executeRawUnsafe(`
+          ALTER TABLE \`User\` ADD COLUMN \`terms_accepted_at\` DATETIME(3) NULL;
+        `);
+      } catch {
+        try {
+          await prisma.$executeRawUnsafe(`
+            ALTER TABLE \`user\` ADD COLUMN \`terms_accepted_at\` DATETIME(3) NULL;
+          `);
+        } catch {
+          // Safe to ignore if column already exists
+        }
+      }
+
+      try {
+        await prisma.$executeRawUnsafe(`
+          ALTER TABLE \`TempleDevotee_registration\` ADD COLUMN \`terms_accepted\` TINYINT(1) NOT NULL DEFAULT 1;
+        `);
+      } catch {
+        try {
+          await prisma.$executeRawUnsafe(`
+            ALTER TABLE \`templedevotee_registration\` ADD COLUMN \`terms_accepted\` TINYINT(1) NOT NULL DEFAULT 1;
+          `);
+        } catch {
+          // Safe to ignore if column already exists
+        }
+      }
+
+      try {
+        await prisma.$executeRawUnsafe(`
+          ALTER TABLE \`TempleDevotee_registration\` ADD COLUMN \`terms_accepted_at\` DATETIME(3) NULL;
+        `);
+      } catch {
+        try {
+          await prisma.$executeRawUnsafe(`
+            ALTER TABLE \`templedevotee_registration\` ADD COLUMN \`terms_accepted_at\` DATETIME(3) NULL;
+          `);
+        } catch {
+          // Safe to ignore if column already exists
+        }
+      }
+
+      try {
+        await prisma.$executeRawUnsafe(`
+          ALTER TABLE \`business_business\` ADD COLUMN \`terms_accepted\` TINYINT(1) NOT NULL DEFAULT 1;
+        `);
+      } catch {
+        // Safe to ignore if column already exists
+      }
+
+      try {
+        await prisma.$executeRawUnsafe(`
+          ALTER TABLE \`business_business\` ADD COLUMN \`terms_accepted_at\` DATETIME(3) NULL;
+        `);
+      } catch {
+        // Safe to ignore if column already exists
+      }
+
+      // Temple terms migrations
+      try {
+        await prisma.$executeRawUnsafe(`
+          ALTER TABLE \`temple_temple\` ADD COLUMN \`terms_accepted\` BOOLEAN NOT NULL DEFAULT 1;
+        `);
+      } catch {
+        // Safe to ignore if column already exists
+      }
+
+      try {
+        await prisma.$executeRawUnsafe(`
+          ALTER TABLE \`temple_temple\` ADD COLUMN \`terms_accepted_at\` DATETIME(3) NULL;
+        `);
+      } catch {
+        // Safe to ignore if column already exists
+      }
+
+      // Event terms migrations
+      try {
+        await prisma.$executeRawUnsafe(`
+          ALTER TABLE \`community_event\` ADD COLUMN \`terms_accepted\` BOOLEAN NOT NULL DEFAULT 1;
+        `);
+      } catch {
+        // Safe to ignore if column already exists
+      }
+
+      try {
+        await prisma.$executeRawUnsafe(`
+          ALTER TABLE \`community_event\` ADD COLUMN \`terms_accepted_at\` DATETIME(3) NULL;
+        `);
+      } catch {
+        // Safe to ignore if column already exists
+      }
+
       // 12. Ensure service_appointment table exists
       try {
         await prisma.$executeRawUnsafe(`
@@ -550,6 +657,8 @@ export const ensureRequiredTables = async () => {
             \`preferred_time\` VARCHAR(191) NULL,
             \`notes\` TEXT NULL,
             \`service_name\` VARCHAR(255) NULL,
+            \`terms_accepted\` BOOLEAN NOT NULL DEFAULT 1,
+            \`terms_accepted_at\` DATETIME(3) NULL,
             \`status\` ENUM('Pending', 'Confirmed', 'Cancelled', 'Completed') NOT NULL DEFAULT 'Pending',
             \`created_at\` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
             PRIMARY KEY (\`id\`),
@@ -559,6 +668,22 @@ export const ensureRequiredTables = async () => {
         `);
       } catch (appointmentErr) {
         console.warn('service_appointment table check:', appointmentErr?.message);
+      }
+
+      try {
+        await prisma.$executeRawUnsafe(`
+          ALTER TABLE \`service_appointment\` ADD COLUMN \`terms_accepted\` BOOLEAN NOT NULL DEFAULT 1;
+        `);
+      } catch {
+        // Safe to ignore if column already exists
+      }
+
+      try {
+        await prisma.$executeRawUnsafe(`
+          ALTER TABLE \`service_appointment\` ADD COLUMN \`terms_accepted_at\` DATETIME(3) NULL;
+        `);
+      } catch {
+        // Safe to ignore if column already exists
       }
 
       // 9. Auto-repair any double-encoded or slash-corrupted temple services/facilities in production

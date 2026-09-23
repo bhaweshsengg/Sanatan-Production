@@ -24,7 +24,16 @@ const eventFields = {
 
 const eventObjectSchema = z.object(eventFields);
 
-export const eventCreateSchema = eventObjectSchema.superRefine((event, context) => {
+export const eventCreateSchema = eventObjectSchema.extend({
+  termsAccepted: z.union([
+    z.literal(true),
+    z.literal('true'),
+    z.literal(1),
+    z.literal('1'),
+  ], {
+    errorMap: () => ({ message: 'You must agree to the Terms and Conditions' }),
+  }).transform(() => true),
+}).superRefine((event, context) => {
   if (event.multiDay && !event.endDate) {
     context.addIssue({ code: z.ZodIssueCode.custom, path: ['endDate'], message: 'End date is required for multi-day events' });
   }

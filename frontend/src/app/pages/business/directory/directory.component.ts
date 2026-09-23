@@ -5,11 +5,12 @@ import { FormsModule } from '@angular/forms';
 import { CommonService } from 'src/app/shared/common.service';
 import { AuthService } from 'src/app/Auth/auth.service';
 import { environment } from 'src/environments/environment';
+import { TermsConditionsModalComponent } from 'src/app/shared/components/terms-conditions-modal/terms-conditions-modal.component';
 
 @Component({
   selector: 'app-directory',
   standalone: true,
-  imports: [CommonModule, RouterLink, FormsModule],
+  imports: [CommonModule, RouterLink, FormsModule, TermsConditionsModalComponent],
   templateUrl: './directory.component.html',
   styleUrls: ['./directory.component.css'],
 })
@@ -36,6 +37,7 @@ export class DirectoryComponent implements OnInit {
     'Community Welfare & Volunteer',
     'Justice of Peace',
     'IT & Professional Services',
+    'Career Development',
     'Other'
   ];
 
@@ -48,6 +50,8 @@ export class DirectoryComponent implements OnInit {
   // Appointment Modal State
   selectedServiceForAppointment: any = null;
   isSubmittingAppointment = false;
+  isTermsModalOpen = false;
+  isAppointmentSubmittedAttempt = false;
   appointmentForm = {
     fullName: '',
     email: '',
@@ -56,12 +60,13 @@ export class DirectoryComponent implements OnInit {
     preferredTime: '',
     serviceName: '',
     notes: '',
+    termsAccepted: false,
   };
 
   constructor(
     private commonService: CommonService,
     private authService: AuthService
-  ) {}
+  ) { }
 
   ngOnInit(): void {
     this.loadCities();
@@ -201,6 +206,7 @@ export class DirectoryComponent implements OnInit {
     tomorrow.setDate(tomorrow.getDate() + 1);
     const defaultDateStr = tomorrow.toISOString().split('T')[0];
 
+    this.isAppointmentSubmittedAttempt = false;
     this.appointmentForm = {
       fullName: user ? `${user.firstName || user.name || ''} ${user.lastName || ''}`.trim() : '',
       email: user?.email || '',
@@ -209,6 +215,7 @@ export class DirectoryComponent implements OnInit {
       preferredTime: '10:00 AM',
       serviceName: biz.businessName || 'General Service',
       notes: '',
+      termsAccepted: false,
     };
   }
 
@@ -218,6 +225,7 @@ export class DirectoryComponent implements OnInit {
   }
 
   submitAppointment(): void {
+    this.isAppointmentSubmittedAttempt = true;
     if (
       !this.appointmentForm.fullName.trim() ||
       !this.appointmentForm.email.trim() ||
@@ -228,10 +236,20 @@ export class DirectoryComponent implements OnInit {
       return;
     }
 
+    if (!this.appointmentForm.termsAccepted) {
+      this.showToastMessage('You must agree to the Terms and Conditions to book an appointment.', 'error');
+      return;
+    }
+
     this.isSubmittingAppointment = true;
     const bizId = this.selectedServiceForAppointment.id;
+    const payload = {
+      ...this.appointmentForm,
+      termsAccepted: true,
+      termsAcceptedAt: new Date().toISOString(),
+    };
 
-    this.commonService.requestAppointment(bizId, this.appointmentForm).subscribe({
+    this.commonService.requestAppointment(bizId, payload).subscribe({
       next: (res: any) => {
         this.isSubmittingAppointment = false;
         const msg = res?.message || 'Appointment requested successfully! The provider will contact you shortly.';

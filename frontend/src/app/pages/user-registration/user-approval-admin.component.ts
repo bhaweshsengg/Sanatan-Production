@@ -12,6 +12,8 @@ interface UserRegistrationRow {
   email: string;
   mobile: string;
   subscription?: string;
+  termsAccepted?: boolean;
+  termsAcceptedAt?: string | null;
   status: string;
   mandir?: { mandir_name: string };
   relation?: { relationshipName: string };
@@ -79,6 +81,12 @@ interface UserRegistrationRow {
                   >
                     Subscription: {{ item.subscription || 'No' }}
                   </span>
+                  <span
+                    *ngIf="item.termsAccepted !== undefined"
+                    class="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 ring-1 ring-inset ring-emerald-600/20"
+                  >
+                    ✓ Terms Accepted
+                  </span>
                 </div>
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-sm text-slate-600">
@@ -101,6 +109,10 @@ interface UserRegistrationRow {
                   <div *ngIf="item.createdAt" class="flex items-center gap-2">
                     <span class="font-medium text-slate-500">Submitted:</span>
                     <span class="text-slate-700">{{ item.createdAt | date:'medium' }}</span>
+                  </div>
+                  <div *ngIf="item.termsAcceptedAt" class="flex items-center gap-2">
+                    <span class="font-medium text-slate-500">Terms Consent:</span>
+                    <span class="text-emerald-700 font-medium">{{ item.termsAcceptedAt | date:'medium' }}</span>
                   </div>
                   <div *ngIf="item.reviewedByUserId" class="flex items-center gap-2">
                     <span class="font-medium text-slate-500">Reviewed By ID:</span>

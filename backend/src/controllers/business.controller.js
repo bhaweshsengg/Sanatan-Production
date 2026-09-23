@@ -338,6 +338,18 @@ export const createBusiness = async (req, res) => {
     const isAdminUser = req.user && req.user.role === 'Admin';
     const status = (isAdminUser && req.body.status) ? req.body.status : (req.body.status === 'Approved' && isAdminUser ? 'Approved' : 'Pending');
 
+    const isTermsAccepted = req.body.termsAccepted === true || req.body.termsAccepted === 'true' || req.body.termsAccepted === 1 || req.body.termsAccepted === '1';
+    if (!isTermsAccepted && !isAdminUser) {
+      return res.status(400).json({
+        success: false,
+        status: 400,
+        message: 'You must agree to the Terms and Conditions to register a business',
+      });
+    }
+
+    const consentDate = req.body.termsAcceptedAt ? new Date(req.body.termsAcceptedAt) : new Date();
+    const validConsentDate = isTermsAccepted ? (isNaN(consentDate.getTime()) ? new Date() : consentDate) : null;
+
     const business = await prisma.business.create({
       data: {
         businessName: resolvedBusinessName,
@@ -361,6 +373,8 @@ export const createBusiness = async (req, res) => {
         fee: fee || null,
         status,
         imageUrl: uploadedImageUrl,
+        termsAccepted: isTermsAccepted,
+        termsAcceptedAt: validConsentDate,
         created_at: new Date(),
       },
     });
@@ -439,10 +453,19 @@ export const createAppointmentRequest = async (req, res) => {
       });
     }
 
+    const termsAccepted = req.body.termsAccepted === true || req.body.termsAccepted === 'true' || req.body.termsAccepted === 1 || req.body.termsAccepted === '1';
+    if (!termsAccepted) {
+      return res.status(400).json({
+        success: false,
+        status: 400,
+        message: 'You must agree to the Terms and Conditions to book an appointment',
+      });
+    }
+
     // Save appointment request record in service_appointment table
     await prisma.$executeRawUnsafe(
-      `INSERT INTO service_appointment (business_id, name, email, phone, preferred_date, preferred_time, notes, service_name, status, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'Pending', NOW())`,
+      `INSERT INTO service_appointment (business_id, name, email, phone, preferred_date, preferred_time, notes, service_name, terms_accepted, terms_accepted_at, status, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, NOW(), 'Pending', NOW())`,
       bizId,
       clientName,
       clientEmail,

@@ -5,6 +5,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../../environments/environment';
 import { TempleSearchSelectComponent, TempleSelectItem } from '../../../shared/components/temple-search-select/temple-search-select.component';
+import { TermsConditionsModalComponent } from '../../../shared/components/terms-conditions-modal/terms-conditions-modal.component';
 
 interface TempleOption {
   id: number;
@@ -16,8 +17,16 @@ interface TempleOption {
 @Component({
   selector: 'app-add-event',
   standalone: true,
-  imports: [CommonModule, FormsModule, TempleSearchSelectComponent],
+  imports: [CommonModule, FormsModule, TempleSearchSelectComponent, TermsConditionsModalComponent],
   template: `
+    <!-- Terms & Conditions Modal -->
+    <app-terms-conditions-modal
+      [isOpen]="isTermsModalOpen"
+      termsType="event"
+      (closed)="isTermsModalOpen = false"
+      (accepted)="termsAccepted = true"
+    ></app-terms-conditions-modal>
+
     <div class="container mx-auto mt-20 px-4 py-12">
       <div class="max-w-4xl mx-auto">
         <div class="mb-8 flex items-center justify-between">
@@ -252,6 +261,33 @@ interface TempleOption {
                 </div>
               </section>
 
+              <!-- Terms and Conditions Section -->
+              <section class="space-y-2 pt-6 border-t">
+                <div class="flex items-start gap-3 p-3.5 rounded-xl border border-orange-200/80 bg-orange-50/50">
+                  <input
+                    id="eventTermsAccepted"
+                    name="eventTermsAccepted"
+                    type="checkbox"
+                    [(ngModel)]="termsAccepted"
+                    class="mt-1 h-4 w-4 rounded border-gray-300 text-orange-600 focus:ring-orange-500 cursor-pointer"
+                  />
+                  <label for="eventTermsAccepted" class="text-xs sm:text-sm text-gray-700 leading-snug cursor-pointer select-none">
+                    I agree to the
+                    <button
+                      type="button"
+                      (click)="isTermsModalOpen = true"
+                      class="text-orange-600 font-semibold underline hover:text-orange-700 cursor-pointer focus:outline-none"
+                    >
+                      Community Event Guidelines &amp; Terms
+                    </button>
+                    and confirm that all event details and venue arrangements are accurate.
+                  </label>
+                </div>
+                <p *ngIf="submittedAttempt && !termsAccepted" class="text-xs text-red-600 font-medium pl-1">
+                  You must accept the Community Event Terms before submitting.
+                </p>
+              </section>
+
               <!-- Actions Section -->
               <div class="flex justify-end gap-3 border-t pt-6">
                 <button type="button" class="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50" (click)="saveDraft()">
@@ -260,7 +296,7 @@ interface TempleOption {
                 <button
                   type="submit"
                   class="rounded-md bg-orange-600 px-5 py-2 text-sm font-medium text-white hover:bg-orange-700 disabled:opacity-50"
-                  [disabled]="isLoading || isUploadingImage || eventForm.invalid || event.description.trim().length < 50 || (event.multiDay && !event.endDate)"
+                  [disabled]="isLoading || isUploadingImage || eventForm.invalid || !termsAccepted || event.description.trim().length < 50 || (event.multiDay && !event.endDate)"
                 >
                   {{ editMode ? 'Save Changes' : 'Submit for Approval' }}
                 </button>
@@ -280,6 +316,11 @@ export class AddEventComponent implements OnInit {
   eventId: number | null = null;
   isLoading = false;
   errorMessage = '';
+
+  // Terms & Conditions State
+  termsAccepted = false;
+  isTermsModalOpen = false;
+  submittedAttempt = false;
 
   // Temple selection state
   temples: TempleOption[] = [];
@@ -465,6 +506,12 @@ export class AddEventComponent implements OnInit {
   }
 
   createEvent(): void {
+    this.submittedAttempt = true;
+    if (!this.termsAccepted) {
+      this.errorMessage = 'You must agree to the Terms and Conditions before submitting.';
+      return;
+    }
+
     if (
       !this.event.title.trim() ||
       !this.event.category ||
@@ -520,6 +567,8 @@ export class AddEventComponent implements OnInit {
       address: this.event.address,
       mapsLink: this.event.mapsLink,
       onlineLink: this.event.onlineLink,
+      termsAccepted: true,
+      termsAcceptedAt: new Date().toISOString(),
     };
   }
 

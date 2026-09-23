@@ -1,4 +1,12 @@
 <div class="p-4 sm:p-6 md:p-12 min-h-screen bg-gray-50 pt-24 pb-16">
+  <!-- Terms & Conditions Modal -->
+  <app-terms-conditions-modal
+    [isOpen]="isTermsModalOpen"
+    termsType="appointment"
+    (closed)="isTermsModalOpen = false"
+    (accepted)="appointmentForm.termsAccepted = true"
+  ></app-terms-conditions-modal>
+
   <!-- Toast Notification -->
   <div
     *ngIf="showToast"
@@ -382,6 +390,33 @@
           ></textarea>
         </div>
 
+        <!-- Terms and Conditions Consent -->
+        <div class="space-y-1.5 pt-2 border-t border-gray-100">
+          <div class="flex items-start gap-2.5 p-3 rounded-lg border border-amber-200/80 bg-amber-50/50">
+            <input
+              id="viewApptTerms"
+              name="termsAccepted"
+              type="checkbox"
+              [(ngModel)]="appointmentForm.termsAccepted"
+              class="mt-0.5 h-4 w-4 rounded border-gray-300 text-amber-600 focus:ring-amber-500 cursor-pointer"
+            />
+            <label for="viewApptTerms" class="text-xs text-gray-700 leading-snug cursor-pointer select-none">
+              I agree to the
+              <button
+                type="button"
+                (click)="isTermsModalOpen = true"
+                class="text-amber-600 font-semibold underline hover:text-amber-700 cursor-pointer focus:outline-none"
+              >
+                Service Appointment Booking Terms
+              </button>
+              and understand this request connects me directly with the provider.
+            </label>
+          </div>
+          <p *ngIf="isAppointmentSubmittedAttempt && !appointmentForm.termsAccepted" class="text-xs text-red-600 font-medium pl-1">
+            You must accept the terms before submitting.
+          </p>
+        </div>
+
         <div class="pt-2 flex justify-end gap-3">
           <button
             (click)="closeAppointmentModal()"
@@ -392,7 +427,7 @@
           </button>
           <button
             type="submit"
-            [disabled]="isSubmittingAppointment"
+            [disabled]="isSubmittingAppointment || !appointmentForm.termsAccepted"
             class="inline-flex items-center px-5 py-2 text-sm font-semibold rounded-lg text-white bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 disabled:opacity-50 transition-all shadow"
           >
             <svg *ngIf="isSubmittingAppointment" class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">

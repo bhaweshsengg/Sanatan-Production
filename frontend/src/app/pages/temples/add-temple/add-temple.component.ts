@@ -10,11 +10,12 @@ import {
   City,
   Deity,
 } from 'src/app/shared/common.service';
+import { TermsConditionsModalComponent } from 'src/app/shared/components/terms-conditions-modal/terms-conditions-modal.component';
 
 @Component({
   selector: 'app-add-temple',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, TermsConditionsModalComponent],
   template: `
     <div
       *ngIf="showToast"
@@ -23,6 +24,15 @@ import {
     >
       {{ toastMessage }}
     </div>
+
+    <!-- Terms & Conditions Modal -->
+    <app-terms-conditions-modal
+      [isOpen]="isTermsModalOpen"
+      termsType="temple"
+      (closed)="isTermsModalOpen = false"
+      (accepted)="termsAccepted = true"
+    ></app-terms-conditions-modal>
+
     <div class="min-h-screen bg-gray-50">
       <header class="border-b bg-white">
         <div class="container mx-auto px-4 py-4">
@@ -673,7 +683,35 @@ import {
                     </div>
                   </div>
                 </div>
-                <div class="flex justify-end gap-2 pt-6 border-t">
+
+                <!-- Terms and Conditions Consent -->
+                <div class="pt-6 border-t space-y-2">
+                  <div class="flex items-start gap-3 p-3.5 rounded-xl border border-orange-200/80 bg-orange-50/50">
+                    <input
+                      id="templeTermsAccepted"
+                      name="templeTermsAccepted"
+                      type="checkbox"
+                      [(ngModel)]="termsAccepted"
+                      class="mt-1 h-4 w-4 rounded border-gray-300 text-orange-600 focus:ring-orange-500 cursor-pointer"
+                    />
+                    <label for="templeTermsAccepted" class="text-xs sm:text-sm text-gray-700 leading-snug cursor-pointer select-none">
+                      I agree to the
+                      <button
+                        type="button"
+                        (click)="isTermsModalOpen = true"
+                        class="text-orange-600 font-semibold underline hover:text-orange-700 cursor-pointer focus:outline-none"
+                      >
+                        Mandir Directory Submission Terms and Conditions
+                      </button>
+                      and certify that the mandir information is authentic.
+                    </label>
+                  </div>
+                  <p *ngIf="submittedAttempt && !termsAccepted" class="text-xs text-red-600 font-medium pl-1">
+                    You must accept the Terms and Conditions before submitting.
+                  </p>
+                </div>
+
+                <div class="flex justify-end gap-2 pt-4">
                   <button
                     type="button"
                     class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&amp;_svg]:pointer-events-none [&amp;_svg]:size-4 [&amp;_svg]:shrink-0 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2"
@@ -684,7 +722,7 @@ import {
                   <button
                     type="submit"
                     class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&amp;_svg]:pointer-events-none [&amp;_svg]:size-4 [&amp;_svg]:shrink-0 text-white h-10 px-4 py-2 bg-orange-600 hover:bg-orange-700"
-                    [disabled]="templeForm.invalid || isLoading"
+                    [disabled]="templeForm.invalid || !termsAccepted || isLoading"
                   >
                     {{
                       isLoading
@@ -736,6 +774,11 @@ export class AddTempleComponent implements OnInit {
   isLoading = false;
   templeId: number | null = null;
   uploadError: string = '';
+
+  // Terms and Conditions State
+  termsAccepted = false;
+  isTermsModalOpen = false;
+  submittedAttempt = false;
 
   // Fixed property initialization
   toastMessage: string = '';
@@ -1040,6 +1083,12 @@ private resolveImageUrl(file: string | undefined | null): string {
   }
 
 async onSubmit() {
+  this.submittedAttempt = true;
+  if (!this.termsAccepted) {
+    this.showToastMessage('You must agree to the Terms and Conditions before submitting.', 'error');
+    return;
+  }
+
   // Format opening hours to HH:MM format expected by backend
   this.temple.opening_hours = this.formatOpeningHours(
     this.temple.opening_hours
@@ -1052,6 +1101,8 @@ async onSubmit() {
   formData.append('mandir_name', this.temple.mandir_name);
   formData.append('full_address', this.temple.full_address);
   formData.append('city_id', this.temple.city_id.toString());
+  formData.append('termsAccepted', 'true');
+  formData.append('termsAcceptedAt', new Date().toISOString());
   const yearEstablished = Number(this.temple.year_established);
   formData.append(
     'year_established',

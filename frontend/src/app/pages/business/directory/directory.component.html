@@ -1,4 +1,12 @@
 <div class="min-h-screen bg-gray-50 font-['Inter'] text-gray-800">
+  <!-- Terms & Conditions Modal -->
+  <app-terms-conditions-modal
+    [isOpen]="isTermsModalOpen"
+    termsType="appointment"
+    (closed)="isTermsModalOpen = false"
+    (accepted)="appointmentForm.termsAccepted = true"
+  ></app-terms-conditions-modal>
+
   <!-- FLOATING TOAST NOTIFICATION -->
   <div
     *ngIf="showToast"
@@ -487,6 +495,33 @@
           ></textarea>
         </div>
 
+        <!-- Terms and Conditions Consent -->
+        <div class="space-y-1.5 pt-2 border-t border-gray-100">
+          <div class="flex items-start gap-2.5 p-3 rounded-xl border border-orange-200/80 bg-orange-50/50">
+            <input
+              id="dirApptTerms"
+              name="termsAccepted"
+              type="checkbox"
+              [(ngModel)]="appointmentForm.termsAccepted"
+              class="mt-0.5 h-4 w-4 rounded border-gray-300 text-orange-600 focus:ring-orange-500 cursor-pointer"
+            />
+            <label for="dirApptTerms" class="text-xs text-gray-700 leading-snug cursor-pointer select-none">
+              I agree to the
+              <button
+                type="button"
+                (click)="isTermsModalOpen = true"
+                class="text-orange-600 font-semibold underline hover:text-orange-700 cursor-pointer focus:outline-none"
+              >
+                Service Appointment Booking Terms
+              </button>
+              and understand this request connects me directly with the provider.
+            </label>
+          </div>
+          <p *ngIf="isAppointmentSubmittedAttempt && !appointmentForm.termsAccepted" class="text-xs text-red-600 font-medium pl-1">
+            You must accept the terms before submitting.
+          </p>
+        </div>
+
         <!-- Action Buttons -->
         <div class="pt-3 border-t border-gray-100 flex items-center justify-end gap-3">
           <button
@@ -499,7 +534,7 @@
 
           <button
             type="submit"
-            [disabled]="isSubmittingAppointment || !apptForm.form.valid"
+            [disabled]="isSubmittingAppointment || !apptForm.form.valid || !appointmentForm.termsAccepted"
             class="px-6 py-2.5 rounded-xl bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 text-white font-bold text-xs shadow-md transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 cursor-pointer"
           >
             <span *ngIf="isSubmittingAppointment">Submitting...</span>

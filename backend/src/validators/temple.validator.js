@@ -27,6 +27,14 @@ export const templeCreateSchema = z.object({
   contactRole: z.string().optional(),
   review: z.string().optional(),
   existing_images: z.union([z.array(z.string()), z.string()]).optional(),
+  termsAccepted: z.union([
+    z.literal(true),
+    z.literal('true'),
+    z.literal(1),
+    z.literal('1'),
+  ], {
+    errorMap: () => ({ message: 'You must agree to the Terms and Conditions' }),
+  }).transform(() => true),
 });
 
 export const templeUpdateSchema = templeCreateSchema.partial();

@@ -5,6 +5,7 @@ import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angula
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { environment } from '../../../environments/environment';
 import { TempleSearchSelectComponent } from '../../shared/components/temple-search-select/temple-search-select.component';
+import { TermsConditionsModalComponent } from '../../shared/components/terms-conditions-modal/terms-conditions-modal.component';
 
 interface TempleOption {
   id: number;
@@ -17,7 +18,7 @@ interface TempleOption {
 @Component({
   selector: 'app-mandir-user-registration',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterLink, TempleSearchSelectComponent],
+  imports: [CommonModule, ReactiveFormsModule, RouterLink, TempleSearchSelectComponent, TermsConditionsModalComponent],
   template: `
     <div class="min-h-screen bg-slate-50 px-3 sm:px-6 lg:px-8 py-8 sm:py-12">
       <div class="mx-auto max-w-3xl rounded-2xl bg-white shadow-xl ring-1 ring-slate-200/80 overflow-hidden">
@@ -271,6 +272,36 @@ interface TempleOption {
               </select>
               <p class="mt-1 text-xs text-slate-500">You can update your communication preferences at any time.</p>
             </div>
+
+            <!-- Terms and Conditions Checkbox -->
+            <div class="md:col-span-2 pt-2 border-t border-slate-200">
+              <div class="flex items-start gap-3 bg-orange-50/50 p-3.5 rounded-xl border border-orange-200/60">
+                <input
+                  type="checkbox"
+                  id="devoteeTermsAccepted"
+                  formControlName="termsAccepted"
+                  class="mt-1 h-4 w-4 rounded border-slate-300 text-orange-600 focus:ring-orange-500 cursor-pointer"
+                />
+                <label for="devoteeTermsAccepted" class="text-xs sm:text-sm text-slate-700 leading-relaxed select-none cursor-pointer">
+                  I have read and agree to the
+                  <button
+                    type="button"
+                    (click)="openTermsModal($event)"
+                    class="font-bold text-orange-600 hover:text-orange-700 underline focus:outline-none"
+                  >
+                    Terms and Conditions
+                  </button>
+                  for temple devotee registration, code of conduct, and community guidelines.
+                  <span class="text-red-500 font-bold ml-0.5">*</span>
+                </label>
+              </div>
+              <div
+                *ngIf="form.get('termsAccepted')?.invalid && (form.get('termsAccepted')?.dirty || form.get('termsAccepted')?.touched)"
+                class="mt-1.5 text-xs text-red-600 font-medium pl-1"
+              >
+                You must agree to the Terms and Conditions to register as a devotee.
+              </div>
+            </div>
           </div>
 
           <!-- Bottom Action Buttons -->
@@ -317,6 +348,14 @@ interface TempleOption {
         <div class="flex-1">{{ message }}</div>
         <button (click)="message = ''" class="text-white/80 hover:text-white text-lg leading-none font-bold ml-2">×</button>
       </div>
+
+      <!-- Terms and Conditions Modal -->
+      <app-terms-conditions-modal
+        [isOpen]="isTermsModalOpen"
+        termsType="devotee"
+        (closed)="closeTermsModal()"
+        (accepted)="onTermsAccepted()"
+      ></app-terms-conditions-modal>
     </div>
   `,
 })
@@ -329,6 +368,7 @@ export class MandirUserRegistrationComponent implements OnInit {
   submitting = false;
   showPassword = false;
   preselectedMandirId: number | null = null;
+  isTermsModalOpen = false;
 
   // Success State
   isSubmitted = false;
@@ -357,6 +397,7 @@ export class MandirUserRegistrationComponent implements OnInit {
       mobile: ['', [Validators.required, Validators.minLength(8), Validators.maxLength(25), Validators.pattern(/^[+()\d\s-]+$/)]],
       mandirId: ['', [Validators.required]],
       subscription: ['Yes', [Validators.required]],
+      termsAccepted: [false, [Validators.requiredTrue]],
     });
   }
 
@@ -420,6 +461,7 @@ export class MandirUserRegistrationComponent implements OnInit {
     this.form.reset({
       subscription: 'Yes',
       mandirId: this.preselectedMandirId || '',
+      termsAccepted: false,
     });
   }
 
@@ -428,6 +470,7 @@ export class MandirUserRegistrationComponent implements OnInit {
     this.form.reset({
       subscription: 'Yes',
       mandirId: this.preselectedMandirId || '',
+      termsAccepted: false,
     });
   }
 
@@ -451,6 +494,8 @@ export class MandirUserRegistrationComponent implements OnInit {
       mobile: formVal.mobile.trim(),
       mandirId: Number(formVal.mandirId),
       subscription: formVal.subscription || 'No',
+      termsAccepted: true,
+      termsAcceptedAt: new Date().toISOString(),
     };
 
     this.http
@@ -499,6 +544,24 @@ export class MandirUserRegistrationComponent implements OnInit {
           this.showMessage(errMessage, 'error');
         },
       });
+  }
+
+  openTermsModal(event?: Event): void {
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+    this.isTermsModalOpen = true;
+  }
+
+  closeTermsModal(): void {
+    this.isTermsModalOpen = false;
+  }
+
+  onTermsAccepted(): void {
+    this.form.patchValue({ termsAccepted: true });
+    this.form.get('termsAccepted')?.markAsTouched();
+    this.form.get('termsAccepted')?.updateValueAndValidity();
   }
 
   private showMessage(value: string, type: 'success' | 'error'): void {

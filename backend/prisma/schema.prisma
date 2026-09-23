@@ -50,6 +50,8 @@ model User {
   passwordHash  String
   role          Role     @default(Admin)
   isActive      Boolean  @default(true)
+  termsAccepted Boolean  @default(true) @map("terms_accepted")
+  termsAcceptedAt DateTime? @map("terms_accepted_at")
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
   discussions   Discussion[]
@@ -121,6 +123,8 @@ model Temple {
   rating             Float        @default(0)
   location           String
   role               String       @default("devotee")
+  termsAccepted      Boolean      @default(true) @map("terms_accepted")
+  termsAcceptedAt    DateTime?    @map("terms_accepted_at")
 
   city      City         @relation(fields: [cityId], references: [id], onDelete: Cascade)
   mainDeity Deity        @relation(fields: [mainDeityId], references: [id], onDelete: Cascade)
@@ -164,6 +168,8 @@ model Event {
   attendees           Int          @default(0)
   organizerId         Int?         @map("organizer_id")
   reviewedById        Int?         @map("reviewed_by_id")
+  termsAccepted       Boolean      @default(true) @map("terms_accepted")
+  termsAcceptedAt     DateTime?    @map("terms_accepted_at")
   createdAt           DateTime     @default(now()) @map("created_at")
   updatedAt           DateTime     @updatedAt @map("updated_at")
 
@@ -201,6 +207,8 @@ model TempleDevoteeRegistration {
   reviewedByUserId Int?             @map("reviewed_by_user_id")
   reviewedAt    DateTime?          @map("reviewed_at")
   notes         String?            @db.Text
+  termsAccepted Boolean            @default(true) @map("terms_accepted")
+  termsAcceptedAt DateTime?        @map("terms_accepted_at")
   createdAt     DateTime           @default(now()) @map("created_at")
   updatedAt     DateTime           @updatedAt @map("updated_at")
 
@@ -241,6 +249,8 @@ model Business {
   created_at     DateTime
   reviewedat     DateTime?
   reviewnotes    String?
+  termsAccepted  Boolean? @default(true) @map("terms_accepted")
+  termsAcceptedAt DateTime? @map("terms_accepted_at")
   imageUrl       String?  @db.VarChar(2048)
 
   @@map("business_business")

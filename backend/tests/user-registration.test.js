@@ -34,11 +34,17 @@ test('registrationSchema validates required fields for devotee registration', ()
     mobile: '+64 21 987 654',
     mandirId: 1,
     subscription: 'Yes',
+    termsAccepted: true,
   };
 
   const parsed = registrationSchema.safeParse(valid);
   assert.equal(parsed.success, true);
   assert.equal(parsed.data.subscription, 'Yes');
+  assert.equal(parsed.data.termsAccepted, true);
+
+  // Missing terms acceptance
+  const missingTerms = registrationSchema.safeParse({ ...valid, termsAccepted: false });
+  assert.equal(missingTerms.success, false);
 
   // Password too short
   const invalidPassword = registrationSchema.safeParse({ ...valid, password: '123' });
@@ -56,6 +62,7 @@ test('registrationSchema validates required fields for devotee registration', ()
     password: 'securePassword123',
     mobile: '+64 21 987 654',
     mandirId: 1,
+    termsAccepted: true,
   });
   assert.equal(noSub.success, true);
   assert.equal(noSub.data.subscription, 'No');
@@ -68,6 +75,7 @@ test('registrationSchema validates required fields for devotee registration', ()
     password: 'securePassword123',
     mobile: '+64 (21) 123-4567',
     mandirId: 1,
+    termsAccepted: true,
   });
   assert.equal(formattedMobile.success, true, 'Formatted mobile number with parentheses and hyphens must be accepted');
 });

@@ -93,6 +93,8 @@ export interface Business {
 
   // Status
   status: string; // e.g., "Pending"
+  termsAccepted?: boolean;
+  termsAcceptedAt?: string;
 
   // Images
   imageUrls?: string[]; // Optional if backend later stores URLs after upload

@@ -1,7 +1,7 @@
 import { logger } from '../utils/logger.js';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { prisma } from '../config/db.js';
+import { prisma, ensureRequiredTables } from '../config/db.js';
 import { env } from '../config/env.js';
 import { signAccessToken, signRefreshToken } from '../utils/jwt.js';
 import { sendSuccess, sendError } from '../utils/response.js';
@@ -9,7 +9,8 @@ import { sendEmail } from '../utils/email.js';
 
 export const register = async (req, res) => {
   try {
-    const { fullName, name, username, email, password, role: reqRole } = req.body;
+    await ensureRequiredTables();
+    const { fullName, name, username, email, password, role: reqRole, termsAccepted, termsAcceptedAt } = req.body;
     const resolvedFullName = (fullName || name || username || '').trim();
 
     if (!resolvedFullName) {
@@ -18,6 +19,11 @@ export const register = async (req, res) => {
 
     if (!email || !String(email).trim()) {
       return sendError(res, 400, 'Valid email address is required');
+    }
+
+    const isTermsAccepted = termsAccepted === true || termsAccepted === 'true' || termsAccepted === 1 || termsAccepted === '1';
+    if (!isTermsAccepted) {
+      return sendError(res, 400, 'You must agree to the Terms and Conditions to register');
     }
 
     // Default role for self-registered users
@@ -46,13 +52,18 @@ export const register = async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const passwordHash = await bcrypt.hash(password, salt);
 
+    const consentDate = termsAcceptedAt ? new Date(termsAcceptedAt) : new Date();
+    const validConsentDate = isNaN(consentDate.getTime()) ? new Date() : consentDate;
+
     const newUser = await prisma.user.create({
       data: {
         username: resolvedFullName,
         email: cleanEmail,
         passwordHash,
         role,
-        isActive: true
+        isActive: true,
+        termsAccepted: true,
+        termsAcceptedAt: validConsentDate
       }
     });
 
@@ -63,7 +74,9 @@ export const register = async (req, res) => {
         fullName: newUser.username,
         username: newUser.username,
         email: newUser.email,
-        role: newUser.role
+        role: newUser.role,
+        termsAccepted: newUser.termsAccepted,
+        termsAcceptedAt: newUser.termsAcceptedAt
       }
     });
   } catch (error) {

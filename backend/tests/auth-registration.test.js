@@ -12,15 +12,22 @@ test('Registration validator and Full Name resolution workflow', async () => {
     fullName: 'Arjun Sharma',
     email: 'arjun.sharma@example.com',
     password: 'Password123!',
+    termsAccepted: true,
   };
   const parseResult = registerSchema.safeParse(validPayload);
-  assert.ok(parseResult.success, 'registerSchema should succeed with fullName');
+  assert.ok(parseResult.success, 'registerSchema should succeed with fullName and terms');
   assert.equal(parseResult.data.fullName, 'Arjun Sharma');
+  assert.equal(parseResult.data.termsAccepted, true);
+
+  // 1b. Test validator rejects without terms
+  const noTermsResult = registerSchema.safeParse({ ...validPayload, termsAccepted: false });
+  assert.ok(!noTermsResult.success, 'registerSchema should reject when termsAccepted is not accepted');
 
   // 2. Test validator requires name
   const invalidPayload = {
     email: 'noname@example.com',
     password: 'Password123!',
+    termsAccepted: true,
   };
   const invalidResult = registerSchema.safeParse(invalidPayload);
   assert.ok(!invalidResult.success, 'registerSchema should reject when fullName/username is missing');
