@@ -105,6 +105,7 @@ model Comment {
 
 model Temple {
   id                 Int          @id @default(autoincrement())
+  publicId           String       @unique @default(cuid()) @map("public_id")
   mandir_name        String
   status             TempleStatus @default(Pending)
   full_address       String

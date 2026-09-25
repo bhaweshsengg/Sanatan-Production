@@ -87,25 +87,45 @@ const normalizeUploadedImagePath = (value) => {
   return `/uploads/${lastSegment}`;
 };
 
-const normalizeTempleRecord = (temple) => ({
-  ...temple,
-  cityId: temple.cityId ?? temple.city_id,
-  city_id: temple.cityId ?? temple.city_id,
-  city: temple.city,
-  mainDeityId: temple.mainDeityId ?? temple.main_deity_id,
-  main_deity_id: temple.mainDeityId ?? temple.main_deity_id,
-  mainDeity: temple.mainDeity,
-  main_deity: temple.mainDeity,
-  images: (temple.images || []).map((img) => ({
-    ...img,
-    file: /^https?:\/\//i.test(img.file || '')
-      ? img.file
-      : normalizeUploadedImagePath(img.file) || img.file,
-  })),
-  service_offered: typeof temple.service_offered === 'string' ? parseListField(temple.service_offered) : (temple.service_offered || []),
-  facilities_offered: typeof temple.facilities_offered === 'string' ? parseListField(temple.facilities_offered) : (temple.facilities_offered || []),
-  events: temple.events || [],
-});
+export const normalizeTempleRecord = (temple, options = {}) => {
+  if (!temple) return null;
+
+  const {
+    your_name,
+    your_email,
+    role,
+    termsAccepted,
+    termsAcceptedAt,
+    terms_accepted,
+    terms_accepted_at,
+    mandirRegistrations,
+    ...publicFields
+  } = temple;
+
+  const base = options.includePrivate ? temple : publicFields;
+
+  return {
+    ...base,
+    id: base.id,
+    publicId: base.publicId ?? base.public_id,
+    cityId: base.cityId ?? base.city_id,
+    city_id: base.cityId ?? base.city_id,
+    city: base.city,
+    mainDeityId: base.mainDeityId ?? base.main_deity_id,
+    main_deity_id: base.mainDeityId ?? base.main_deity_id,
+    mainDeity: base.mainDeity,
+    main_deity: base.mainDeity,
+    images: (base.images || []).map((img) => ({
+      ...img,
+      file: /^https?:\/\//i.test(img.file || '')
+        ? img.file
+        : normalizeUploadedImagePath(img.file) || img.file,
+    })),
+    service_offered: typeof base.service_offered === 'string' ? parseListField(base.service_offered) : (base.service_offered || []),
+    facilities_offered: typeof base.facilities_offered === 'string' ? parseListField(base.facilities_offered) : (base.facilities_offered || []),
+    events: base.events || [],
+  };
+};
 
 const uploadNewImage = async (file, folder = 'temples') => {
   const isBlobConfigured = Boolean(env.isBlobConfigured || env.blobToken || process.env.BLOB_READ_WRITE_TOKEN);
@@ -290,15 +310,18 @@ export const getTemple = async (req, res) => {
     await repairTempleStatuses();
     await ensureRequiredTables().catch(() => {});
 
-    const id = Number(req.params.id);
-    if (!Number.isInteger(id) || id <= 0) {
-      return sendError(res, 400, 'Invalid temple id');
+    const param = req.params.id ? String(req.params.id).trim() : '';
+    if (!param) {
+      return sendError(res, 400, 'Invalid temple identifier');
     }
+
+    const isNumeric = /^\d+$/.test(param);
+    const whereClause = isNumeric ? { id: Number(param) } : { publicId: param };
 
     let temple;
     try {
       temple = await prisma.temple.findUnique({
-        where: { id },
+        where: whereClause,
         include: {
           city: true,
           mainDeity: true,
@@ -311,11 +334,11 @@ export const getTemple = async (req, res) => {
       });
     } catch (queryError) {
       logger.warn('getTemple: events relation query failed, falling back to basic include', {
-        id,
+        param,
         error: queryError.message,
       });
       temple = await prisma.temple.findUnique({
-        where: { id },
+        where: whereClause,
         include: {
           city: true,
           mainDeity: true,
@@ -334,12 +357,45 @@ export const getTemple = async (req, res) => {
 
 export const updateTemple = async (req, res) => {
   try {
+    const param = req.params.id ? String(req.params.id).trim() : '';
+    if (!param) return sendError(res, 400, 'Invalid temple identifier');
+
+    const isNumeric = /^\d+$/.test(param);
+    const whereClause = isNumeric ? { id: Number(param) } : { publicId: param };
+
     const current = await prisma.temple.findUnique({
-      where: { id: Number(req.params.id) },
+      where: whereClause,
       include: { images: true },
     });
 
     if (!current) return sendError(res, 404, 'Temple not found', {});
+
+    // IDOR / BOLA Authorization check:
+    // Super Admins can update any temple.
+    // TempleManagers can only update the specific temple they manage/own.
+    if (req.user && req.user.role !== 'Admin') {
+      const userEmail = (req.user.email || '').trim().toLowerCase();
+      const isOwnerByEmail = Boolean(userEmail && current.your_email?.toLowerCase() === userEmail);
+      let isApprovedAdmin = false;
+
+      if (!isOwnerByEmail && userEmail) {
+        const adminReg = await prisma.templeDevoteeRegistration.findFirst({
+          where: {
+            mandirId: current.id,
+            email: userEmail,
+            status: 'Approved',
+            relation: {
+              relationshipName: { in: ['Temple Admin', 'Admin', 'Temple Manager'] },
+            },
+          },
+        });
+        isApprovedAdmin = Boolean(adminReg);
+      }
+
+      if (!isOwnerByEmail && !isApprovedAdmin) {
+        return sendError(res, 403, 'Forbidden: You do not have permission to manage this temple', {});
+      }
+    }
 
     const rawPayload = {
       mandir_name: req.body.mandir_name,
@@ -362,12 +418,18 @@ export const updateTemple = async (req, res) => {
       role: req.body.role,
     };
 
+    // Strip privileged fields if caller is not Super Admin
+    if (req.user && req.user.role !== 'Admin') {
+      delete rawPayload.status;
+      delete rawPayload.rating;
+    }
+
     const cleanedPayload = Object.fromEntries(
       Object.entries(rawPayload).filter(([, value]) => value !== undefined)
     );
 
     const temple = await prisma.temple.update({
-      where: { id: Number(req.params.id) },
+      where: { id: current.id },
       data: cleanedPayload,
       include: { city: true, mainDeity: true, images: true },
     });
@@ -431,8 +493,21 @@ export const updateTemple = async (req, res) => {
 
 export const deleteTemple = async (req, res) => {
   try {
+    if (!req.user) {
+      return sendError(res, 401, 'Unauthorized: Authentication required', {});
+    }
+    if (req.user.role !== 'Admin') {
+      return sendError(res, 403, 'Forbidden: Only administrators can delete temples', {});
+    }
+
+    const param = req.params.id ? String(req.params.id).trim() : '';
+    if (!param) return sendError(res, 400, 'Invalid temple identifier');
+
+    const isNumeric = /^\d+$/.test(param);
+    const whereClause = isNumeric ? { id: Number(param) } : { publicId: param };
+
     const temple = await prisma.temple.findUnique({
-      where: { id: Number(req.params.id) },
+      where: whereClause,
       include: { images: true },
     });
 
@@ -457,7 +532,7 @@ export const deleteTemple = async (req, res) => {
       if (absolutePath) await fs.rm(absolutePath, { force: true }).catch(() => {});
     }
 
-    await prisma.temple.delete({ where: { id: Number(req.params.id) } });
+    await prisma.temple.delete({ where: { id: temple.id } });
     return sendSuccess(res, 200, { message: 'Temple deleted successfully', data: {} });
   } catch (error) {
     logger.error('deleteTemple error', { message: error.message });
@@ -468,8 +543,27 @@ export const deleteTemple = async (req, res) => {
 export const updateTempleStatus = async (req, res) => {
   try {
     await repairTempleStatuses();
+
+    if (!req.user) {
+      return sendError(res, 401, 'Unauthorized: Authentication required', {});
+    }
+    if (req.user.role !== 'Admin') {
+      return sendError(res, 403, 'Forbidden: Only administrators can update temple status', {});
+    }
+
+    const param = req.params.id ? String(req.params.id).trim() : '';
+    if (!param) return sendError(res, 400, 'Invalid temple identifier');
+
+    const isNumeric = /^\d+$/.test(param);
+    const whereClause = isNumeric ? { id: Number(param) } : { publicId: param };
+
+    const current = await prisma.temple.findUnique({
+      where: whereClause,
+    });
+    if (!current) return sendError(res, 404, 'Temple not found', {});
+
     const temple = await prisma.temple.update({
-      where: { id: Number(req.params.id) },
+      where: { id: current.id },
       data: { status: req.body.status === 'Reject' ? 'Rejected' : req.body.status },
       include: { city: true, mainDeity: true, images: true },
     });

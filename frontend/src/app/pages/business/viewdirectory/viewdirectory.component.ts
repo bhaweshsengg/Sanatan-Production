@@ -68,9 +68,14 @@ export class ViewdirectoryComponent implements OnInit, OnDestroy {
     this.http.get<any>(apiUrl).subscribe({
       next: (response) => {
         if (response?.success && response?.data) {
+          const raw = response.data;
           this.businessData = {
-            ...response.data,
-            images: response.data.images ?? (response.data.imageUrl ? [{ file: response.data.imageUrl }] : [])
+            ...raw,
+            mobile: raw.mobile || raw.ownerPhone || null,
+            phone: raw.phone || raw.phoneNo || null,
+            phoneNo: raw.phoneNo || raw.phone || null,
+            ownerPhone: raw.ownerPhone || raw.mobile || null,
+            images: raw.images ?? (raw.imageUrl ? [{ file: raw.imageUrl }] : [])
           };
         } else {
           this.showToastMessage('Failed to fetch business details.', 'error');

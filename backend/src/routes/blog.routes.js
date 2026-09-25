@@ -33,33 +33,11 @@ try {
   // Ignore directory creation error in read-only environments when using Blob
 }
 
-const diskStorage = multer.diskStorage({
-  destination: (_req, _file, cb) => {
-    cb(null, uploadDir);
-  },
-  filename: (_req, file, cb) => {
-    const safeName =
-      `${Date.now()}-${Math.round(Math.random() * 1e9)}` +
-      path.extname(file.originalname);
-    cb(null, safeName);
-  },
-});
+import { createUploadMiddleware } from '../utils/fileUpload.js';
 
-const isBlobEnabled = Boolean(env.isBlobConfigured || env.blobToken || process.env.BLOB_READ_WRITE_TOKEN);
-const storage = (isBlobEnabled || env.cloudinary.enabled) ? multer.memoryStorage() : diskStorage;
-
-const upload = multer({
-  storage,
-  limits: {
-    fileSize: 5 * 1024 * 1024,
-  },
-  fileFilter: (_req, file, cb) => {
-    if (file.mimetype && file.mimetype.startsWith('image/')) {
-      cb(null, true);
-    } else {
-      cb(new Error('Only image files are allowed'));
-    }
-  },
+const upload = createUploadMiddleware({
+  maxFiles: 1,
+  maxFileSize: 5 * 1024 * 1024,
 });
 
 router.post('/upload-image', authenticate, authorize('Admin'), upload.single('image'), uploadBlogImage);

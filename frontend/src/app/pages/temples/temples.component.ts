@@ -10,6 +10,7 @@ import { AuthService } from '../../Auth/auth.service';
 interface Temple {
   status: string;
   id: number;
+  publicId?: string;
   name: string;
   deity: string;
   location: string;
@@ -37,6 +38,8 @@ interface Temple {
 interface ApiTemple {
   status: string;
   id: number;
+  publicId?: string;
+  public_id?: string;
   mandir_name: string;
   full_address: string;
   city: {
@@ -202,11 +205,19 @@ interface Deity {
 
                 <div class="flex gap-3">
                   <button
-                    [routerLink]="['/temples/view-temple',temple.id]"
+                    [routerLink]="['/temples/view-temple', temple.publicId || temple.id]"
                     class="flex-1 bg-orange-600 text-white py-2 px-4 rounded-lg text-sm font-medium hover:bg-orange-700 transition-colors"
                   >
                     Visit Temple
                   </button>
+                  <a
+                    *ngIf="isAdmin"
+                    [routerLink]="['/temples/edit-temple', temple.id]"
+                    title="Edit Temple (Admin)"
+                    class="px-3 py-2 border border-orange-300 bg-orange-50 text-orange-700 rounded-lg text-sm font-medium hover:bg-orange-100 transition-colors flex items-center justify-center cursor-pointer"
+                  >
+                    ✏️
+                  </a>
                   <a
                     [href]="getPhoneLink(temple.phone)"
                     [attr.aria-label]="'Call ' + temple.name"
@@ -287,8 +298,7 @@ export class TemplesComponent implements OnInit {
     private http: HttpClient,
     private authService: AuthService
   ) {
-    const user = this.authService.getUserData();
-    this.isAdmin = user?.role === 'Admin' || user?.role === 'Super Admin';
+    this.isAdmin = this.authService.isAdmin();
   }
 
   ngOnInit() {
@@ -435,6 +445,7 @@ export class TemplesComponent implements OnInit {
 
     return {
       id: apiTemple.id,
+      publicId: apiTemple.publicId || (apiTemple as any).public_id,
       name: apiTemple.mandir_name,
       deity: apiTemple.main_deity.name,
       location: apiTemple.city.name,

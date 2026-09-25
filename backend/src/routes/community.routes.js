@@ -22,13 +22,13 @@ router.post('/discussions', authenticate, createDiscussion);
 // Local Groups
 router.get('/groups', optionalAuthenticate, getGroups);
 router.get('/groups/:id', optionalAuthenticate, getGroupById);
-router.post('/groups', optionalAuthenticate, createGroup);
-router.put('/groups/:id', optionalAuthenticate, updateGroup);
-router.delete('/groups/:id', optionalAuthenticate, deleteGroup);
+router.post('/groups', authenticate, createGroup);
+router.put('/groups/:id', authenticate, updateGroup);
+router.delete('/groups/:id', authenticate, deleteGroup);
 
 // Group Membership Actions
-router.post('/groups/:id/join', optionalAuthenticate, joinGroup);
-router.post('/groups/:id/leave', optionalAuthenticate, leaveGroup);
+router.post('/groups/:id/join', authenticate, joinGroup);
+router.post('/groups/:id/leave', authenticate, leaveGroup);
 
 // Community Members Directory
 router.get('/members', getMembers);

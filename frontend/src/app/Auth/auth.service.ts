@@ -10,6 +10,8 @@ import { environment } from '../../environments/environment';
 export class AuthService {
   private isAuthenticatedSubject = new BehaviorSubject<boolean>(this.hasToken());
   public isAuthenticated$ = this.isAuthenticatedSubject.asObservable();
+  private currentUserSubject = new BehaviorSubject<any>(this.getUserData());
+  public currentUser$ = this.currentUserSubject.asObservable();
   private http = inject(HttpClient);
 
   constructor() { }
@@ -18,6 +20,7 @@ export class AuthService {
     localStorage.setItem('authToken', token);
     localStorage.setItem('userData', JSON.stringify(userData));
     this.isAuthenticatedSubject.next(true);
+    this.currentUserSubject.next(userData);
   }
 
   logout(): void {
@@ -41,10 +44,18 @@ export class AuthService {
     localStorage.removeItem('authToken');
     localStorage.removeItem('userData');
     this.isAuthenticatedSubject.next(false);
+    this.currentUserSubject.next(null);
   }
 
   isLoggedIn(): boolean {
     return this.isAuthenticatedSubject.value;
+  }
+
+  isAdmin(): boolean {
+    if (!this.hasToken()) return false;
+    const user = this.getUserData();
+    const role = (user?.role || '').toLowerCase();
+    return role === 'admin' || role === 'super admin';
   }
 
   private hasToken(): boolean {

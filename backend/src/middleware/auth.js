@@ -28,7 +28,7 @@ export const authenticate = async (req, res, next) => {
 
     next();
   } catch (error) {
-    return sendError(res, 401, 'Invalid or expired token', { details: error.message });
+    return sendError(res, 401, 'Invalid or expired token', {});
   }
 };
 

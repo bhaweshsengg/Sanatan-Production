@@ -49,7 +49,7 @@ const corsOptions = {
       return;
     }
 
-    callback(new Error(`CORS blocked for origin: ${origin}`));
+    callback(null, false);
   },
 
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
@@ -71,6 +71,13 @@ app.use(
     crossOriginResourcePolicy: { policy: 'cross-origin' },
     crossOriginOpenerPolicy: false,
     crossOriginEmbedderPolicy: false,
+    xContentTypeOptions: true,
+    xFrameOptions: { action: 'deny' },
+    xXssProtection: true,
+    referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
+    dnsPrefetchControl: { allow: false },
+    hidePoweredBy: true,
+    hsts: env.nodeEnv === 'production' ? { maxAge: 31536000, includeSubDomains: true, preload: true } : false,
   })
 );
 
@@ -90,12 +97,26 @@ app.use('/uploads', staticCorsMiddleware, (req, res, next) => {
   const requestedPath = decodeURIComponent(req.path || '').replace(/^\/+/, '');
   if (!requestedPath) return next();
 
-  const absolutePath = path.resolve(env.uploadDir, requestedPath);
+  const uploadRoot = path.resolve(env.uploadDir);
+  const absolutePath = path.resolve(uploadRoot, requestedPath);
+
+  // Path traversal guard: ensure resolved path remains inside upload root
+  if (!absolutePath.startsWith(uploadRoot + path.sep) && absolutePath !== uploadRoot) {
+    return res.status(403).json({ success: false, message: 'Forbidden: Invalid file path' });
+  }
+
   if (fs.existsSync(absolutePath)) {
     return next();
   }
 
-  const templeImagePath = path.resolve(env.uploadDir, 'temple_images', requestedPath);
+  const templeImagesRoot = path.resolve(uploadRoot, 'temple_images');
+  const templeImagePath = path.resolve(templeImagesRoot, requestedPath);
+
+  // Path traversal guard: ensure resolved path remains inside temple_images root
+  if (!templeImagePath.startsWith(templeImagesRoot + path.sep) && templeImagePath !== templeImagesRoot) {
+    return res.status(403).json({ success: false, message: 'Forbidden: Invalid file path' });
+  }
+
   if (fs.existsSync(templeImagePath)) {
     return res.sendFile(templeImagePath);
   }

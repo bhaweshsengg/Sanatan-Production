@@ -52,6 +52,12 @@ interface Submission {
           <li>
             <a class="group inline-flex h-9 items-center justify-center rounded-md px-3 py-1.5 text-sm font-medium transition-colors hover:bg-gray-100 hover:text-gray-900" routerLink="/admin/deities">Deities</a>
           </li>
+          <li>
+            <a class="group inline-flex h-9 items-center justify-center rounded-md px-3 py-1.5 text-sm font-medium transition-colors hover:bg-gray-100 hover:text-gray-900" routerLink="/admin/blogs">Blog Posts</a>
+          </li>
+          <li>
+            <a class="group inline-flex h-9 items-center justify-center rounded-md px-3 py-1.5 text-sm font-medium transition-colors hover:bg-gray-100 hover:text-gray-900" routerLink="/admin/religious-articles">Religious Articles</a>
+          </li>
         </ul>
       </nav>
 

@@ -125,6 +125,9 @@ export const getPublicReligiousArticleById = async (req, res) => {
 
 export const listAdminReligiousArticles = async (req, res) => {
   try {
+    if (!req.user || req.user.role !== 'Admin') {
+      return sendError(res, 403, 'Forbidden: Only administrators can access admin religious articles', {});
+    }
     await ensureRequiredTables();
     const { category, status, search, limit, page } = req.query;
 
@@ -190,6 +193,9 @@ export const listAdminReligiousArticles = async (req, res) => {
 
 export const getAdminReligiousArticleById = async (req, res) => {
   try {
+    if (!req.user || req.user.role !== 'Admin') {
+      return sendError(res, 403, 'Forbidden: Only administrators can view admin religious articles', {});
+    }
     await ensureRequiredTables();
     const { id } = req.params;
 
@@ -214,6 +220,9 @@ export const getAdminReligiousArticleById = async (req, res) => {
 
 export const createReligiousArticle = async (req, res) => {
   try {
+    if (!req.user || req.user.role !== 'Admin') {
+      return sendError(res, 403, 'Forbidden: Only administrators can create religious articles', {});
+    }
     await ensureRequiredTables();
     const {
       title,
@@ -274,6 +283,9 @@ export const createReligiousArticle = async (req, res) => {
 
 export const updateReligiousArticle = async (req, res) => {
   try {
+    if (!req.user || req.user.role !== 'Admin') {
+      return sendError(res, 403, 'Forbidden: Only administrators can update religious articles', {});
+    }
     await ensureRequiredTables();
     const { id } = req.params;
 
@@ -359,6 +371,9 @@ export const updateReligiousArticle = async (req, res) => {
 
 export const updateReligiousArticleStatus = async (req, res) => {
   try {
+    if (!req.user || req.user.role !== 'Admin') {
+      return sendError(res, 403, 'Forbidden: Only administrators can update religious article status', {});
+    }
     await ensureRequiredTables();
     const { id } = req.params;
     const { status } = req.body;
@@ -395,6 +410,9 @@ export const updateReligiousArticleStatus = async (req, res) => {
 
 export const deleteReligiousArticle = async (req, res) => {
   try {
+    if (!req.user || req.user.role !== 'Admin') {
+      return sendError(res, 403, 'Forbidden: Only administrators can delete religious articles', {});
+    }
     await ensureRequiredTables();
     const { id } = req.params;
 

@@ -255,12 +255,21 @@ interface CommunityEvent {
               gatherings with the wider community. Help bring people together
               through shared celebrations and learning.
             </p>
-            <button
-              routerLink="/events/add-event"
-              class="bg-orange-600 text-white px-6 py-3 rounded-md hover:bg-orange-700"
-            >
-              + Create Event
-            </button>
+            <div class="flex flex-wrap items-center justify-center gap-3">
+              <button
+                routerLink="/events/add-event"
+                class="bg-orange-600 text-white px-6 py-3 rounded-md hover:bg-orange-700 font-medium"
+              >
+                + Create Event
+              </button>
+              <a
+                *ngIf="isAdmin"
+                routerLink="/admin/events"
+                class="border border-orange-600 text-orange-600 bg-white px-6 py-3 rounded-md hover:bg-orange-50 font-medium"
+              >
+                ⚙️ Event Admin
+              </a>
+            </div>
           </div>
         </section>
       </div>
@@ -387,8 +396,7 @@ export class EventsComponent implements OnInit {
     private readonly route: ActivatedRoute,
   ) {
     this.authService = authService;
-    const user = authService.getUserData();
-    this.isAdmin = user?.role === 'Admin' || user?.role === 'Super Admin';
+    this.isAdmin = authService.isAdmin();
     this.joinedEventIds = this.loadJoinedEventIds();
   }
 

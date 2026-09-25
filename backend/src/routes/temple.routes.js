@@ -14,7 +14,7 @@ import {
   updateTempleStatus,
 } from '../controllers/temple.controller.js';
 
-import { authenticate, authorize } from '../middleware/auth.js';
+import { authenticate, authorize, optionalAuthenticate } from '../middleware/auth.js';
 import { validate } from '../middleware/validate.js';
 
 import {
@@ -55,16 +55,15 @@ const storage = (isBlobEnabled || env.cloudinary.enabled)
   ? multer.memoryStorage()
   : diskStorage;
 
-const upload = multer({
-  storage,
-  limits: {
-    files: env.maxUploadFiles,
-    fileSize: 10 * 1024 * 1024,
-  },
+import { createUploadMiddleware } from '../utils/fileUpload.js';
+
+const upload = createUploadMiddleware({
+  maxFiles: env.maxUploadFiles,
+  maxFileSize: 10 * 1024 * 1024,
 });
 
-router.get('/', listTemples);
-router.get('/:id', getTemple);
+router.get('/', optionalAuthenticate, listTemples);
+router.get('/:id', optionalAuthenticate, getTemple);
 
 // Public: anyone can submit a temple for review (no auth required)
 router.post(
@@ -85,11 +84,11 @@ router.put(
   updateTemple
 );
 
-router.delete('/:id', authorize('Admin', 'TempleManager'), deleteTemple);
+router.delete('/:id', authorize('Admin'), deleteTemple);
 
 router.patch(
   '/:id/status',
-  authorize('Admin', 'TempleManager'),
+  authorize('Admin'),
   validate(templeStatusSchema),
   updateTempleStatus
 );

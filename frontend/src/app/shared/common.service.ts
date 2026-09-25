@@ -24,6 +24,7 @@ export interface ApiResponse<T> {
 export interface Temple {
   message: string;
   id?: number;
+  publicId?: string;
 
   // Required API fields
   mandir_name: string; // Temple name
@@ -71,6 +72,8 @@ export interface Business {
   address: string;
   city: string;
   phone: string;
+  phoneNo?: string;
+  mobile?: string;
   email: string;
   website?: string;
 
@@ -227,6 +230,7 @@ transformToAPIPayload(temple: Temple): TempleAPIPayload {
 
     return {
       ...apiTemple,
+      publicId: apiTemple.publicId ?? apiTemple.public_id,
       city_id: cityId,
       main_deity_id: mainDeityId,
       city: apiTemple.city,
@@ -276,7 +280,7 @@ formatOpeningHours(hours: string): string {
       );
   }
 
-  getTemplebyId(id: number): Observable<Temple> {
+  getTemplebyId(id: number | string): Observable<Temple> {
     return this.http
       .get<any>(`${this.apiUrl}/temple/${id}`)
       .pipe(

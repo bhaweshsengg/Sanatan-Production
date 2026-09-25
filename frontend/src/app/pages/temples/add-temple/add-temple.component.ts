@@ -773,6 +773,7 @@ export class AddTempleComponent implements OnInit {
   isEditMode = false;
   isLoading = false;
   templeId: number | null = null;
+  templePublicId: string | null = null;
   uploadError: string = '';
 
   // Terms and Conditions State
@@ -904,6 +905,7 @@ export class AddTempleComponent implements OnInit {
         service_offered: this.normalizeCodes(temple.service_offered, this.servicesList),
         facilities_offered: this.normalizeCodes(temple.facilities_offered, this.facilitiesList),
       };
+      this.templePublicId = temple.publicId || (temple as any).public_id || null;
       this.uploadedImages = [];
       if (temple.images && temple.images.length > 0) {
         temple.images.forEach((img: any, index: number) => {
@@ -1195,7 +1197,8 @@ async onSubmit() {
           if (returnUrl) {
             this.router.navigateByUrl(returnUrl);
           } else {
-            this.router.navigate(['/temples/view-temple', this.templeId]);
+            const dest = (response as any)?.data?.publicId || response?.publicId || this.templePublicId || this.templeId;
+            this.router.navigate(['/temples/view-temple', dest]);
           }
         }, 1500);
       },
@@ -1246,8 +1249,8 @@ async onSubmit() {
     const returnUrl = this.route.snapshot.queryParams['returnUrl'];
     if (returnUrl) {
       this.router.navigateByUrl(returnUrl);
-    } else if (this.isEditMode && this.templeId) {
-      this.router.navigate(['/temples/view-temple', this.templeId]);
+    } else if (this.isEditMode && (this.templePublicId || this.templeId)) {
+      this.router.navigate(['/temples/view-temple', this.templePublicId || this.templeId]);
     } else {
       this.router.navigate(['/temples']);
     }

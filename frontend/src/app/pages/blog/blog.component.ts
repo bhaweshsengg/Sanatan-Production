@@ -539,7 +539,17 @@ export class BlogComponent implements OnInit {
 
   getSanitizedHtml(content?: string): SafeHtml {
     if (!content) return '';
-    return this.sanitizer.bypassSecurityTrustHtml(content);
+    // Strip dangerous tags, inline event handlers, and javascript: URIs to prevent XSS
+    const sanitized = content
+      .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+      .replace(/<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi, '')
+      .replace(/<object\b[^<]*(?:(?!<\/object>)<[^<]*)*<\/object>/gi, '')
+      .replace(/<embed\b[^<]*(?:(?!<\/embed>)<[^<]*)*<\/embed>/gi, '')
+      .replace(/\son\w+\s*=\s*(['"]).*?\1/gi, '')
+      .replace(/\son\w+\s*=\s*[^\s>]+/gi, '')
+      .replace(/href\s*=\s*(['"])javascript:.*?\1/gi, 'href="#"')
+      .replace(/src\s*=\s*(['"])javascript:.*?\1/gi, 'src=""');
+    return this.sanitizer.bypassSecurityTrustHtml(sanitized);
   }
 
   getTagsList(tags?: string | null): string[] {

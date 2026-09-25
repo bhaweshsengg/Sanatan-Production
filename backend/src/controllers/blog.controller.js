@@ -76,6 +76,9 @@ const generateSlug = (title = '') => {
 
 export const uploadBlogImage = async (req, res) => {
   try {
+    if (!req.user || req.user.role !== 'Admin') {
+      return sendError(res, 403, 'Forbidden: Only administrators can upload blog images');
+    }
     if (!req.file) {
       return sendError(res, 400, 'Image file is required');
     }
@@ -138,7 +141,7 @@ export const listPublicBlogs = async (req, res) => {
         ...(limitNum !== undefined ? { take: limitNum } : {}),
         include: {
           author: {
-            select: { id: true, username: true, email: true },
+            select: { id: true, username: true },
           },
         },
       }),
@@ -175,7 +178,7 @@ export const getPublicBlogById = async (req, res) => {
       },
       include: {
         author: {
-          select: { id: true, username: true, email: true },
+          select: { id: true, username: true },
         },
       },
     });
@@ -196,6 +199,9 @@ export const getPublicBlogById = async (req, res) => {
 
 export const listAdminBlogs = async (req, res) => {
   try {
+    if (!req.user || req.user.role !== 'Admin') {
+      return sendError(res, 403, 'Forbidden: Only administrators can access admin blogs', {});
+    }
     await ensureRequiredTables();
     const { status, category, search } = req.query;
 
@@ -237,6 +243,9 @@ export const listAdminBlogs = async (req, res) => {
 
 export const getAdminBlogById = async (req, res) => {
   try {
+    if (!req.user || req.user.role !== 'Admin') {
+      return sendError(res, 403, 'Forbidden: Only administrators can view admin blog details', {});
+    }
     await ensureRequiredTables();
     const id = Number(req.params.id);
     if (!id) {
@@ -268,6 +277,9 @@ export const getAdminBlogById = async (req, res) => {
 
 export const createBlog = async (req, res) => {
   try {
+    if (!req.user || req.user.role !== 'Admin') {
+      return sendError(res, 403, 'Forbidden: Only administrators can create blog posts', {});
+    }
     await ensureRequiredTables();
     const data = req.body;
 
@@ -308,6 +320,9 @@ export const createBlog = async (req, res) => {
 
 export const updateBlog = async (req, res) => {
   try {
+    if (!req.user || req.user.role !== 'Admin') {
+      return sendError(res, 403, 'Forbidden: Only administrators can update blog posts', {});
+    }
     await ensureRequiredTables();
     const id = Number(req.params.id);
     if (!id) {
@@ -360,6 +375,9 @@ export const updateBlog = async (req, res) => {
 
 export const updateBlogStatus = async (req, res) => {
   try {
+    if (!req.user || req.user.role !== 'Admin') {
+      return sendError(res, 403, 'Forbidden: Only administrators can update blog status', {});
+    }
     await ensureRequiredTables();
     const id = Number(req.params.id);
     if (!id) {
@@ -394,6 +412,9 @@ export const updateBlogStatus = async (req, res) => {
 
 export const deleteBlog = async (req, res) => {
   try {
+    if (!req.user || req.user.role !== 'Admin') {
+      return sendError(res, 403, 'Forbidden: Only administrators can delete blog posts', {});
+    }
     await ensureRequiredTables();
     const id = Number(req.params.id);
     if (!id) {

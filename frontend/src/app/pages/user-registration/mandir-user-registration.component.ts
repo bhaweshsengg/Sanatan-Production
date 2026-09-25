@@ -9,6 +9,7 @@ import { TermsConditionsModalComponent } from '../../shared/components/terms-con
 
 interface TempleOption {
   id: number;
+  publicId?: string;
   mandir_name: string;
   full_address?: string;
   city?: { id?: number; name?: string };
@@ -511,7 +512,7 @@ export class MandirUserRegistrationComponent implements OnInit {
           this.submittedEmail = payload.email;
           this.submittedMobile = payload.mobile;
           this.submittedSubscription = payload.subscription;
-          this.submittedMandirId = payload.mandirId;
+          this.submittedMandirId = templeObj?.publicId || (templeObj as any)?.public_id || payload.mandirId;
 
           this.showMessage(
             response?.message || 'Registration submitted successfully! Pending admin approval.',

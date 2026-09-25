@@ -44,24 +44,14 @@ const diskStorage = multer.diskStorage({
   },
 });
 
-const isBlobEnabled = Boolean(env.isBlobConfigured || env.blobToken || process.env.BLOB_READ_WRITE_TOKEN);
-const storage = (isBlobEnabled || env.cloudinary.enabled) ? multer.memoryStorage() : diskStorage;
+import { createUploadMiddleware } from '../utils/fileUpload.js';
 
-const upload = multer({
-  storage,
-  limits: {
-    fileSize: 5 * 1024 * 1024,
-  },
-  fileFilter: (_req, file, cb) => {
-    if (file.mimetype && file.mimetype.startsWith('image/')) {
-      cb(null, true);
-    } else {
-      cb(new Error('Only image files are allowed'));
-    }
-  },
+const upload = createUploadMiddleware({
+  maxFiles: 1,
+  maxFileSize: 5 * 1024 * 1024,
 });
 
-router.post('/upload-image', upload.single('image'), uploadEventImage);
+router.post('/upload-image', authenticate, upload.single('image'), uploadEventImage);
 router.get('/', listApprovedEvents);
 router.get('/admin', authenticate, authorize('Admin'), getAdminEvents);
 router.get('/admin/:id', authenticate, authorize('Admin'), getAdminEvent);

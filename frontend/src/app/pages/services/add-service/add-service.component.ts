@@ -189,7 +189,7 @@ import { TermsConditionsModalComponent } from 'src/app/shared/components/terms-c
 
               <div>
                 <label class="block text-sm font-bold text-gray-900 mb-1.5">
-                  Phone No.
+                  Phone Number
                 </label>
                 <input
                   type="tel"
@@ -637,10 +637,12 @@ export class AddServiceComponent implements OnInit {
     formData.append('ownerEmail', this.email.trim());
     formData.append('address', this.address.trim());
     formData.append('city', this.city);
-    formData.append('mobile', this.mobile.trim());
-    formData.append('phone', this.phoneNo.trim() || this.mobile.trim());
-    formData.append('phoneNo', this.phoneNo.trim() || this.mobile.trim());
-    formData.append('ownerPhone', this.mobile.trim());
+    const trimmedMobile = (this.mobile || '').trim();
+    const trimmedPhone = (this.phoneNo || '').trim();
+    formData.append('mobile', trimmedMobile);
+    formData.append('ownerPhone', trimmedMobile);
+    formData.append('phone', trimmedPhone);
+    formData.append('phoneNo', trimmedPhone);
     formData.append('description', this.description.trim());
     formData.append('fee', this.fee.trim());
     formData.append('services', this.services.trim());

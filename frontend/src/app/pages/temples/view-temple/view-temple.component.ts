@@ -353,6 +353,17 @@ interface ApiTemple {
                   </svg>
                   Register as Devotee
                 </a>
+                <button
+                  *ngIf="isAdmin"
+                  type="button"
+                  (click)="editTemple()"
+                  class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-semibold transition-colors border border-orange-300 bg-orange-50 text-orange-700 hover:bg-orange-100 h-10 px-4 py-2 cursor-pointer"
+                >
+                  <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                  </svg>
+                  Edit Temple (Admin)
+                </button>
               </div>
             </div>
           </div>
@@ -629,8 +640,7 @@ export class ViewTempleComponent implements OnInit {
     private router: Router,
     private authService: AuthService
   ) {
-    const user = this.authService.getUserData();
-    this.isAdmin = !!user && (user.role === 'Admin' || user.role === 'Super Admin');
+    this.isAdmin = this.authService.isAdmin();
   }
 
   editTemple(): void {
@@ -640,27 +650,38 @@ export class ViewTempleComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    const id = this.route.snapshot.paramMap.get('id');
-    if (id) {
-      this.getTemple(+id);
-      // Restore favourite state from localStorage
-      const favs: number[] = JSON.parse(localStorage.getItem('favouriteTemples') || '[]');
-      this.isFavourite = favs.includes(+id);
+    const identifier = this.route.snapshot.paramMap.get('id');
+    if (identifier) {
+      this.getTemple(identifier);
     } else {
       this.isLoadingTemple = false;
     }
   }
 
-  getTemple(id: number): void {
+  getTemple(identifier: string | number): void {
     this.isLoadingTemple = true;
-    this.templeService.getTemplebyId(id).subscribe({
+    this.templeService.getTemplebyId(identifier).subscribe({
       next: (temple) => {
         this.temple = temple;
         this.isLoadingTemple = false;
-        if (temple && (temple as any).events && (temple as any).events.length > 0) {
+        if (!temple) return;
+
+        // Redirect old numeric URLs safely to the new publicId URL
+        const isNumeric = /^\d+$/.test(String(identifier).trim());
+        if (isNumeric && temple.publicId) {
+          this.router.navigate(['/temples/view-temple', temple.publicId], { replaceUrl: true });
+        }
+
+        // Restore favourite state from localStorage
+        const favs: (string | number)[] = JSON.parse(localStorage.getItem('favouriteTemples') || '[]');
+        this.isFavourite = favs.includes(temple.publicId || '') || favs.includes(temple.id || 0);
+
+        if ((temple as any).events && (temple as any).events.length > 0) {
           this.templeEvents = (temple as any).events;
         }
-        this.loadTempleEvents(id);
+        if (temple.id) {
+          this.loadTempleEvents(temple.id);
+        }
       },
       error: (error) => {
         console.error('Error fetching temple:', error);
@@ -683,16 +704,16 @@ export class ViewTempleComponent implements OnInit {
   }
 
   toggleFavourite(): void {
-    const id = this.temple?.id;
-    if (!id) return;
-    const favs: number[] = JSON.parse(localStorage.getItem('favouriteTemples') || '[]');
+    const key = this.temple?.publicId || this.temple?.id;
+    if (!key) return;
+    const favs: (string | number)[] = JSON.parse(localStorage.getItem('favouriteTemples') || '[]');
     if (this.isFavourite) {
-      const updated = favs.filter(f => f !== id);
+      const updated = favs.filter(f => f !== key && f !== this.temple?.id && f !== this.temple?.publicId);
       localStorage.setItem('favouriteTemples', JSON.stringify(updated));
       this.isFavourite = false;
       this.showToast('Removed from favourites');
     } else {
-      favs.push(id);
+      favs.push(key);
       localStorage.setItem('favouriteTemples', JSON.stringify(favs));
       this.isFavourite = true;
       this.showToast('Added to favourites ❤️');

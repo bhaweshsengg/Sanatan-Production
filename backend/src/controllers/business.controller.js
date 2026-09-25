@@ -94,10 +94,11 @@ export const getBusinesses = async (req, res) => {
     }
 
     // Filter by Status:
-    // If 'all' is passed (e.g. from Admin review panel), do not filter by status.
-    // If specific status (e.g. 'Pending', 'Approved', 'Rejected') is passed, filter by it.
-    // If no status is specified (e.g. public directory), default to 'Approved'.
-    if (status) {
+    // Only authenticated Admins can view pending, rejected, or all status records.
+    // Public directory requests always default to 'Approved' to prevent sensitive data exposure.
+    const isAdmin = Boolean(req.user && req.user.role === 'Admin');
+
+    if (isAdmin && status) {
       if (String(status).toLowerCase() !== 'all') {
         where.status = status;
       }
@@ -137,6 +138,8 @@ export const getBusinesses = async (req, res) => {
       data: businesses.map((business) => ({
         ...business,
         id: business.id.toString(),
+        mobile: business.ownerPhone || null,
+        phoneNo: business.phone || null,
         linkedInUrl: business.linkedInUrl || null,
         fee: business.fee || null,
         images: business.imageUrl ? [{ file: business.imageUrl }] : [],
@@ -186,12 +189,29 @@ export const getBusinessById = async (req, res) => {
       });
     }
 
+    const isAdmin = Boolean(req.user && req.user.role === 'Admin');
+    const isOwner = Boolean(
+      req.user?.email &&
+      ((business.email && business.email.toLowerCase() === req.user.email.toLowerCase()) ||
+       (business.ownerEmail && business.ownerEmail.toLowerCase() === req.user.email.toLowerCase()))
+    );
+
+    if (business.status !== 'Approved' && !isAdmin && !isOwner) {
+      return res.status(404).json({
+        success: false,
+        status: 404,
+        message: 'Business not found',
+      });
+    }
+
     res.json({
       success: true,
       status: 200,
       data: {
         ...business,
         id: business.id.toString(),
+        mobile: business.ownerPhone || null,
+        phoneNo: business.phone || null,
         linkedInUrl: business.linkedInUrl || null,
         fee: business.fee || null,
         images: business.imageUrl ? [{ file: business.imageUrl }] : [],
@@ -229,6 +249,13 @@ export const getBusinessById = async (req, res) => {
 
 export const updateBusinessStatus = async (req, res) => {
   try {
+    if (!req.user || req.user.role !== 'Admin') {
+      return res.status(403).json({
+        success: false,
+        status: 403,
+        message: 'Forbidden: Only administrators can update business status',
+      });
+    }
     await ensureRequiredTables();
     const allowedStatuses = new Set(['Pending', 'Approved', 'Rejected', 'Delist']);
     const { status } = req.body;
@@ -256,6 +283,8 @@ export const updateBusinessStatus = async (req, res) => {
       data: {
         ...business,
         id: business.id.toString(),
+        mobile: business.ownerPhone || null,
+        phoneNo: business.phone || null,
         images: business.imageUrl ? [{ file: business.imageUrl }] : [],
       },
     });
@@ -320,8 +349,10 @@ export const createBusiness = async (req, res) => {
       `${category || 'Community'} Service`
     );
 
-    const resolvedPhone = phone || phoneNo || mobile || '';
-    const resolvedOwnerPhone = mobile || phone || phoneNo || '';
+    const resolvedMobile = (mobile || ownerPhone || '').trim();
+    const resolvedPhoneInput = (phone || phoneNo || '').trim();
+    const resolvedOwnerPhone = resolvedMobile || resolvedPhoneInput;
+    const resolvedPhone = resolvedPhoneInput;
     const resolvedEmail = email || ownerEmail || '';
     const resolvedOwnerEmail = ownerEmail || email || '';
 
@@ -388,6 +419,8 @@ export const createBusiness = async (req, res) => {
       data: {
         ...business,
         id: business.id.toString(),
+        mobile: business.ownerPhone || null,
+        phoneNo: business.phone || null,
         linkedInUrl: business.linkedInUrl || null,
         fee: business.fee || null,
         images: business.imageUrl ? [{ file: business.imageUrl }] : [],

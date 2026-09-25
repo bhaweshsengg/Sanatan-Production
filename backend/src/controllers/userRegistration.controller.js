@@ -203,8 +203,11 @@ export const createUserRegistration = async (req, res) => {
   }
 };
 
-export const listPendingRegistrations = async (_req, res) => {
+export const listPendingRegistrations = async (req, res) => {
   try {
+    if (!req.user || req.user.role !== 'Admin') {
+      return sendError(res, 403, 'Forbidden: Only administrators can view pending registrations', {});
+    }
     const model = getDevoteeModel();
     const registrations = await model.findMany({
       where: { status: 'Pending' },
@@ -229,6 +232,9 @@ export const listPendingRegistrations = async (_req, res) => {
 
 const updateRegistrationStatus = async (req, res, targetStatus) => {
   try {
+    if (!req.user || req.user.role !== 'Admin') {
+      return sendError(res, 403, 'Forbidden: Only administrators can update registration status', {});
+    }
     const registrationId = Number(req.params.id);
 
     const result = await prisma.$transaction(async (tx) => {

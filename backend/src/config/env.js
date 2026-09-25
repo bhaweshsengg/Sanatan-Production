@@ -49,6 +49,10 @@ export const env = {
       .map(origin => origin.trim())
       .filter(Boolean),
     'https://sanatan-production-frontend.vercel.app',
+    'https://sanatan.nz',
+    'https://www.sanatan.nz',
+    'https://sanatan.org.nz',
+    'https://www.sanatan.org.nz',
   ],
   maxUploadFiles: Number(process.env.MAX_UPLOAD_FILES || 5),
   blobToken: process.env.BLOB_READ_WRITE_TOKEN || '',

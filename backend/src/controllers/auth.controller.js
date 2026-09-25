@@ -26,11 +26,12 @@ export const register = async (req, res) => {
       return sendError(res, 400, 'You must agree to the Terms and Conditions to register');
     }
 
-    // Default role for self-registered users
+    // Default role for self-registered users: restrict to unprivileged roles to prevent privilege escalation
     let role = 'User';
     if (reqRole) {
       const capitalized = reqRole.charAt(0).toUpperCase() + reqRole.slice(1).toLowerCase();
-      if (['Admin', 'TempleManager', 'BusinessManager', 'User', 'Devotee', 'Priest'].includes(capitalized)) {
+      // Admins, TempleManagers, and BusinessManagers cannot be self-assigned
+      if (['User', 'Devotee', 'Priest'].includes(capitalized)) {
         role = capitalized;
       }
     }
@@ -102,7 +103,12 @@ export const login = async (req, res) => {
       } 
     });
 
-    if (!user || !user.isActive || !(await bcrypt.compare(password, user.passwordHash))) {
+    // Constant-time dummy hash comparison to prevent timing attacks / user enumeration
+    const DUMMY_HASH = '$2a$10$e7Bf6ZcW7.9Yd4rM5K5Qse1g3W7GkG3H0W2Y9R4D6Q8K2Y9R4D6Q8';
+    const hashToCompare = user?.passwordHash || DUMMY_HASH;
+    const isPasswordValid = await bcrypt.compare(password || '', hashToCompare);
+
+    if (!user || !user.isActive || !isPasswordValid) {
       return sendError(res, 400, 'Invalid email or password', {});
     }
 
@@ -194,7 +200,10 @@ export const forgotPassword = async (req, res) => {
       { expiresIn: env.jwtResetExpiresIn }
     );
 
-    const resetUrl = `http://localhost:4200/auth/reset-password?token=${resetToken}`;
+    const frontendBaseUrl = req.headers.origin && env.corsOrigin.includes(req.headers.origin)
+      ? req.headers.origin
+      : (env.corsOrigin[0] || 'http://localhost:4200');
+    const resetUrl = `${frontendBaseUrl}/auth/reset-password?token=${resetToken}`;
     
     await sendEmail({
       to: user.email,
@@ -218,8 +227,8 @@ export const resetPassword = async (req, res) => {
   try {
     const { token, newPassword } = req.body;
 
-    if (!token || !newPassword) {
-      return sendError(res, 400, 'Token and new password are required');
+    if (!token || !newPassword || typeof newPassword !== 'string' || newPassword.trim().length < 6) {
+      return sendError(res, 400, 'Token and a valid new password (at least 6 characters) are required');
     }
 
     const decoded = jwt.verify(token, env.jwtResetSecret);

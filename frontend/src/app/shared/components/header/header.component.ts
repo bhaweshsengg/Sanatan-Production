@@ -171,7 +171,7 @@ import { AuthService } from 'src/app/Auth/auth.service';
               </div>
             </div>
 
-            <!-- Admin Dropdown -->
+            <!-- Admin Dropdown (Visible only to authenticated Admin users) -->
             <div *ngIf="isAdmin" class="relative admin-dropdown-container shrink-0">
               <a
                 (click)="toggleAdminDropdown()"
@@ -436,7 +436,7 @@ import { AuthService } from 'src/app/Auth/auth.service';
               </div>
             </div>
 
-            <!-- Mobile Admin Accordion Dropdown -->
+            <!-- Mobile Admin Accordion Dropdown (Visible only to authenticated Admin users) -->
             <div *ngIf="isAdmin" class="px-1 border-t border-gray-100 pt-2">
               <button
                 type="button"
@@ -566,18 +566,18 @@ export class HeaderComponent implements OnInit, OnDestroy {
   ngOnInit() {
     this.checkScroll();
     this.checkAdminStatus();
-    // Subscribe to authentication state changes
-    this.authSubscription = this.authService.isAuthenticated$.subscribe(
-      (isAuthenticated) => {
-        this.isLoggedIn = isAuthenticated;
-        this.checkAdminStatus();
-      }
-    );
+    // Reactively update admin visibility on login/logout
+    this.authSubscription = this.authService.currentUser$.subscribe(() => {
+      this.checkAdminStatus();
+    });
   }
 
   private checkAdminStatus() {
-    const user = this.authService.getUserData();
-    this.isAdmin = user?.role === 'Admin' || user?.role === 'Super Admin';
+    this.isLoggedIn = this.authService.isLoggedIn();
+    this.isAdmin = this.authService.isAdmin();
+    if (!this.isAdmin) {
+      this.isAdminDropdownOpen = false;
+    }
   }
 
   ngOnDestroy() {
@@ -587,7 +587,9 @@ export class HeaderComponent implements OnInit, OnDestroy {
   }
 
   onLogout() {
+    this.isAdminDropdownOpen = false;
     this.authService.logout();
+    this.checkAdminStatus();
     this.router.navigate(['/auth/login-registeration-forget']);
   }
 

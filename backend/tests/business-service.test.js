@@ -80,3 +80,82 @@ test('Business/Service creation, fee, social media, and appointment request work
     where: { id: created.id },
   });
 });
+
+test('Service registration and details flow preserves both Mobile and Phone Number', async () => {
+  await ensureRequiredTables();
+  const { createBusiness, getBusinessById } = await import('../src/controllers/business.controller.js');
+
+  const uniqueId = Date.now();
+  const testEmail = `contact_flow_${uniqueId}@example.com`;
+  const mobileInput = '+64 21 555 1234';
+  const phoneInput = '+64 9 555 5678';
+
+  let createStatusCode = 200;
+  let createResponseBody = null;
+  const mockRes = {
+    status(code) {
+      createStatusCode = code;
+      return this;
+    },
+    json(body) {
+      createResponseBody = body;
+      return this;
+    },
+  };
+
+  await createBusiness({
+    user: { role: 'Admin', email: testEmail },
+    body: {
+      firstName: 'Vedic',
+      lastName: 'Astrologer',
+      category: 'Astrology & Horoscope',
+      description: 'Expert Vedic horoscope guidance',
+      address: '123 Queen Street',
+      city: 'Auckland',
+      mobile: mobileInput,
+      phoneNo: phoneInput,
+      phone: phoneInput,
+      email: testEmail,
+      termsAccepted: 'true',
+      status: 'Approved',
+    },
+  }, mockRes);
+
+  assert.equal(createStatusCode, 201, 'Should create service successfully');
+  assert.ok(createResponseBody?.data?.id, 'Should return created service ID');
+  assert.equal(createResponseBody.data.mobile, mobileInput, 'Created response must return mobile');
+  assert.equal(createResponseBody.data.phone, phoneInput, 'Created response must return phone');
+  assert.equal(createResponseBody.data.phoneNo, phoneInput, 'Created response must return phoneNo');
+
+  const createdId = createResponseBody.data.id;
+
+  // Now verify getBusinessById returns both mobile and phone
+  let getStatusCode = 200;
+  let getResponseBody = null;
+  const mockGetRes = {
+    status(code) {
+      getStatusCode = code;
+      return this;
+    },
+    json(body) {
+      getResponseBody = body;
+      return this;
+    },
+  };
+
+  await getBusinessById({
+    params: { id: createdId },
+    user: { role: 'User', email: 'public@example.com' },
+  }, mockGetRes);
+
+  assert.equal(getStatusCode, 200, 'Should fetch service details');
+  assert.equal(getResponseBody.data.mobile, mobileInput, 'Details must return mobile');
+  assert.equal(getResponseBody.data.phone, phoneInput, 'Details must return phone');
+  assert.equal(getResponseBody.data.phoneNo, phoneInput, 'Details must return phoneNo');
+  assert.equal(getResponseBody.data.ownerPhone, mobileInput, 'Details must return ownerPhone as mobile');
+
+  // Clean up
+  await prisma.business.delete({
+    where: { id: BigInt(createdId) },
+  });
+});

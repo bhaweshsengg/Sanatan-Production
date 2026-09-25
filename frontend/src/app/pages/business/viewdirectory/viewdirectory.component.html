@@ -107,8 +107,8 @@
             Book Appointment
           </button>
           <a
-            *ngIf="businessData.phone"
-            [href]="'tel:' + businessData.phone"
+            *ngIf="businessData.mobile || businessData.phone || businessData.ownerPhone"
+            [href]="'tel:' + (businessData.mobile || businessData.phone || businessData.ownerPhone)"
             class="inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg text-gray-700 bg-gray-100 hover:bg-gray-200 transition-colors"
           >
             <svg class="w-4 h-4 mr-2 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -143,27 +143,32 @@
         </h2>
         <div class="space-y-3.5 text-sm text-gray-700">
           <div *ngIf="businessData.ownerName" class="flex items-start">
-            <span class="w-24 text-gray-500 font-medium">Provider:</span>
+            <span class="w-32 text-gray-500 font-medium shrink-0">Provider:</span>
             <span class="font-semibold text-gray-800">{{ businessData.ownerName }}</span>
           </div>
 
           <div *ngIf="businessData.address || businessData.city" class="flex items-start">
-            <span class="w-24 text-gray-500 font-medium">Location:</span>
+            <span class="w-32 text-gray-500 font-medium shrink-0">Location:</span>
             <span class="text-gray-800">{{ businessData.address }}<span *ngIf="businessData.address && businessData.city">, </span>{{ businessData.city }}</span>
           </div>
 
-          <div *ngIf="businessData.phone" class="flex items-start">
-            <span class="w-24 text-gray-500 font-medium">Phone:</span>
-            <a [href]="'tel:' + businessData.phone" class="text-amber-700 font-medium hover:underline">{{ businessData.phone }}</a>
+          <div *ngIf="businessData.mobile || businessData.ownerPhone" class="flex items-start">
+            <span class="w-32 text-gray-500 font-medium shrink-0">Mobile:</span>
+            <a [href]="'tel:' + (businessData.mobile || businessData.ownerPhone)" class="text-amber-700 font-medium hover:underline">{{ businessData.mobile || businessData.ownerPhone }}</a>
+          </div>
+
+          <div *ngIf="businessData.phone || businessData.phoneNo" class="flex items-start">
+            <span class="w-32 text-gray-500 font-medium shrink-0">Phone Number:</span>
+            <a [href]="'tel:' + (businessData.phone || businessData.phoneNo)" class="text-amber-700 font-medium hover:underline">{{ businessData.phone || businessData.phoneNo }}</a>
           </div>
 
           <div *ngIf="businessData.email" class="flex items-start">
-            <span class="w-24 text-gray-500 font-medium">Email:</span>
+            <span class="w-32 text-gray-500 font-medium shrink-0">Email:</span>
             <a [href]="'mailto:' + businessData.email" class="text-amber-700 hover:underline break-all">{{ businessData.email }}</a>
           </div>
 
           <div *ngIf="businessData.website" class="flex items-start">
-            <span class="w-24 text-gray-500 font-medium">Website:</span>
+            <span class="w-32 text-gray-500 font-medium shrink-0">Website:</span>
             <a [href]="businessData.website" target="_blank" rel="noopener noreferrer" class="text-amber-700 hover:underline break-all">{{ businessData.website }}</a>
           </div>
         </div>

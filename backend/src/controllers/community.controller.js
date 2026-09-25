@@ -390,13 +390,15 @@ export const updateGroup = async (req, res) => {
     const existingGroup = groups[0];
 
     // Authorization: only creator or Admin can edit
-    if (req.user) {
-      const isCreator = existingGroup.creator_id === req.user.id;
-      const isAdmin = req.user.role === 'Admin';
-      const isEmailMatch = req.user.email && existingGroup.contact_email?.toLowerCase() === req.user.email.toLowerCase();
-      if (!isCreator && !isAdmin && !isEmailMatch) {
-        return sendError(res, 403, 'Forbidden: You do not have permission to edit this group');
-      }
+    if (!req.user) {
+      return sendError(res, 401, 'Authentication required');
+    }
+
+    const isCreator = existingGroup.creator_id === req.user.id;
+    const isAdmin = req.user.role === 'Admin';
+    const isEmailMatch = Boolean(req.user.email && existingGroup.contact_email?.toLowerCase() === req.user.email.toLowerCase());
+    if (!isCreator && !isAdmin && !isEmailMatch) {
+      return sendError(res, 403, 'Forbidden: You do not have permission to edit this group');
     }
 
     const updates = validation.data;
@@ -445,12 +447,15 @@ export const deleteGroup = async (req, res) => {
 
     const existingGroup = groups[0];
 
-    if (req.user) {
-      const isCreator = existingGroup.creator_id === req.user.id;
-      const isAdmin = req.user.role === 'Admin';
-      if (!isCreator && !isAdmin) {
-        return sendError(res, 403, 'Forbidden: You do not have permission to delete this group');
-      }
+    if (!req.user) {
+      return sendError(res, 401, 'Authentication required');
+    }
+
+    const isCreator = existingGroup.creator_id === req.user.id;
+    const isAdmin = req.user.role === 'Admin';
+    const isEmailMatch = Boolean(req.user.email && existingGroup.contact_email?.toLowerCase() === req.user.email.toLowerCase());
+    if (!isCreator && !isAdmin && !isEmailMatch) {
+      return sendError(res, 403, 'Forbidden: You do not have permission to delete this group');
     }
 
     // Mark as archived or remove members and group
@@ -479,12 +484,16 @@ export const joinGroup = async (req, res) => {
       return sendError(res, 404, 'Active group not found');
     }
 
-    // Default member info from logged in user if available
+    if (!req.user) {
+      return sendError(res, 401, 'Authentication required');
+    }
+
+    // Bind member info to the authenticated user to prevent impersonation
     const bodyData = {
-      name: req.body.name || req.user?.username || '',
-      email: req.body.email || req.user?.email || '',
+      name: req.body.name || req.user.username || 'Member',
+      email: req.user.email || req.body.email || '',
       phone: req.body.phone || '',
-      role: req.body.role || 'Member',
+      role: req.user.role === 'Admin' ? (req.body.role || 'Member') : 'Member',
     };
 
     const validation = joinGroupSchema.safeParse(bodyData);
@@ -547,15 +556,31 @@ export const leaveGroup = async (req, res) => {
     const { id } = req.params;
     const groupId = Number(id);
 
-    const email = (req.body.email || req.user?.email || req.query.email || '').trim().toLowerCase();
-    if (!email) {
+    if (!req.user) {
+      return sendError(res, 401, 'Authentication required');
+    }
+
+    const groups = await prisma.$queryRawUnsafe('SELECT id, creator_id, contact_email FROM community_group WHERE id = ?', groupId);
+    const existingGroup = groups && groups.length > 0 ? groups[0] : null;
+
+    const targetEmail = (req.body.email || req.query.email || req.user.email || '').trim().toLowerCase();
+    if (!targetEmail) {
       return sendError(res, 400, 'Member email is required to leave group');
+    }
+
+    // IDOR protection: Only self, Admin, or Group Creator can remove member
+    const isSelf = Boolean(req.user.email && req.user.email.toLowerCase() === targetEmail);
+    const isAdmin = req.user.role === 'Admin';
+    const isCreator = Boolean(existingGroup && existingGroup.creator_id === req.user.id);
+
+    if (!isSelf && !isAdmin && !isCreator) {
+      return sendError(res, 403, 'Forbidden: You do not have permission to remove this member from the group');
     }
 
     const existingMember = await prisma.$queryRawUnsafe(
       'SELECT id FROM community_group_member WHERE group_id = ? AND LOWER(email) = ?',
       groupId,
-      email
+      targetEmail
     );
 
     if (existingMember.length === 0) {
@@ -565,7 +590,7 @@ export const leaveGroup = async (req, res) => {
     await prisma.$executeRawUnsafe(
       'DELETE FROM community_group_member WHERE group_id = ? AND LOWER(email) = ?',
       groupId,
-      email
+      targetEmail
     );
 
     const memberCountRes = await prisma.$queryRawUnsafe(

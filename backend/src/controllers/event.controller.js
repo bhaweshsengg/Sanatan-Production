@@ -80,6 +80,12 @@ const toEventData = (body) => ({
   onlineLink: body.onlineLink || null,
 });
 
+const publicEventInclude = {
+  organizer: { select: { id: true, username: true } },
+  reviewer: { select: { id: true, username: true } },
+  temple: { select: { id: true, mandir_name: true, full_address: true } },
+};
+
 const eventInclude = {
   organizer: { select: { id: true, username: true, email: true } },
   reviewer: { select: { id: true, username: true } },
@@ -135,7 +141,7 @@ export const listApprovedEvents = async (req, res) => {
     const [events, total] = await Promise.all([
       prisma.event.findMany({ 
         where, 
-        include: eventInclude, 
+        include: publicEventInclude, 
         orderBy: { eventDate: 'asc' },
         ...(skip !== undefined ? { skip } : {}),
         ...(limitNum !== undefined ? { take: limitNum } : {}),
@@ -216,6 +222,9 @@ export const createEvent = async (req, res) => {
 
 export const updateEvent = async (req, res) => {
   try {
+    if (!req.user || req.user.role !== 'Admin') {
+      return sendError(res, 403, 'Forbidden: Only administrators can update events', {});
+    }
     const event = await prisma.event.update({ where: { id: Number(req.params.id) }, data: toEventData(req.body), include: eventInclude });
     return sendSuccess(res, 200, { data: event, message: 'Event updated successfully' });
   } catch (error) {
@@ -225,6 +234,9 @@ export const updateEvent = async (req, res) => {
 
 export const updateEventStatus = async (req, res) => {
   try {
+    if (!req.user || req.user.role !== 'Admin') {
+      return sendError(res, 403, 'Forbidden: Only administrators can update event status', {});
+    }
     const event = await prisma.event.update({
       where: { id: Number(req.params.id) },
       data: { status: req.body.status, reviewedById: req.user.id },
@@ -260,6 +272,9 @@ export const uploadEventImage = async (req, res) => {
 
 export const deleteEvent = async (req, res) => {
   try {
+    if (!req.user || req.user.role !== 'Admin') {
+      return sendError(res, 403, 'Forbidden: Only administrators can delete events', {});
+    }
     const event = await prisma.event.findUnique({
       where: { id: Number(req.params.id) },
     });
