@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { prisma, ensureRequiredTables } from '../src/config/db.js';
 import { register, login } from '../src/controllers/auth.controller.js';
 import { updateGroup, deleteGroup, leaveGroup } from '../src/controllers/community.controller.js';
-import { updateTemple, getTemple, deleteTemple, updateTempleStatus } from '../src/controllers/temple.controller.js';
+import { listTemples, updateTemple, getTemple, deleteTemple, updateTempleStatus } from '../src/controllers/temple.controller.js';
 import { getBusinesses, getBusinessById, updateBusinessStatus } from '../src/controllers/business.controller.js';
 import { listApprovedEvents, updateEvent, deleteEvent, updateEventStatus } from '../src/controllers/event.controller.js';
 import { listPublicBlogs, getPublicBlogById, createBlog, updateBlog, deleteBlog } from '../src/controllers/blog.controller.js';
@@ -587,5 +587,20 @@ test('Security Audit: Defense-in-depth controller authorization on admin operati
   const articleDeleteRes = createMockResponse();
   await deleteReligiousArticle({ user: unauthorizedUser, params: { id: '1' } }, articleDeleteRes);
   assert.equal(articleDeleteRes.statusCode, 403, 'deleteReligiousArticle must reject non-admin');
+});
+
+test('Security Audit: Temple listing resilience and self-healing public_id column support', async () => {
+  const req = { query: {} };
+  const res = createMockResponse();
+
+  await listTemples(req, res);
+
+  assert.equal(res.statusCode, 200, 'listTemples must always return 200 even with missing columns');
+  assert.ok(Array.isArray(res.body?.data), 'Response data must be an array of temples');
+  assert.ok(res.body.data.length > 0, 'Should return temples');
+  for (const t of res.body.data) {
+    assert.ok(t.publicId, 'Each temple must contain a valid publicId (or fallback to id)');
+    assert.ok(t.id, 'Each temple must contain a valid numeric id');
+  }
 });
 

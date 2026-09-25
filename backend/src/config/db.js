@@ -49,6 +49,56 @@ export const repairTempleStatuses = () => {
   return templeStatusRepair;
 };
 
+let templePublicIdPromise;
+
+export const ensureTemplePublicIdColumn = async () => {
+  if (!templePublicIdPromise) {
+    templePublicIdPromise = (async () => {
+      try {
+        await prisma.$executeRawUnsafe(
+          'ALTER TABLE `temple_temple` ADD COLUMN `public_id` VARCHAR(191) NULL;'
+        );
+      } catch {
+        // Safe to ignore if column already exists (MySQL Error 1060: Duplicate column name)
+      }
+
+      try {
+        const unmigrated = await prisma.$queryRawUnsafe(
+          "SELECT id FROM `temple_temple` WHERE `public_id` IS NULL OR `public_id` = ''"
+        );
+        if (Array.isArray(unmigrated) && unmigrated.length > 0) {
+          for (const item of unmigrated) {
+            const cuid = generateCuid();
+            await prisma.$executeRawUnsafe(
+              'UPDATE `temple_temple` SET `public_id` = ? WHERE `id` = ?',
+              cuid,
+              item.id
+            );
+          }
+        }
+      } catch {
+        // Safe to ignore if table does not exist or query fails
+      }
+
+      try {
+        await prisma.$executeRawUnsafe(
+          'ALTER TABLE `temple_temple` ADD UNIQUE INDEX `temple_temple_public_id_key` (`public_id`);'
+        );
+      } catch {
+        // Safe to ignore if index already exists (MySQL Error 1061: Duplicate key name)
+      }
+    })().catch((error) => {
+      templePublicIdPromise = undefined;
+      throw error;
+    });
+  }
+
+  return templePublicIdPromise;
+};
+
+// Immediately invoke in background so it self-heals as soon as db module loads
+ensureTemplePublicIdColumn().catch(() => {});
+
 let requiredTablesPromise;
 
 export const ensureRequiredTables = async () => {
@@ -643,39 +693,7 @@ export const ensureRequiredTables = async () => {
       }
 
       // Temple publicId self-healing migration
-      try {
-        await prisma.$executeRawUnsafe(`
-          ALTER TABLE \`temple_temple\` ADD COLUMN \`public_id\` VARCHAR(191) NULL;
-        `);
-      } catch {
-        // Safe to ignore if column already exists
-      }
-
-      try {
-        const unmigrated = await prisma.$queryRawUnsafe(`
-          SELECT id FROM \`temple_temple\` WHERE \`public_id\` IS NULL OR \`public_id\` = ''
-        `);
-        if (Array.isArray(unmigrated) && unmigrated.length > 0) {
-          for (const item of unmigrated) {
-            const cuid = generateCuid();
-            await prisma.$executeRawUnsafe(
-              'UPDATE `temple_temple` SET `public_id` = ? WHERE `id` = ?',
-              cuid,
-              item.id
-            );
-          }
-        }
-      } catch {
-        // Safe to ignore if table does not exist yet
-      }
-
-      try {
-        await prisma.$executeRawUnsafe(`
-          ALTER TABLE \`temple_temple\` ADD UNIQUE INDEX \`temple_temple_public_id_key\` (\`public_id\`);
-        `);
-      } catch {
-        // Safe to ignore if index already exists
-      }
+      await ensureTemplePublicIdColumn();
 
       // Event terms migrations
       try {

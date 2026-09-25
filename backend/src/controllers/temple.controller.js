@@ -2,7 +2,7 @@ import { logger } from '../utils/logger.js';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { put, del } from '@vercel/blob';
-import { prisma, repairTempleStatuses, ensureRequiredTables } from '../config/db.js';
+import { prisma, repairTempleStatuses, ensureRequiredTables, ensureTemplePublicIdColumn } from '../config/db.js';
 import { env } from '../config/env.js';
 import { sendSuccess, sendError } from '../utils/response.js';
 // import { v2 as cloudinary } from 'cloudinary';
@@ -107,7 +107,7 @@ export const normalizeTempleRecord = (temple, options = {}) => {
   return {
     ...base,
     id: base.id,
-    publicId: base.publicId ?? base.public_id,
+    publicId: base.publicId ?? base.public_id ?? String(base.id),
     cityId: base.cityId ?? base.city_id,
     city_id: base.cityId ?? base.city_id,
     city: base.city,
@@ -196,9 +196,121 @@ const resolveLocalImagePath = (imagePath) => {
   return candidate.startsWith(uploadRoot) ? candidate : null;
 };
 
+const listTemplesRawFallback = async (req, res, { where = {}, sortDirection = 'desc', skip, limitNum, pageNum = 1 }) => {
+  try {
+    const rawTemples = await prisma.$queryRawUnsafe('SELECT * FROM `temple_temple`');
+    if (!Array.isArray(rawTemples)) {
+      return sendError(res, 500, 'Could not fetch temples', {});
+    }
+
+    const [cities, deities, images] = await Promise.all([
+      prisma.$queryRawUnsafe('SELECT id, name FROM `temple_city`').catch(() => []),
+      prisma.$queryRawUnsafe('SELECT id, name FROM `temple_maindeity`').catch(() => []),
+      prisma.$queryRawUnsafe('SELECT id, templeId, file FROM `temple_image`').catch(() => []),
+    ]);
+
+    const cityMap = new Map((Array.isArray(cities) ? cities : []).map((c) => [c.id, c]));
+    const deityMap = new Map((Array.isArray(deities) ? deities : []).map((d) => [d.id, d]));
+    const imageMap = new Map();
+    if (Array.isArray(images)) {
+      for (const img of images) {
+        const tid = img.templeId;
+        if (!imageMap.has(tid)) imageMap.set(tid, []);
+        imageMap.get(tid).push(img);
+      }
+    }
+
+    let filtered = rawTemples.map((t) => ({
+      ...t,
+      publicId: t.public_id || String(t.id),
+      city: cityMap.get(t.city_id) || null,
+      mainDeity: deityMap.get(t.main_deity_id) || null,
+      images: imageMap.get(t.id) || [],
+      events: [],
+    }));
+
+    if (where.cityId) filtered = filtered.filter((t) => t.city_id === where.cityId);
+    if (where.mainDeityId) filtered = filtered.filter((t) => t.main_deity_id === where.mainDeityId);
+    if (where.id) filtered = filtered.filter((t) => t.id === where.id);
+    if (where.status) filtered = filtered.filter((t) => t.status === where.status);
+    if (req.query.search && typeof req.query.search === 'string' && req.query.search.trim()) {
+      const q = req.query.search.trim().toLowerCase();
+      filtered = filtered.filter((t) =>
+        (t.mandir_name && t.mandir_name.toLowerCase().includes(q)) ||
+        (t.full_address && t.full_address.toLowerCase().includes(q)) ||
+        (t.description && t.description.toLowerCase().includes(q))
+      );
+    }
+
+    filtered.sort((a, b) => (sortDirection === 'asc' ? a.id - b.id : b.id - a.id));
+
+    const total = filtered.length;
+    const paginated = (skip !== undefined && limitNum !== undefined)
+      ? filtered.slice(skip, skip + limitNum)
+      : filtered;
+
+    return sendSuccess(res, 200, {
+      data: paginated.map(normalizeTempleRecord),
+      pagination: {
+        total,
+        page: pageNum,
+        limit: limitNum || total,
+        totalPages: limitNum ? Math.ceil(total / limitNum) : 1,
+      },
+    });
+  } catch (err) {
+    logger.error('listTemplesRawFallback error', { message: err.message });
+    return sendError(res, 500, 'Could not fetch temples', { details: err.message });
+  }
+};
+
+const getTempleRawFallback = async (req, res, param, isNumeric) => {
+  try {
+    let rows;
+    if (isNumeric) {
+      rows = await prisma.$queryRawUnsafe('SELECT * FROM `temple_temple` WHERE `id` = ? LIMIT 1', Number(param));
+    } else {
+      try {
+        rows = await prisma.$queryRawUnsafe('SELECT * FROM `temple_temple` WHERE `public_id` = ? LIMIT 1', param);
+      } catch {
+        rows = [];
+      }
+      if (!Array.isArray(rows) || rows.length === 0) {
+        rows = await prisma.$queryRawUnsafe('SELECT * FROM `temple_temple` WHERE `mandir_name` = ? LIMIT 1', param);
+      }
+    }
+
+    if (!Array.isArray(rows) || rows.length === 0) {
+      return sendError(res, 404, 'Temple not found', {});
+    }
+
+    const t = rows[0];
+    const [cities, deities, images] = await Promise.all([
+      prisma.$queryRawUnsafe('SELECT id, name FROM `temple_city` WHERE id = ? LIMIT 1', t.city_id).catch(() => []),
+      prisma.$queryRawUnsafe('SELECT id, name FROM `temple_maindeity` WHERE id = ? LIMIT 1', t.main_deity_id).catch(() => []),
+      prisma.$queryRawUnsafe('SELECT id, templeId, file FROM `temple_image` WHERE templeId = ?', t.id).catch(() => []),
+    ]);
+
+    const templeObj = {
+      ...t,
+      publicId: t.public_id || String(t.id),
+      city: Array.isArray(cities) && cities[0] ? cities[0] : null,
+      mainDeity: Array.isArray(deities) && deities[0] ? deities[0] : null,
+      images: Array.isArray(images) ? images : [],
+      events: [],
+    };
+
+    return sendSuccess(res, 200, { data: normalizeTempleRecord(templeObj) });
+  } catch (err) {
+    logger.error('getTempleRawFallback error', { message: err.message });
+    return sendError(res, 500, 'Could not fetch temple', { details: err.message });
+  }
+};
+
 export const listTemples = async (req, res) => {
   try {
     await repairTempleStatuses();
+    await ensureTemplePublicIdColumn().catch(() => {});
     const { city, deity, temple, status, search, page, limit, sort, order } = req.query;
 
     const where = {};
@@ -221,20 +333,61 @@ export const listTemples = async (req, res) => {
     const limitNum = isPaginated ? Math.max(1, Number(limit || 20)) : undefined;
     const skip = isPaginated ? (pageNum - 1) * limitNum : undefined;
 
-    const [temples, total] = await Promise.all([
-      prisma.temple.findMany({
-        where,
-        include: {
-          city: true,
-          mainDeity: true,
-          images: true,
-        },
-        orderBy: { id: sortDirection },
-        ...(skip !== undefined ? { skip } : {}),
-        ...(limitNum !== undefined ? { take: limitNum } : {}),
-      }),
-      prisma.temple.count({ where })
-    ]);
+    let temples;
+    let total;
+
+    try {
+      [temples, total] = await Promise.all([
+        prisma.temple.findMany({
+          where,
+          include: {
+            city: true,
+            mainDeity: true,
+            images: true,
+          },
+          orderBy: { id: sortDirection },
+          ...(skip !== undefined ? { skip } : {}),
+          ...(limitNum !== undefined ? { take: limitNum } : {}),
+        }),
+        prisma.temple.count({ where }),
+      ]);
+    } catch (queryError) {
+      if (queryError.message && (queryError.message.includes('public_id') || queryError.message.includes('column'))) {
+        logger.warn('listTemples: public_id column error detected, attempting immediate schema repair...', {
+          error: queryError.message,
+        });
+        await ensureTemplePublicIdColumn().catch(() => {});
+        try {
+          [temples, total] = await Promise.all([
+            prisma.temple.findMany({
+              where,
+              include: {
+                city: true,
+                mainDeity: true,
+                images: true,
+              },
+              orderBy: { id: sortDirection },
+              ...(skip !== undefined ? { skip } : {}),
+              ...(limitNum !== undefined ? { take: limitNum } : {}),
+            }),
+            prisma.temple.count({ where }),
+          ]);
+        } catch (retryError) {
+          logger.warn('listTemples: retrying via raw SQL fallback without public_id', {
+            error: retryError.message,
+          });
+          return await listTemplesRawFallback(req, res, {
+            where,
+            sortDirection,
+            skip,
+            limitNum,
+            pageNum,
+          });
+        }
+      } else {
+        throw queryError;
+      }
+    }
 
     return sendSuccess(res, 200, { 
       data: temples.map(normalizeTempleRecord),
@@ -308,6 +461,7 @@ export const createTemple = async (req, res) => {
 export const getTemple = async (req, res) => {
   try {
     await repairTempleStatuses();
+    await ensureTemplePublicIdColumn().catch(() => {});
     await ensureRequiredTables().catch(() => {});
 
     const param = req.params.id ? String(req.params.id).trim() : '';
@@ -333,18 +487,45 @@ export const getTemple = async (req, res) => {
         },
       });
     } catch (queryError) {
-      logger.warn('getTemple: events relation query failed, falling back to basic include', {
-        param,
-        error: queryError.message,
-      });
-      temple = await prisma.temple.findUnique({
-        where: whereClause,
-        include: {
-          city: true,
-          mainDeity: true,
-          images: true,
-        },
-      });
+      if (queryError.message && (queryError.message.includes('public_id') || queryError.message.includes('column'))) {
+        logger.warn('getTemple: public_id column error detected, attempting immediate schema repair...', {
+          error: queryError.message,
+        });
+        await ensureTemplePublicIdColumn().catch(() => {});
+        try {
+          temple = await prisma.temple.findUnique({
+            where: whereClause,
+            include: {
+              city: true,
+              mainDeity: true,
+              images: true,
+            },
+          });
+        } catch (retryError) {
+          logger.warn('getTemple: retrying via raw SQL fallback', { error: retryError.message });
+          return await getTempleRawFallback(req, res, param, isNumeric);
+        }
+      } else {
+        logger.warn('getTemple: events relation query failed, falling back to basic include', {
+          param,
+          error: queryError.message,
+        });
+        try {
+          temple = await prisma.temple.findUnique({
+            where: whereClause,
+            include: {
+              city: true,
+              mainDeity: true,
+              images: true,
+            },
+          });
+        } catch (fallbackError) {
+          if (fallbackError.message && (fallbackError.message.includes('public_id') || fallbackError.message.includes('column'))) {
+            return await getTempleRawFallback(req, res, param, isNumeric);
+          }
+          throw fallbackError;
+        }
+      }
     }
 
     if (!temple) return sendError(res, 404, 'Temple not found', {});
