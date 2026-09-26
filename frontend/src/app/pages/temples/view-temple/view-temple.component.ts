@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
+import { Title } from '@angular/platform-browser';
 import { CommonService, Temple } from 'src/app/shared/common.service';
 import { AuthService } from 'src/app/Auth/auth.service';
 import { environment } from '../../../../environments/environment';
@@ -41,17 +42,21 @@ interface ApiTemple {
     <div class="min-h-screen bg-gray-50">
       <header class="border-b bg-white">
         <div class="container mx-auto px-4 py-4">
-          <a class="flex items-center space-x-2" href="/temples">
+          <a class="flex items-center space-x-3" routerLink="/temples">
             <div
-              class="w-10 h-10 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center"
+              class="w-10 h-10 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center shrink-0"
             >
               <span class="text-white font-bold text-lg">🕉</span>
             </div>
             <div>
-              <h1 class="text-xl font-bold text-gray-900">
-                Sanatan New Zealand
+              <h1 class="text-xl font-bold text-gray-900 leading-tight">
+                {{ temple?.mandir_name || 'Sanatan New Zealand' }}
               </h1>
-              <p class="text-sm text-black-700">Mandir Details</p>
+              <p class="text-sm text-black-700 flex items-center flex-wrap gap-1">
+                <span class="text-orange-600 hover:underline">Sanatan New Zealand</span>
+                <span class="text-gray-400">/</span>
+                <span>{{ temple?.mandir_name || 'Mandir Details' }}</span>
+              </p>
             </div>
           </a>
         </div>
@@ -638,7 +643,8 @@ export class ViewTempleComponent implements OnInit {
     private templeService: CommonService,
     private route: ActivatedRoute,
     private router: Router,
-    private authService: AuthService
+    private authService: AuthService,
+    private titleService: Title
   ) {
     this.isAdmin = this.authService.isAdmin();
   }
@@ -665,6 +671,10 @@ export class ViewTempleComponent implements OnInit {
         this.temple = temple;
         this.isLoadingTemple = false;
         if (!temple) return;
+
+        if (temple.mandir_name) {
+          this.titleService.setTitle(`${temple.mandir_name} | Sanatan New Zealand`);
+        }
 
         // Redirect old numeric URLs safely to the new publicId URL
         const isNumeric = /^\d+$/.test(String(identifier).trim());
