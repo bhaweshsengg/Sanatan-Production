@@ -73,11 +73,29 @@ interface CommunityEvent {
             📅 Community Gatherings
           </span>
           <h2 class="text-4xl font-bold text-gray-900 mb-4">Upcoming Events</h2>
-          <p class="text-xl text-black-700 max-w-3xl mx-auto">
+          <p class="text-xl text-black-700 max-w-3xl mx-auto mb-8">
             Join our vibrant community in celebrating festivals, attending
             satsangs, and participating in spiritual activities across New
             Zealand.
           </p>
+
+          <!-- Create Event Hero Action -->
+          <div class="flex flex-wrap items-center justify-center gap-3">
+            <a
+              routerLink="/events/add-event"
+              class="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-gradient-to-r from-orange-600 to-red-600 text-white font-bold text-sm sm:text-base shadow-lg hover:shadow-xl hover:from-orange-700 hover:to-red-700 transform hover:scale-105 transition-all duration-200 cursor-pointer"
+            >
+              <span class="text-lg">📅</span>
+              <span>Create Event</span>
+            </a>
+            <a
+              routerLink="/festival/create"
+              class="inline-flex items-center gap-2 px-5 py-3 rounded-full bg-orange-50 text-orange-700 font-semibold text-sm border border-orange-200 shadow-sm hover:bg-orange-100 transition-all cursor-pointer"
+            >
+              <span class="text-lg">🪔</span>
+              <span>Create Festival</span>
+            </a>
+          </div>
         </div>
 
         <section class="mb-12" aria-labelledby="upcoming-events-heading">

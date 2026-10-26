@@ -1,9 +1,10 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { trigger, state, style, transition, animate, stagger, query } from '@angular/animations';
 import { PanchangComponent } from '../panchang/panchang.component';
 import { DateandtimeComponent } from '../dateandtime/dateandtime.component';
+import { AuthService } from '../../Auth/auth.service';
 
 @Component({
   selector: 'app-home',
@@ -51,17 +52,89 @@ import { DateandtimeComponent } from '../dateandtime/dateandtime.component';
           <span class="text-gray-900">Sanatan New Zealand</span>
         </h1>
         
-        <p [@fadeInUp] class="text-xl text-black-700 max-w-4xl mx-auto mb-12 leading-relaxed">
+        <p [@fadeInUp] class="text-xl text-black-700 max-w-4xl mx-auto mb-10 leading-relaxed">
           Your spiritual home in Aotearoa. Connect with temples, join festivals, explore Hindu traditions,
           and build meaningful relationships with fellow devotees across New Zealand.
         </p>
-        
-        <div [@fadeInUp] class="flex flex-col sm:flex-row gap-6 justify-center mb-20">
-          <button routerLink="/temples" class="group bg-gradient-to-r from-orange-600 to-red-600 text-white px-8 py-4 rounded-xl text-lg font-medium hover:from-orange-700 hover:to-red-700 transform hover:scale-105 transition-all duration-300 shadow-xl hover:shadow-2xl flex items-center justify-center">
+
+        <!-- Quick Action Buttons for Community Contributions -->
+        <div [@fadeInUp] class="max-w-4xl mx-auto mb-10">
+          <div class="flex items-center justify-center gap-2 mb-4">
+            <span class="h-px w-8 bg-orange-300"></span>
+            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gradient-to-r from-orange-100 to-amber-100 text-orange-900 text-xs font-bold uppercase tracking-wider shadow-xs">
+              <span>✨</span>
+              <span>Quick Community Actions</span>
+              <span *ngIf="isAdmin" class="ml-1 text-[10px] bg-orange-600 text-white px-1.5 py-0.2 rounded font-bold">Admin</span>
+            </span>
+            <span class="h-px w-8 bg-orange-300"></span>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-left">
+            <!-- Add Temple Button -->
+            <a
+              routerLink="/temples/add-temple"
+              class="group relative flex items-center gap-4 p-4 rounded-2xl bg-white/95 backdrop-blur-md border border-orange-200/90 shadow-md hover:shadow-xl hover:border-orange-500 hover:-translate-y-1 transition-all duration-300 overflow-hidden cursor-pointer"
+            >
+              <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 text-white flex items-center justify-center text-2xl shadow-md shrink-0 group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300">
+                🛕
+              </div>
+              <div class="min-w-0 flex-1">
+                <div class="flex items-center justify-between">
+                  <span class="font-bold text-gray-900 group-hover:text-orange-600 text-base transition-colors">
+                    Add Temple
+                  </span>
+                  <span class="text-orange-500 font-bold text-sm transform group-hover:translate-x-1 transition-transform">→</span>
+                </div>
+                <p class="text-xs text-gray-500 mt-0.5 truncate">List your sacred mandir</p>
+              </div>
+            </a>
+
+            <!-- Add Event Button -->
+            <a
+              routerLink="/events/add-event"
+              class="group relative flex items-center gap-4 p-4 rounded-2xl bg-white/95 backdrop-blur-md border border-orange-200/90 shadow-md hover:shadow-xl hover:border-orange-500 hover:-translate-y-1 transition-all duration-300 overflow-hidden cursor-pointer"
+            >
+              <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-orange-500 to-red-600 text-white flex items-center justify-center text-2xl shadow-md shrink-0 group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300">
+                📅
+              </div>
+              <div class="min-w-0 flex-1">
+                <div class="flex items-center justify-between">
+                  <span class="font-bold text-gray-900 group-hover:text-orange-600 text-base transition-colors">
+                    Add Event
+                  </span>
+                  <span class="text-orange-500 font-bold text-sm transform group-hover:translate-x-1 transition-transform">→</span>
+                </div>
+                <p class="text-xs text-gray-500 mt-0.5 truncate">Post pooja or festival</p>
+              </div>
+            </a>
+
+            <!-- Add Service Button -->
+            <a
+              routerLink="/services/add"
+              class="group relative flex items-center gap-4 p-4 rounded-2xl bg-white/95 backdrop-blur-md border border-orange-200/90 shadow-md hover:shadow-xl hover:border-orange-500 hover:-translate-y-1 transition-all duration-300 overflow-hidden cursor-pointer"
+            >
+              <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-red-500 to-pink-600 text-white flex items-center justify-center text-2xl shadow-md shrink-0 group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300">
+                🏛️
+              </div>
+              <div class="min-w-0 flex-1">
+                <div class="flex items-center justify-between">
+                  <span class="font-bold text-gray-900 group-hover:text-orange-600 text-base transition-colors">
+                    Add Service
+                  </span>
+                  <span class="text-orange-500 font-bold text-sm transform group-hover:translate-x-1 transition-transform">→</span>
+                </div>
+                <p class="text-xs text-gray-500 mt-0.5 truncate">Register priest or service</p>
+              </div>
+            </a>
+          </div>
+        </div>
+
+        <div [@fadeInUp] class="flex flex-col sm:flex-row gap-5 justify-center mb-16">
+          <button routerLink="/temples" class="group bg-gradient-to-r from-orange-600 to-red-600 text-white px-8 py-3.5 rounded-xl text-base sm:text-lg font-medium hover:from-orange-700 hover:to-red-700 transform hover:scale-105 transition-all duration-300 shadow-xl hover:shadow-2xl flex items-center justify-center">
             <span class="mr-3 text-2xl group-hover:animate-bounce">🛕</span>
             Find Temples
           </button>
-          <button routerLink="/events" class="group border-2 border-orange-600 text-orange-600 px-8 py-4 rounded-xl text-lg font-medium hover:bg-orange-600 hover:text-white transform hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-xl flex items-center justify-center">
+          <button routerLink="/events" class="group border-2 border-orange-600 text-orange-600 px-8 py-3.5 rounded-xl text-base sm:text-lg font-medium hover:bg-orange-600 hover:text-white transform hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-xl flex items-center justify-center">
             <span class="mr-3 text-2xl group-hover:animate-bounce">📅</span>
             View Events
           </button>
@@ -246,7 +319,16 @@ import { DateandtimeComponent } from '../dateandtime/dateandtime.component';
   `
 })
 export class HomeComponent implements OnInit {
+  private authService = inject(AuthService);
+  isLoggedIn = false;
+  isAdmin = false;
+
   ngOnInit() {
-    // Component initialization
+    this.isLoggedIn = this.authService.isLoggedIn();
+    this.isAdmin = this.authService.isAdmin();
+    this.authService.isAuthenticated$.subscribe((status) => {
+      this.isLoggedIn = status;
+      this.isAdmin = this.authService.isAdmin();
+    });
   }
 }

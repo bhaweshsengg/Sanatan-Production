@@ -5,6 +5,7 @@ import { Router, RouterLink } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 import { CommonService } from '../../shared/common.service';
+import { AuthService } from '../../Auth/auth.service';
 
 export interface FestivalItem {
   id: number | string;
@@ -44,6 +45,26 @@ export interface FestivalItem {
           <p class="text-lg md:text-xl text-orange-100 mb-8 max-w-3xl mx-auto font-light">
             Explore the sacred calendar of Sanatan festivals and community celebrations organized across Aotearoa
           </p>
+
+          <!-- Create Festival Hero Action -->
+          <div class="mb-8 flex flex-wrap items-center justify-center gap-3">
+            <a
+              routerLink="/festival/create"
+              class="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-white text-orange-700 font-bold text-sm sm:text-base shadow-xl hover:shadow-2xl hover:bg-orange-50 transform hover:scale-105 transition-all duration-200 cursor-pointer"
+            >
+              <span class="text-lg">🪔</span>
+              <span>Create Festival</span>
+            </a>
+            <a
+              *ngIf="isAdmin"
+              routerLink="/admin/events"
+              [queryParams]="{ category: 'Festival' }"
+              class="inline-flex items-center gap-2 px-5 py-3 rounded-full bg-orange-800/80 hover:bg-orange-900 text-white font-semibold text-sm border border-white/20 shadow-md transition-all cursor-pointer"
+            >
+              <span>⚙️</span>
+              <span>Manage Festivals</span>
+            </a>
+          </div>
 
           <!-- Search & Filter Controls -->
           <div class="flex flex-col sm:flex-row items-center justify-center gap-3 max-w-4xl mx-auto">
@@ -88,17 +109,26 @@ export interface FestivalItem {
                 Showing festival celebrations and observances created across our community
               </p>
             </div>
-            <div class="flex items-center gap-2">
+            <div class="flex flex-wrap items-center gap-2">
               <a
-                routerLink="/events/add-event"
-                class="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-orange-600 hover:bg-orange-700 text-white font-semibold text-xs transition shadow-sm"
+                routerLink="/festival/create"
+                class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 text-white font-bold text-xs sm:text-sm shadow-md hover:shadow-lg transition-all duration-200"
               >
-                <span>➕</span>
-                <span>Submit Festival Event</span>
+                <span>🪔</span>
+                <span>Create Festival</span>
+              </a>
+              <a
+                *ngIf="isAdmin"
+                routerLink="/admin/events"
+                [queryParams]="{ category: 'Festival' }"
+                class="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-orange-100 hover:bg-orange-200 text-orange-950 font-semibold text-xs border border-orange-300 transition shadow-sm"
+              >
+                <span>⚙️</span>
+                <span>Manage Festivals</span>
               </a>
               <a
                 routerLink="/events"
-                class="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-white hover:bg-gray-100 text-gray-700 font-medium text-xs border border-gray-300 transition shadow-sm"
+                class="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-white hover:bg-gray-100 text-gray-700 font-medium text-xs border border-gray-300 transition shadow-sm"
               >
                 <span>📅</span>
                 <span>All Events</span>
@@ -141,11 +171,11 @@ export interface FestivalItem {
                 Reset Filters
               </button>
               <a
-                routerLink="/events/add-event"
+                routerLink="/festival/create"
                 class="px-4 py-2 rounded-lg bg-orange-600 text-white font-medium text-sm hover:bg-orange-700 transition shadow-sm inline-flex items-center gap-1.5"
               >
-                <span>➕</span>
-                <span>Submit Festival Event</span>
+                <span>🪔</span>
+                <span>Create Festival</span>
               </a>
               <a
                 routerLink="/events"
@@ -284,6 +314,14 @@ export interface FestivalItem {
                 >
                   <span>📅</span>
                   <span>Find Events</span>
+                </a>
+                <a
+                  *ngIf="isAdmin"
+                  [routerLink]="['/admin/events/edit', festival.id]"
+                  class="inline-flex items-center justify-center gap-1 bg-white hover:bg-gray-100 border border-gray-300 text-gray-700 font-semibold text-xs py-2.5 px-2.5 rounded-lg transition shadow-2xs"
+                  title="Admin: Edit Festival Details"
+                >
+                  <span>✏️</span>
                 </a>
               </div>
             </div>
@@ -443,14 +481,17 @@ export class FestivalComponent implements OnInit {
   isLoading: boolean = false;
   errorMessage: string = '';
   selectedFestival: FestivalItem | null = null;
+  isAdmin: boolean = false;
 
   constructor(
     private readonly commonService: CommonService,
     private readonly http: HttpClient,
     private readonly router: Router,
+    private readonly authService: AuthService,
   ) {}
 
   ngOnInit(): void {
+    this.isAdmin = this.authService.isAdmin();
     this.loadFestivals();
   }
 

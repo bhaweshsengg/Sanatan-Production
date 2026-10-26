@@ -58,27 +58,39 @@ const uploadNewImage = async (file, folder = 'events') => {
   return '';
 };
 
-const toEventData = (body) => ({
-  title: body.title,
-  category: body.category,
-  description: body.description,
-  imageUrl: body.imageUrl || null,
-  eventDate: body.eventDate,
-  startTime: body.startTime,
-  endTime: body.endTime,
-  multiDay: Boolean(body.multiDay),
-  endDate: body.endDate || null,
-  recurring: Boolean(body.recurring),
-  frequency: body.frequency || null,
-  registrationOpens: body.registrationOpens || null,
-  registrationCloses: body.registrationCloses || null,
-  templeId: body.templeId ? Number(body.templeId) : null,
-  templeName: body.templeName,
-  hallName: body.hallName || null,
-  address: body.address || null,
-  mapsLink: body.mapsLink || null,
-  onlineLink: body.onlineLink || null,
-});
+const toEventData = (body) => {
+  const isFestival = body.category && (
+    body.category.toLowerCase().includes('festival') ||
+    body.category === 'Religious Observance'
+  );
+
+  let resolvedTempleName = (body.templeName || '').trim();
+  if (!resolvedTempleName && isFestival) {
+    resolvedTempleName = (body.communityName || '').trim() || (body.address || '').trim() || 'Sanatan Community';
+  }
+
+  return {
+    title: body.title,
+    category: body.category,
+    description: body.description,
+    imageUrl: body.imageUrl || null,
+    eventDate: body.eventDate,
+    startTime: body.startTime,
+    endTime: body.endTime,
+    multiDay: Boolean(body.multiDay),
+    endDate: body.endDate || null,
+    recurring: Boolean(body.recurring),
+    frequency: body.frequency || null,
+    registrationOpens: body.registrationOpens || null,
+    registrationCloses: body.registrationCloses || null,
+    templeId: body.templeId ? Number(body.templeId) : null,
+    templeName: resolvedTempleName,
+    hallName: body.hallName || null,
+    address: body.address || null,
+    mapsLink: body.mapsLink || null,
+    onlineLink: body.onlineLink || null,
+  };
+};
 
 const publicEventInclude = {
   organizer: { select: { id: true, username: true } },

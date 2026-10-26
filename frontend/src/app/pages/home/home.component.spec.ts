@@ -23,4 +23,19 @@ describe('HomeComponent', () => {
   it('should create', () => {
     expect(component).toBeTruthy();
   });
+
+  it('should render the Quick Action buttons in the Hero section', () => {
+    const compiled = fixture.nativeElement as HTMLElement;
+    const addTempleBtn = compiled.querySelector('a[routerlink="/temples/add-temple"], a[href="/temples/add-temple"]');
+    const addEventBtn = compiled.querySelector('a[routerlink="/events/add-event"], a[href="/events/add-event"]');
+    const addServiceBtn = compiled.querySelector('a[routerlink="/services/add"], a[href="/services/add"]');
+
+    expect(addTempleBtn).toBeTruthy();
+    expect(addEventBtn).toBeTruthy();
+    expect(addServiceBtn).toBeTruthy();
+
+    expect(addTempleBtn?.textContent).toContain('Add Temple');
+    expect(addEventBtn?.textContent).toContain('Add Event');
+    expect(addServiceBtn?.textContent).toContain('Add Service');
+  });
 });

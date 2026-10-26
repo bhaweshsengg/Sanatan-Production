@@ -1,5 +1,11 @@
 import { z } from 'zod';
 
+export const isFestivalCategory = (category) => {
+  if (!category || typeof category !== 'string') return false;
+  const c = category.toLowerCase().trim();
+  return c.includes('festival') || c === 'religious observance';
+};
+
 const eventFields = {
   title: z.string().trim().min(1).max(191),
   category: z.string().trim().min(1).max(191),
@@ -15,7 +21,9 @@ const eventFields = {
   registrationOpens: z.string().nullable().optional().or(z.literal('')),
   registrationCloses: z.string().nullable().optional().or(z.literal('')),
   templeId: z.coerce.number().int().positive().nullable().optional(),
-  templeName: z.string().trim().min(1).max(191),
+  templeName: z.string().trim().max(191).nullable().optional().or(z.literal('')),
+  communityId: z.coerce.number().int().positive().nullable().optional(),
+  communityName: z.string().trim().max(191).nullable().optional().or(z.literal('')),
   hallName: z.string().max(191).nullable().optional().or(z.literal('')),
   address: z.string().max(191).nullable().optional().or(z.literal('')),
   mapsLink: z.string().url().max(2048).nullable().optional().or(z.literal('')),
@@ -37,6 +45,27 @@ export const eventCreateSchema = eventObjectSchema.extend({
   if (event.multiDay && !event.endDate) {
     context.addIssue({ code: z.ZodIssueCode.custom, path: ['endDate'], message: 'End date is required for multi-day events' });
   }
+
+  const isFestival = isFestivalCategory(event.category);
+  const hasTemple = Boolean(event.templeName && event.templeName.trim().length > 0);
+  const hasCommunity = Boolean(event.communityName && event.communityName.trim().length > 0);
+  const hasAddress = Boolean(event.address && event.address.trim().length > 0);
+
+  if (!isFestival && !hasTemple) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['templeName'],
+      message: 'Temple Name is required for regular events',
+    });
+  }
+
+  if (isFestival && !hasTemple && !hasCommunity && !hasAddress) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['templeName'],
+      message: 'Please select a Community or Temple, or provide a location for the festival',
+    });
+  }
 });
 
 export const eventUpdateSchema = eventObjectSchema.partial();
@@ -44,3 +73,4 @@ export const eventUpdateSchema = eventObjectSchema.partial();
 export const eventStatusSchema = z.object({
   status: z.enum(['Approved', 'Rejected', 'Cancelled', 'Completed']),
 });
+

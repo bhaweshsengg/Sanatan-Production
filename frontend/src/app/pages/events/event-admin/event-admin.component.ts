@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { environment } from '../../../../environments/environment';
 
 interface AdminEvent {
@@ -37,14 +37,55 @@ interface EventAttendeeDetail {
         <div class="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p class="text-sm font-semibold uppercase tracking-wide text-orange-600">Admin</p>
-            <h1 class="mt-2 text-3xl font-bold text-gray-900">Event Management</h1>
-            <p class="mt-2 text-gray-600">Review submissions, approve events, edit event details, manage attendees, and delete events.</p>
+            <h1 class="mt-2 text-3xl font-bold text-gray-900">Event &amp; Festival Management</h1>
+            <p class="mt-2 text-gray-600">Review submissions, approve events and festivals, edit details, manage attendees, and delete records.</p>
           </div>
-          <a routerLink="/business/admin/business-submissions" class="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">Business &amp; Temple Admin</a>
+          <div class="flex flex-wrap items-center gap-2">
+            <a routerLink="/festival/create" class="rounded-md bg-orange-600 px-3.5 py-2 text-xs font-semibold text-white hover:bg-orange-700 shadow-sm inline-flex items-center gap-1.5">
+              <span>🪔</span>
+              <span>New Festival</span>
+            </a>
+            <a routerLink="/events/add-event" class="rounded-md border border-gray-300 bg-white px-3.5 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-50 shadow-sm">
+              ➕ New Regular Event
+            </a>
+            <a routerLink="/business/admin/business-submissions" class="rounded-md border border-gray-300 bg-white px-3.5 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50">
+              Business &amp; Temple Admin
+            </a>
+          </div>
         </div>
 
         <div *ngIf="successMessage" class="mb-6 rounded-md bg-green-50 p-4 text-green-700 border border-green-200">{{ successMessage }}</div>
         <div *ngIf="errorMessage" class="mb-6 rounded-md bg-red-50 p-4 text-red-700">{{ errorMessage }}</div>
+
+        <!-- Category & Festival Filter Tabs -->
+        <div class="mb-4 flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            (click)="setFilter('All')"
+            [ngClass]="activeFilter === 'All' ? 'bg-orange-600 text-white font-bold' : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'"
+            class="px-3.5 py-1.5 rounded-lg text-xs transition shadow-2xs"
+          >
+            All Submissions ({{ events.length }})
+          </button>
+          <button
+            type="button"
+            (click)="setFilter('Festival')"
+            [ngClass]="activeFilter === 'Festival' ? 'bg-orange-600 text-white font-bold' : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'"
+            class="px-3.5 py-1.5 rounded-lg text-xs transition shadow-2xs inline-flex items-center gap-1"
+          >
+            <span>🪔</span>
+            <span>Festivals ({{ festivalCount }})</span>
+          </button>
+          <button
+            type="button"
+            (click)="setFilter('Regular')"
+            [ngClass]="activeFilter === 'Regular' ? 'bg-orange-600 text-white font-bold' : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'"
+            class="px-3.5 py-1.5 rounded-lg text-xs transition shadow-2xs"
+          >
+            Regular Events ({{ regularCount }})
+          </button>
+        </div>
+
         <div *ngIf="loading" class="rounded-lg bg-white p-8 text-center text-gray-600 shadow-sm">Loading event submissions...</div>
 
         <div *ngIf="!loading" class="overflow-hidden rounded-lg border bg-white shadow-sm">
@@ -61,7 +102,7 @@ interface EventAttendeeDetail {
                 </tr>
               </thead>
               <tbody class="divide-y divide-gray-200 bg-white">
-                <tr *ngFor="let event of events">
+                <tr *ngFor="let event of filteredEvents">
                   <td class="px-6 py-4">
                     <div class="font-semibold text-gray-900">{{ event.title }}</div>
                     <div class="text-sm text-gray-500">{{ event.category }} · {{ event.templeName }}</div>
@@ -90,7 +131,7 @@ interface EventAttendeeDetail {
                     </div>
                   </td>
                 </tr>
-                <tr *ngIf="events.length === 0"><td colspan="6" class="px-6 py-10 text-center text-gray-500">No event submissions found.</td></tr>
+                <tr *ngIf="filteredEvents.length === 0"><td colspan="6" class="px-6 py-10 text-center text-gray-500">No {{ activeFilter === 'All' ? 'event' : activeFilter.toLowerCase() }} submissions found.</td></tr>
               </tbody>
             </table>
           </div>
@@ -241,10 +282,49 @@ export class EventAdminComponent implements OnInit {
   loadingAttendees = false;
   attendeesError = '';
 
-  constructor(private readonly http: HttpClient) {}
+  activeFilter: 'All' | 'Festival' | 'Regular' = 'All';
+
+  constructor(
+    private readonly http: HttpClient,
+    private readonly route: ActivatedRoute
+  ) {}
 
   ngOnInit(): void {
+    this.route.queryParams.subscribe((params) => {
+      const cat = params['category'] || params['filter'];
+      if (cat && (cat.toLowerCase() === 'festival' || cat.toLowerCase().includes('festival'))) {
+        this.activeFilter = 'Festival';
+      }
+    });
     this.loadEvents();
+  }
+
+  get festivalCount(): number {
+    return this.events.filter((e) => this.isFestival(e)).length;
+  }
+
+  get regularCount(): number {
+    return this.events.filter((e) => !this.isFestival(e)).length;
+  }
+
+  get filteredEvents(): AdminEvent[] {
+    if (this.activeFilter === 'Festival') {
+      return this.events.filter((e) => this.isFestival(e));
+    }
+    if (this.activeFilter === 'Regular') {
+      return this.events.filter((e) => !this.isFestival(e));
+    }
+    return this.events;
+  }
+
+  isFestival(event: AdminEvent): boolean {
+    if (!event.category) return false;
+    const cat = event.category.toLowerCase().trim();
+    return cat.includes('festival') || cat === 'religious observance';
+  }
+
+  setFilter(filter: 'All' | 'Festival' | 'Regular'): void {
+    this.activeFilter = filter;
   }
 
   loadEvents(): void {

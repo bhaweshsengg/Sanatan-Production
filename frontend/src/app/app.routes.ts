@@ -5,6 +5,7 @@ import { EventsComponent } from './pages/events/events.component';
 import { CommunityComponent } from './pages/community/community.component';
 import { PanchangComponent } from './pages/panchang/panchang.component';
 import { FestivalComponent } from './pages/festival/festival.component';
+import { AddFestivalComponent } from './pages/festival/add-festival/add-festival.component';
 import { DateandtimeComponent } from './pages/dateandtime/dateandtime.component';
 import { AboutComponent } from './pages/about/about.component';
 import { ReligiousContentsComponent } from './pages/religious-contents/religious-contents.component';
@@ -48,6 +49,10 @@ export const routes: Routes = [
   { path: 'community/discussion/new', component: AdddiscussionComponent },
   { path: 'panchang', component: PanchangComponent },
   { path: 'festival', component: FestivalComponent },
+  { path: 'festival/create', component: AddFestivalComponent },
+  { path: 'festival/add-festival', redirectTo: '/festival/create' },
+  { path: 'festivals/create', redirectTo: '/festival/create' },
+  { path: 'festivals', redirectTo: '/festival' },
   { path: 'religiouscontents', component: ReligiousContentsComponent },
   { path: 'religious-contents', redirectTo: '/religiouscontents' },
   { path: 'blog', component: BlogComponent },

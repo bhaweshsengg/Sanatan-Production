@@ -96,6 +96,17 @@ interface Deity {
             worship and celebrate
           </p>
 
+          <!-- Create Temple Action in Hero Section -->
+          <div class="mb-8 flex items-center justify-center gap-3">
+            <a
+              routerLink="/temples/add-temple"
+              class="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-white text-orange-600 font-bold text-sm sm:text-base shadow-lg hover:shadow-xl hover:bg-orange-50 transform hover:scale-105 transition-all duration-200 cursor-pointer"
+            >
+              <span class="text-lg">🛕</span>
+              <span>Add Temple</span>
+            </a>
+          </div>
+
           <!-- Search + Filters -->
           <div class="flex flex-col md:flex-row gap-4 justify-center">
             <!-- Search Input -->

@@ -28,6 +28,36 @@ interface Sloka {
   source: string;
 }
 
+interface DashboardTemple {
+  id: number;
+  publicId?: string;
+  mandir_name: string;
+  main_deity?: { name: string };
+  mainDeity?: { name: string };
+  deity?: string;
+  city?: { name: string };
+  location?: string;
+  rating?: number;
+  images?: Array<{ file: string }>;
+  status?: string;
+}
+
+interface DashboardEvent {
+  id: string | number;
+  title: string;
+  templeName?: string;
+  hallName?: string;
+  venue?: string;
+  category: string;
+  eventDate: string;
+  startTime: string;
+  endTime?: string;
+  imageUrl?: string;
+  status: string;
+  multiDay?: boolean;
+  endDate?: string;
+}
+
 @Component({
   selector: 'app-dashboard',
   standalone: true,
@@ -142,111 +172,129 @@ interface Sloka {
               <div class="flex flex-col space-y-1.5 p-6">
                 <div class="text-2xl font-semibold leading-none tracking-tight flex items-center justify-between">
                   <span>Upcoming Spiritual Events</span>
-                  <a class="text-sm text-orange-600 hover:underline" href="/events">View all</a>
+                  <a class="text-sm text-orange-600 hover:underline" routerLink="/events">View all</a>
                 </div>
               </div>
               <div class="p-6 pt-0 space-y-4">
-                <div class="flex items-center space-x-4 p-3 bg-gray-50 rounded-lg">
-                  <img alt="Janmashtami Celebration" loading="lazy" width="60" height="60" decoding="async" data-nimg="1" class="rounded-lg object-cover" src="https://placehold.co/60x60/FFD700/000000?text=Krishna" style="color: transparent;">
-                  <div class="flex-1">
-                    <h4 class="font-semibold text-gray-900">Janmashtami Celebration</h4>
-                    <p class="text-sm text-black-700">Shri Krishna Mandir</p>
-                    <div class="flex items-center gap-4 mt-1">
-                      <span class="text-sm text-gray-500 flex items-center"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-calendar h-3 w-3 mr-1"><path d="M8 2v4"></path><path d="M16 2v4"></path><rect width="18" height="18" x="3" y="4" rx="2"></rect><path d="M3 10h18"></path></svg>Aug 26</span>
-                      <span class="text-sm text-gray-500 flex items-center"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-clock h-3 w-3 mr-1"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>18:00</span>
-                      <div class="inline-flex items-center rounded-full border px-2.5 py-0.5 font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 text-foreground text-xs">Festival</div>
-                    </div>
-                  </div>
-                  <a class="inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&amp;_svg]:pointer-events-none [&amp;_svg]:size-4 [&amp;_svg]:shrink-0 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 rounded-md px-3" href="/events">View</a>
+                <div *ngIf="isLoadingEvents" class="py-8 text-center text-gray-500">
+                  <div class="inline-block animate-spin rounded-full h-6 w-6 border-2 border-orange-500 border-t-transparent mb-2"></div>
+                  <p class="text-xs">Loading upcoming events...</p>
                 </div>
-                <div class="flex items-center space-x-4 p-3 bg-gray-50 rounded-lg">
-                  <img alt="Ganesha Chaturthi Puja" loading="lazy" width="60" height="60" decoding="async" data-nimg="1" class="rounded-lg object-cover" src="https://placehold.co/60x60/FF4500/FFFFFF?text=Ganesha" style="color: transparent;">
-                  <div class="flex-1">
-                    <h4 class="font-semibold text-gray-900">Ganesha Chaturthi Puja</h4>
-                    <p class="text-sm text-black-700">Ganesh Temple Auckland</p>
-                    <div class="flex items-center gap-4 mt-1">
-                      <span class="text-sm text-gray-500 flex items-center"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-calendar h-3 w-3 mr-1"><path d="M8 2v4"></path><path d="M16 2v4"></path><rect width="18" height="18" x="3" y="4" rx="2"></rect><path d="M3 10h18"></path></svg>Sep 7</span>
-                      <span class="text-sm text-gray-500 flex items-center"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-clock h-3 w-3 mr-1"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>10:00</span>
-                      <div class="inline-flex items-center rounded-full border px-2.5 py-0.5 font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 text-foreground text-xs">Puja</div>
-                    </div>
-                  </div>
-                  <a class="inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&amp;_svg]:pointer-events-none [&amp;_svg]:size-4 [&amp;_svg]:shrink-0 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 rounded-md px-3" href="/events">View</a>
+                <div *ngIf="!isLoadingEvents && upcomingEventsList.length === 0" class="py-6 text-center text-gray-500 text-sm">
+                  No upcoming spiritual events scheduled at this moment.
                 </div>
-                <div class="flex items-center space-x-4 p-3 bg-gray-50 rounded-lg">
-                  <img alt="Bhagavad Gita Study Circle" loading="lazy" width="60" height="60" decoding="async" data-nimg="1" class="rounded-lg object-cover" src="https://placehold.co/60x60/8B4513/FFFFFF?text=Gita" style="color: transparent;">
-                  <div class="flex-1">
-                    <h4 class="font-semibold text-gray-900">Bhagavad Gita Study Circle</h4>
-                    <p class="text-sm text-black-700">Sanatan Dharm Mandir</p>
-                    <div class="flex items-center gap-4 mt-1">
-                      <span class="text-sm text-gray-500 flex items-center"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-calendar h-3 w-3 mr-1"><path d="M8 2v4"></path><path d="M16 2v4"></path><rect width="18" height="18" x="3" y="4" rx="2"></rect><path d="M3 10h18"></path></svg>Aug 20</span>
-                      <span class="text-sm text-gray-500 flex items-center"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-clock h-3 w-3 mr-1"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>19:00</span>
-                      <div class="inline-flex items-center rounded-full border px-2.5 py-0.5 font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus-visible:ring-offset-2 text-foreground text-xs">Satsang</div>
+                <div *ngFor="let event of upcomingEventsList" class="flex items-center space-x-4 p-3 bg-gray-50 rounded-lg hover:bg-orange-50/50 transition-colors">
+                  <img
+                    [alt]="event.title"
+                    loading="lazy"
+                    width="60"
+                    height="60"
+                    decoding="async"
+                    class="rounded-lg object-cover w-[60px] h-[60px] shrink-0"
+                    [src]="resolveEventImageUrl(event.imageUrl)"
+                    (error)="onImageError($event, defaultEventImage)"
+                  />
+                  <div class="flex-1 min-w-0">
+                    <h4 class="font-semibold text-gray-900 truncate">{{ event.title }}</h4>
+                    <p class="text-sm text-black-700 truncate">
+                      {{ event.hallName ? (event.templeName + ' - ' + event.hallName) : (event.templeName || 'Community Event') }}
+                    </p>
+                    <div class="flex items-center gap-3 sm:gap-4 mt-1 flex-wrap">
+                      <span class="text-sm text-gray-500 flex items-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-calendar h-3 w-3 mr-1 text-gray-400"><path d="M8 2v4"></path><path d="M16 2v4"></path><rect width="18" height="18" x="3" y="4" rx="2"></rect><path d="M3 10h18"></path></svg>
+                        {{ formatEventDate(event.eventDate) }}
+                      </span>
+                      <span class="text-sm text-gray-500 flex items-center" *ngIf="event.startTime">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-clock h-3 w-3 mr-1 text-gray-400"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                        {{ event.startTime }}
+                      </span>
+                      <div class="inline-flex items-center rounded-full border px-2.5 py-0.5 font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 text-foreground text-xs">
+                        {{ event.category || 'Spiritual' }}
+                      </div>
                     </div>
                   </div>
-                  <a class="inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&amp;_svg]:pointer-events-none [&amp;_svg]:size-4 [&amp;_svg]:shrink-0 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 rounded-md px-3" href="/events">View</a>
+                  <a
+                    routerLink="/events"
+                    class="inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 rounded-md px-3 shrink-0"
+                  >
+                    View
+                  </a>
                 </div>
               </div>
             </div>
             <div class="rounded-lg border bg-card text-card-foreground shadow-sm">
               <div class="flex flex-col space-y-1.5 p-6">
-                <div class="text-2xl font-semibold leading-none tracking-tight">Featured Mandirs</div>
+                <div class="text-2xl font-semibold leading-none tracking-tight flex items-center justify-between">
+                  <span>Featured Mandirs</span>
+                  <a class="text-sm text-orange-600 hover:underline" routerLink="/temples">View all</a>
+                </div>
                 <div class="text-sm text-muted-foreground">Discover beautiful temples across New Zealand</div>
               </div>
               <div class="p-6 pt-0 space-y-4">
-                <div class="flex items-center space-x-4 p-3 bg-gray-50 rounded-lg">
-                  <img alt="ISKCON Auckland" loading="lazy" width="80" height="80" decoding="async" data-nimg="1" class="rounded-lg object-cover" src="https://placehold.co/80x80/FFA500/FFFFFF?text=ISKCON" style="color: transparent;">
-                  <div class="flex-1">
-                    <h4 class="font-semibold text-gray-900">ISKCON Auckland</h4>
-                    <p class="text-sm text-black-700">Dedicated to Krishna</p>
-                    <p class="text-sm text-amber-600">Daily Bhagavatam classes</p>
-                    <div class="flex items-center gap-4 mt-1">
-                      <span class="text-sm text-gray-500 flex items-center"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-map-pin h-3 w-3 mr-1"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"></path><circle cx="12" cy="10" r="3"></circle></svg>5.2 km</span>
-                      <span class="text-sm text-gray-500 flex items-center"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-star h-3 w-3 mr-1 text-yellow-500"><path d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z"></path></svg>4.9</span>
-                    </div>
-                  </div>
-                  <button class="inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&amp;_svg]:pointer-events-none [&amp;_svg]:size-4 [&amp;_svg]:shrink-0 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 rounded-md px-3">Visit</button>
+                <div *ngIf="isLoadingMandirs" class="py-8 text-center text-gray-500">
+                  <div class="inline-block animate-spin rounded-full h-6 w-6 border-2 border-orange-500 border-t-transparent mb-2"></div>
+                  <p class="text-xs">Loading featured mandirs...</p>
                 </div>
-                <div class="flex items-center space-x-4 p-3 bg-gray-50 rounded-lg">
-                  <img alt="Shiva Vishnu Temple" loading="lazy" width="80" height="80" decoding="async" data-nimg="1" class="rounded-lg object-cover" src="https://placehold.co/80x80/0000FF/FFFFFF?text=Shiva" style="color: transparent;">
-                  <div class="flex-1">
-                    <h4 class="font-semibold text-gray-900">Shiva Vishnu Temple</h4>
-                    <p class="text-sm text-black-700">Dedicated to Shiva &amp; Vishnu</p>
-                    <p class="text-sm text-amber-600">Monday Shiva Abhishek</p>
-                    <div class="flex items-center gap-4 mt-1">
-                      <span class="text-sm text-gray-500 flex items-center"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-map-pin h-3 w-3 mr-1"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"></path><circle cx="12" cy="10" r="3"></circle></svg>8.1 km</span>
-                      <span class="text-sm text-gray-500 flex items-center"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-star h-3 w-3 mr-1 text-yellow-500"><path d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z"></path></svg>4.7</span>
-                    </div>
-                  </div>
-                  <button class="inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&amp;_svg]:pointer-events-none [&amp;_svg]:size-4 [&amp;_svg]:shrink-0 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 rounded-md px-3">Visit</button>
+                <div *ngIf="!isLoadingMandirs && featuredMandirs.length === 0" class="py-6 text-center text-gray-500 text-sm">
+                  No mandirs available at this moment.
                 </div>
-                <div class="flex items-center space-x-4 p-3 bg-gray-50 rounded-lg">
-                  <img alt="Durga Mata Mandir" loading="lazy" width="80" height="80" decoding="async" data-nimg="1" class="rounded-lg object-cover" src="https://placehold.co/80x80/800000/FFFFFF?text=Durga" style="color: transparent;">
-                  <div class="flex-1">
-                    <h4 class="font-semibold text-gray-900">Durga Mata Mandir</h4>
-                    <p class="text-sm text-black-700">Dedicated to Durga</p>
-                    <p class="text-sm text-amber-600">Navratri celebrations</p>
-                    <div class="flex items-center gap-4 mt-1">
-                      <span class="text-sm text-gray-500 flex items-center"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-map-pin h-3 w-3 mr-1"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"></path><circle cx="12" cy="10" r="3"></circle></svg>12.3 km</span>
-                      <span class="text-sm text-gray-500 flex items-center"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-star h-3 w-3 mr-1 text-yellow-500"><path d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z"></path></svg>4.8</span>
+                <div *ngFor="let mandir of featuredMandirs" class="flex items-center space-x-4 p-3 bg-gray-50 rounded-lg hover:bg-orange-50/50 transition-colors">
+                  <img
+                    [alt]="mandir.mandir_name"
+                    loading="lazy"
+                    width="80"
+                    height="80"
+                    decoding="async"
+                    class="rounded-lg object-cover w-20 h-20 shrink-0"
+                    [src]="resolveTempleImageUrl(mandir.images?.[0]?.file)"
+                    (error)="onImageError($event, defaultTempleImage)"
+                  />
+                  <div class="flex-1 min-w-0">
+                    <h4 class="font-semibold text-gray-900 truncate">{{ mandir.mandir_name }}</h4>
+                    <p class="text-sm text-black-700 truncate">
+                      Dedicated to {{ mandir.main_deity?.name || mandir.mainDeity?.name || mandir.deity || 'Bhagwan' }}
+                    </p>
+                    <p class="text-sm text-amber-600 truncate" *ngIf="mandir.city?.name || mandir.location">
+                      {{ mandir.city?.name || mandir.location }}
+                    </p>
+                    <div class="flex items-center gap-4 mt-1 flex-wrap">
+                      <span class="text-sm text-gray-500 flex items-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-map-pin h-3 w-3 mr-1 text-gray-400"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                        {{ mandir.city?.name || 'New Zealand' }}
+                      </span>
+                      <span class="text-sm text-gray-500 flex items-center" *ngIf="mandir.rating">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-star h-3 w-3 mr-1 text-yellow-500 fill-yellow-500"><path d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z"></path></svg>
+                        {{ mandir.rating }}
+                      </span>
                     </div>
                   </div>
-                  <button class="inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&amp;_svg]:pointer-events-none [&amp;_svg]:size-4 [&amp;_svg]:shrink-0 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 rounded-md px-3">Visit</button>
+                  <a
+                    [routerLink]="['/temples/view-temple', mandir.publicId || mandir.id]"
+                    class="inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 rounded-md px-3 shrink-0"
+                  >
+                    Visit
+                  </a>
                 </div>
               </div>
             </div>
           </div>
           
-          <div class="space-y-6">
-            <div class="max-w-sm">
-              <div class="rounded-lg bg-card text-card-foreground w-full max-w-4xl mx-auto shadow-lg border-0 bg-gradient-to-br from-white to-amber-50">
-                <div class="p-0">
+          <!-- सनातन पंचांग Section Container -->
+          <div id="sanatan-panchang-section" class="sanatan-panchang-container space-y-6">
+            <div class="rounded-lg bg-card text-card-foreground w-full shadow-lg border-0 bg-gradient-to-br from-white to-amber-50 overflow-hidden">
+              <div class="p-0">
                   <div class="bg-gradient-to-r from-amber-500 to-orange-500 text-white p-6 rounded-t-lg">
+
+                  <div class="flex items-center gap-2">
+                      <h2 class="text-2xl font-bold flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-clock h-6 w-6"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                        सनातन पंचांग
+                      </h2>
+                    </div>
+
                     <div class="flex items-center justify-between">
+                    
                       <div>
-                        <h2 class="text-2xl font-bold flex items-center gap-2">
-                          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-clock h-6 w-6"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
-                          सनातन पंचांग
-                        </h2>
                         <p class="text-amber-100 mt-1">{{ currentDate }}, {{ panchang.day }}</p>
                       </div>
                       <div class="text-right">
@@ -335,7 +383,6 @@ interface Sloka {
                       </div>
                     </div>
                   </div>
-                </div>
               </div>
             </div>
             
@@ -377,13 +424,22 @@ export class DashboardComponent implements OnInit, OnDestroy {
     businesses: 0
   };
 
+  featuredMandirs: DashboardTemple[] = [];
+  upcomingEventsList: DashboardEvent[] = [];
+  isLoadingMandirs: boolean = true;
+  isLoadingEvents: boolean = true;
+
+  readonly defaultTempleImage = 'https://images.unsplash.com/photo-1542397284385-6010376c5337?auto=format&fit=crop&w=800&q=80';
+  readonly defaultEventImage = 'https://images.unsplash.com/photo-1605649487212-47bdab064df7?auto=format&fit=crop&w=400&q=80';
+  private backendOrigin = environment.apiBaseUrl.replace(/\/api(\/v\d+)?(\/public)?\/?$/, '');
+
   currentDate: string = '';
   currentTime: string = '';
   timeZone: string = 'Pacific/Auckland';
   selectedCity: string = 'Auckland';
   cities: string[] = ['Auckland', 'Wellington', 'Christchurch', 'Hamilton'];
   activeTab: string = 'general';
-  
+
   panchangTabs = [
     { id: 'general', label: 'सामान्य जानकारी' },
     { id: 'muhurta', label: 'मुहूर्त' },
@@ -443,7 +499,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.updateDateTime();
     this.updateDailySloka();
     this.updatePanchangData();
-    
+    this.loadFeaturedMandirs();
+    this.loadUpcomingEvents();
+
     this.http.get<any>(`${environment.apiBaseUrl}/stats`).subscribe({
       next: (res) => {
         if (res.data) {
@@ -452,7 +510,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
       },
       error: (err) => console.error('Failed to load stats', err)
     });
-    
+
     // Update time every second
     this.timer = setInterval(() => {
       this.updateDateTime();
@@ -466,19 +524,116 @@ export class DashboardComponent implements OnInit, OnDestroy {
     }
   }
 
+  loadFeaturedMandirs(): void {
+    this.isLoadingMandirs = true;
+    this.http.get<any>(`${environment.apiBaseUrl}/temple`).subscribe({
+      next: (res) => {
+        const raw = res?.data || res || [];
+        const temples: any[] = Array.isArray(raw) ? raw : [];
+        const approved = temples.filter((t: any) => t.status === 'Approved');
+        approved.sort((a: any, b: any) => (Number(b.rating) || 0) - (Number(a.rating) || 0));
+        this.featuredMandirs = approved.slice(0, 3);
+        this.isLoadingMandirs = false;
+      },
+      error: (err) => {
+        console.error('Failed to load featured mandirs', err);
+        this.featuredMandirs = [];
+        this.isLoadingMandirs = false;
+      }
+    });
+  }
+
+  loadUpcomingEvents(): void {
+    this.isLoadingEvents = true;
+    this.http.get<any>(`${environment.apiBaseUrl}/event`).subscribe({
+      next: (res) => {
+        const raw = res?.data || res || [];
+        const events: any[] = Array.isArray(raw) ? raw : [];
+        const upcoming = events.filter((ev: any) => {
+          if (ev.status && ev.status !== 'Approved') return false;
+          return !this.isPastEvent(ev.eventDate || ev.date);
+        });
+        upcoming.sort((a: any, b: any) => {
+          const dateA = new Date(a.eventDate || a.date).getTime();
+          const dateB = new Date(b.eventDate || b.date).getTime();
+          return dateA - dateB;
+        });
+        this.upcomingEventsList = upcoming.slice(0, 3);
+        this.isLoadingEvents = false;
+      },
+      error: (err) => {
+        console.error('Failed to load upcoming events', err);
+        this.upcomingEventsList = [];
+        this.isLoadingEvents = false;
+      }
+    });
+  }
+
+  private isPastEvent(dateStr: string | undefined): boolean {
+    if (!dateStr) return false;
+    const eventDate = new Date(dateStr.slice(0, 10));
+    return !Number.isNaN(eventDate.getTime()) && eventDate < new Date(new Date().toDateString());
+  }
+
+  formatEventDate(dateStr: string | undefined): string {
+    if (!dateStr) return '';
+    try {
+      const d = new Date(dateStr.slice(0, 10));
+      if (isNaN(d.getTime())) return dateStr;
+      return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    } catch {
+      return dateStr;
+    }
+  }
+
+  resolveTempleImageUrl(file: string | undefined | null): string {
+    if (!file) return this.defaultTempleImage;
+    if (/^https?:\/\//i.test(file)) return file;
+    const normalized = file.replace(/\\/g, '/').replace(/^\.\//, '').replace(/^\/+/, '');
+    if (!normalized) return this.defaultTempleImage;
+
+    const cleanFilename = normalized
+      .replace(/^assets\//, '')
+      .replace(/^temple_images\//, '')
+      .replace(/^uploads\/(temple_images\/)?/, '');
+
+    const isDynamicUpload = /^\d{10,}-/.test(cleanFilename);
+    if (isDynamicUpload) {
+      if (environment.production) {
+        return `${this.backendOrigin}/uploads/${cleanFilename}`;
+      }
+      return `/uploads/${cleanFilename}`;
+    }
+
+    return `/assets/temple_images/${cleanFilename}`;
+  }
+
+  resolveEventImageUrl(url: string | undefined | null): string {
+    if (!url) return this.defaultEventImage;
+    if (/^https?:\/\//i.test(url)) return url;
+    return `${this.backendOrigin}/${url.replace(/^\/+/, '')}`;
+  }
+
+  onImageError(event: Event, fallbackUrl: string): void {
+    const img = event.target as HTMLImageElement;
+    if (img && img.src !== fallbackUrl) {
+      img.src = fallbackUrl;
+    }
+  }
+
   updateDateTime() {
     const now = new Date();
-    this.currentDate = now.toLocaleDateString('en-NZ', { 
-      weekday: 'long', 
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric' 
+    this.currentDate = now.toLocaleDateString('en-NZ', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
     });
-    
-    this.currentTime = now.toLocaleTimeString('en-NZ', { 
-      hour: '2-digit', 
-      minute: '2-digit', 
-      second: '2-digit' 
+
+    this.currentTime = now.toLocaleTimeString('en-NZ', {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit'
     });
   }
 
@@ -492,15 +647,15 @@ export class DashboardComponent implements OnInit, OnDestroy {
   updatePanchangData() {
     // This would typically come from an API or calculation library
     // For demo purposes, we're using mock data that changes based on time
-    
+
     const now = new Date();
     const hours = now.getHours();
-    
+
     // Determine current period based on time of day
     let periodName = '';
     let periodType: 'Good' | 'Bad' | 'Neutral' = 'Neutral';
     let periodDescription = '';
-    
+
     if (hours >= 5 && hours < 7) {
       periodName = 'Brahma Muhurta';
       periodType = 'Good';
@@ -530,7 +685,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
       periodType = 'Bad';
       periodDescription = 'Rest period, not ideal for new ventures';
     }
-    
+
     // Mock panchang data - in a real app, this would come from calculations or API
     this.panchang = {
       date: now.toLocaleDateString('hi-IN'),
@@ -562,23 +717,23 @@ export class DashboardComponent implements OnInit, OnDestroy {
     } else if (this.selectedCity === 'Hamilton') {
       this.timeZone = 'Pacific/Auckland';
     }
-    
+
     this.updatePanchangData();
   }
 
   // These functions would contain actual astronomical calculations in a real app
   private calculateTithi(date: Date): string {
-    const tithis = ['प्रतिपदा', 'द्वितीया', 'तृतीया', 'चतुर्थी', 'पंचमी', 'षष्ठी', 'सप्तमी', 'अष्टमी', 'नवमी', 'दशमी', 
-                   'एकादशी', 'द्वादशी', 'त्रयोदशी', 'चतुर्दशी', 'पूर्णिमा', 'प्रतिपदा', 'द्वितीया', 'तृतीया', 'चतुर्थी', 'पंचमी', 
-                   'षष्ठी', 'सप्तमी', 'अष्टमी', 'नवमी', 'दशमी', 'एकादशी', 'द्वादशी', 'त्रयोदशी', 'चतुर्दशी', 'अमावस्या'];
+    const tithis = ['प्रतिपदा', 'द्वितीया', 'तृतीया', 'चतुर्थी', 'पंचमी', 'षष्ठी', 'सप्तमी', 'अष्टमी', 'नवमी', 'दशमी',
+      'एकादशी', 'द्वादशी', 'त्रयोदशी', 'चतुर्दशी', 'पूर्णिमा', 'प्रतिपदा', 'द्वितीया', 'तृतीया', 'चतुर्थी', 'पंचमी',
+      'षष्ठी', 'सप्तमी', 'अष्टमी', 'नवमी', 'दशमी', 'एकादशी', 'द्वादशी', 'त्रयोदशी', 'चतुर्दशी', 'अमावस्या'];
     const day = date.getDate();
     return tithis[day % 30];
   }
 
   private calculateNakshatra(date: Date): string {
-    const nakshatras = ['अश्विनी', 'भरणी', 'कृत्तिका', 'रोहिणी', 'मृगशिरा', 'आर्द्रा', 'पुनर्वसु', 'पुष्य', 'आश्लेषा', 'मघा', 
-                       'पूर्व फाल्गुनी', 'उत्तर फाल्गुनी', 'हस्त', 'चित्रा', 'स्वाती', 'विशाखा', 'अनुराधा', 'ज्येष्ठा', 'मूल', 
-                       'पूर्वाषाढ़ा', 'उत्तराषाढ़ा', 'श्रवण', 'धनिष्ठा', 'शतभिषा', 'पूर्व भाद्रपद', 'उत्तर भाद्रपद', 'रेवती'];
+    const nakshatras = ['अश्विनी', 'भरणी', 'कृत्तिका', 'रोहिणी', 'मृगशिरा', 'आर्द्रा', 'पुनर्वसु', 'पुष्य', 'आश्लेषा', 'मघा',
+      'पूर्व फाल्गुनी', 'उत्तर फाल्गुनी', 'हस्त', 'चित्रा', 'स्वाती', 'विशाखा', 'अनुराधा', 'ज्येष्ठा', 'मूल',
+      'पूर्वाषाढ़ा', 'उत्तराषाढ़ा', 'श्रवण', 'धनिष्ठा', 'शतभिषा', 'पूर्व भाद्रपद', 'उत्तर भाद्रपद', 'रेवती'];
     const day = date.getDate();
     return nakshatras[day % 27];
   }
@@ -587,17 +742,17 @@ export class DashboardComponent implements OnInit, OnDestroy {
     const hours = date.getHours();
     const minutes = date.getMinutes();
     const seconds = date.getSeconds();
-    
+
     // Convert to Indian time (for demonstration)
     const indianHours = (hours + 7) % 24;
-    
+
     // Simple conversion to Vedic time (ghati, pala, vipala)
     const totalSeconds = indianHours * 3600 + minutes * 60 + seconds;
     const ghati = Math.floor(totalSeconds / 1440);
     const remainingSeconds = totalSeconds % 1440;
     const pala = Math.floor(remainingSeconds / 24);
     const vipala = Math.floor(remainingSeconds % 24);
-    
+
     return `${ghati}:${pala}:${vipala}`;
   }
-}
+}

@@ -144,6 +144,7 @@ import { AuthService } from 'src/app/Auth/auth.service';
                 >
                   🌸 Festival
                 </a>
+               
                 <a
                   routerLink="/panchang"
                   (click)="closeSpiritualToolsDropdown()"
@@ -409,6 +410,7 @@ import { AuthService } from 'src/app/Auth/auth.service';
                 >
                   🌸 Festival
                 </a>
+              
                 <a
                   routerLink="/panchang"
                   (click)="closeMobileMenu(); closeSpiritualToolsDropdown()"
@@ -561,7 +563,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
     private authService: AuthService,
     private router: Router,
     private elementRef: ElementRef
-  ) {}
+  ) { }
 
   ngOnInit() {
     this.checkScroll();

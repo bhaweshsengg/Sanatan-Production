@@ -24,4 +24,11 @@ describe('FestivalComponent', () => {
   it('should create', () => {
     expect(component).toBeTruthy();
   });
+
+  it('should render the Create Festival button linking to /festival/create', () => {
+    const compiled = fixture.nativeElement as HTMLElement;
+    const createBtn = compiled.querySelector('a[routerlink="/festival/create"], a[href="/festival/create"]');
+    expect(createBtn).toBeTruthy();
+    expect(createBtn?.textContent).toContain('Create Festival');
+  });
 });
