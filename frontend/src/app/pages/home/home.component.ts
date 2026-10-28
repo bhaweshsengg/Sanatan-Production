@@ -9,23 +9,23 @@ import { AuthService } from '../../Auth/auth.service';
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [CommonModule, RouterModule,PanchangComponent],
+  imports: [CommonModule, RouterModule, PanchangComponent],
   animations: [
     trigger('fadeInUp', [
-      state('in', style({opacity: 1, transform: 'translateY(0)'})),
+      state('in', style({ opacity: 1, transform: 'translateY(0)' })),
       transition('void => *', [
-        style({opacity: 0, transform: 'translateY(30px)'}),
+        style({ opacity: 0, transform: 'translateY(30px)' }),
         animate('600ms ease-out')
       ])
     ]),
     trigger('staggerIn', [
       transition('* => *', [
         query(':enter', [
-          style({opacity: 0, transform: 'translateY(30px)'}),
+          style({ opacity: 0, transform: 'translateY(30px)' }),
           stagger(100, [
-            animate('600ms ease-out', style({opacity: 1, transform: 'translateY(0)'}))
+            animate('600ms ease-out', style({ opacity: 1, transform: 'translateY(0)' }))
           ])
-        ], {optional: true})
+        ], { optional: true })
       ])
     ])
   ],
@@ -81,7 +81,7 @@ import { AuthService } from '../../Auth/auth.service';
               <div class="min-w-0 flex-1">
                 <div class="flex items-center justify-between">
                   <span class="font-bold text-gray-900 group-hover:text-orange-600 text-base transition-colors">
-                    Add Temple
+                    Add New Temple
                   </span>
                   <span class="text-orange-500 font-bold text-sm transform group-hover:translate-x-1 transition-transform">→</span>
                 </div>

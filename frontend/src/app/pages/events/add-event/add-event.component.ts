@@ -31,7 +31,7 @@ interface TempleOption {
       <div class="max-w-4xl mx-auto">
         <div class="mb-8 flex items-center justify-between">
           <h2 class="text-2xl font-bold text-gray-900">{{ editMode ? 'Edit Community Event' : 'Create Community Event' }}</h2>
-          <span class="text-sm text-gray-500">{{ editMode ? 'Admin edit' : 'Submit for approval' }}</span>
+          <!-- <span class="text-sm text-gray-500">{{ editMode ? 'Admin edit' : 'Submit for approval' }}</span> -->
         </div>
         <div *ngIf="errorMessage" class="mb-4 rounded-md bg-red-50 p-4 text-red-700">{{ errorMessage }}</div>
         <div class="rounded-lg border bg-white shadow-sm">
@@ -52,10 +52,10 @@ interface TempleOption {
                   <label class="text-sm font-medium text-gray-700" for="category">Event Category *</label>
                   <select class="mt-2 flex h-10 w-full rounded-md border border-gray-300 px-3 text-sm focus:border-orange-500 focus:outline-none focus:ring-1 focus:ring-orange-500" id="category" name="category" [(ngModel)]="event.category" required>
                     <option value="" disabled>Select event category</option>
-                    <option>Festival</option>
-                    <option>Major Festival</option>
+                   <!-- <option>Festival</option>-->
+                   <!--<option>Major Festival</option>-->
                     <option>Religious Observance</option>
-                    <option>Pooja</option>
+                    <option>Pooja</option> 
                     <option>Havan/Yagna</option>
                     <option>Bhajan/Kirtan</option>
                     <option>Spiritual Discourse</option>
@@ -143,17 +143,17 @@ interface TempleOption {
 
                   <!-- Select Temple & Community -->
                   <div class="space-y-4">
-                    <!-- Community Selection (Available when Festival category is selected) -->
-                    <div *ngIf="isFestivalCategory" class="rounded-md border border-orange-200 bg-orange-50/60 p-3.5 space-y-2">
+                    <!-- Host Community Group Selection -->
+                    <div class="rounded-md border border-orange-200 bg-orange-50/60 p-3.5 space-y-2">
                       <div class="flex items-center justify-between">
                         <label class="text-xs font-bold text-orange-950 uppercase tracking-wide flex items-center gap-1.5" for="communityId">
                           <span>👥</span>
-                          <span>Select Community Group</span>
+                          <span>Host Community Group</span>
                         </label>
-                        <span class="text-[11px] bg-orange-100 text-orange-800 font-semibold px-2 py-0.5 rounded-full">Festival Feature</span>
+                        <span class="text-[11px] bg-orange-100 text-orange-800 font-semibold px-2 py-0.5 rounded-full">Optional</span>
                       </div>
                       <p class="text-xs text-gray-600">
-                        Associate this festival event with a community group. Temple selection becomes optional.
+                        Associate this event with an active community group, or specify a custom group name.
                       </p>
                       <select
                         id="communityId"
@@ -284,12 +284,12 @@ interface TempleOption {
                 <div class="grid gap-4 sm:grid-cols-2">
                   <div>
                     <label class="text-sm font-medium text-gray-700" for="templeName">
-                      {{ isFestivalCategory ? 'Temple Name (Optional for Festivals)' : 'Temple Name *' }}
+                      {{ isFestivalCategory ? 'Temple Name (Optional for Festivals)' : 'Temple Venue *' }}
                     </label>
                     <input
                       class="mt-2 flex h-10 w-full rounded-md border border-gray-300 px-3 text-sm focus:border-orange-500 focus:outline-none focus:ring-1 focus:ring-orange-500"
                       id="templeName"
-                      name="templeName"
+                      name="templeName" 
                       [(ngModel)]="event.templeName"
                       [placeholder]="isFestivalCategory ? 'Optional (leave blank to use selected community)' : 'Enter temple name'"
                       [required]="!isFestivalCategory"
@@ -446,7 +446,11 @@ export class AddEventComponent implements OnInit {
   get isFestivalCategory(): boolean {
     if (!this.event.category) return false;
     const cat = this.event.category.toLowerCase().trim();
-    return cat.includes('festival') || cat === 'religious observance';
+    return (
+      cat.includes('festival') ||
+      cat === 'religious observance' ||
+      ['hindu', 'jain', 'sikh', 'baudh'].includes(cat)
+    );
   }
 
   isSubmitDisabled(): boolean {
@@ -716,7 +720,7 @@ export class AddEventComponent implements OnInit {
       registrationCloses: this.event.registrationCloses,
       templeId: this.event.templeId ? Number(this.event.templeId) : null,
       templeName: effectiveTemple,
-      communityId: this.selectedCommunityId ? Number(this.selectedCommunityId) : null,
+      communityId: this.selectedCommunityId ? Number(this.selectedCommunityId) : (this.event.communityId ? Number(this.event.communityId) : null),
       communityName: effectiveCommunity || null,
       hallName: this.event.hallName,
       address: this.event.address,
@@ -733,12 +737,20 @@ export class AddEventComponent implements OnInit {
       next: (response) => {
         const event = response?.data;
         if (event) {
+          const resolvedCommunityId = event.communityId ?? event.communityGroup?.id ?? null;
+          const resolvedCommunityName = event.communityName ?? event.communityGroup?.name ?? '';
           this.event = {
             ...this.event,
             ...event,
             templeId: event.templeId ?? event.temple?.id ?? null,
+            communityId: resolvedCommunityId ? Number(resolvedCommunityId) : null,
+            communityName: resolvedCommunityName,
             date: event.eventDate,
           };
+          this.selectedCommunityId = this.event.communityId ? Number(this.event.communityId) : null;
+          if (!this.selectedCommunityId && this.event.communityName) {
+            this.customCommunityName = this.event.communityName;
+          }
           this.syncSelectedTempleDisplay();
         }
         this.isLoading = false;

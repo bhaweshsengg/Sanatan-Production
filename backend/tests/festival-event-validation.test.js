@@ -9,6 +9,16 @@ test('isFestivalCategory correctly identifies festival categories', () => {
   assert.equal(isFestivalCategory('Community Festival Celebration'), true);
   assert.equal(isFestivalCategory('festival'), true);
 
+  // Sanatan Dharma traditions
+  assert.equal(isFestivalCategory('Hindu'), true);
+  assert.equal(isFestivalCategory('Jain'), true);
+  assert.equal(isFestivalCategory('Sikh'), true);
+  assert.equal(isFestivalCategory('Baudh'), true);
+  assert.equal(isFestivalCategory('hindu'), true);
+  assert.equal(isFestivalCategory('jain'), true);
+  assert.equal(isFestivalCategory('sikh'), true);
+  assert.equal(isFestivalCategory('baudh'), true);
+
   // Non-festival categories
   assert.equal(isFestivalCategory('Pooja'), false);
   assert.equal(isFestivalCategory('Havan/Yagna'), false);
@@ -19,6 +29,25 @@ test('isFestivalCategory correctly identifies festival categories', () => {
   assert.equal(isFestivalCategory('Other'), false);
   assert.equal(isFestivalCategory(''), false);
   assert.equal(isFestivalCategory(null), false);
+});
+
+test('Festival events with Dharma traditions (Hindu, Jain, Sikh, Baudh) pass validation', () => {
+  for (const tradition of ['Hindu', 'Jain', 'Sikh', 'Baudh']) {
+    const festival = {
+      title: `${tradition} Sacred Celebration`,
+      category: tradition,
+      description: 'Devotional celebration of traditions, spiritual heritage, prayers, community satsang, and prasad for all.',
+      eventDate: '2026-11-20',
+      startTime: '10:00',
+      endTime: '13:00',
+      termsAccepted: true,
+      templeName: '',
+      communityName: '',
+    };
+    const result = eventCreateSchema.safeParse(festival);
+    assert.equal(result.success, true, `Tradition ${tradition} should pass validation without mandatory temple`);
+    assert.equal(result.data.category, tradition);
+  }
 });
 
 test('Regular events require Temple Name', () => {
@@ -92,8 +121,8 @@ test('Festival events allow Temple selection when Mandir is chosen', () => {
   assert.equal(result.data.templeId, 2);
 });
 
-test('Festival events require at least Community, Temple, or location address', () => {
-  const festivalWithoutAnyLocation = {
+test('Festival events can be created without requiring a Temple or Host Community', () => {
+  const festivalWithoutLocation = {
     title: 'Community Deepavali Gathering',
     category: 'Festival',
     description: 'Celebrating the festival of lights with lamps, devotional songs, prasad, and traditional blessings for all families.',
@@ -106,9 +135,6 @@ test('Festival events require at least Community, Temple, or location address', 
     address: '',
   };
 
-  const result = eventCreateSchema.safeParse(festivalWithoutAnyLocation);
-  assert.equal(result.success, false);
-  const locationError = result.error.issues.find(i => i.path.includes('templeName'));
-  assert.ok(locationError);
-  assert.match(locationError.message, /Please select a Community or Temple/);
+  const result = eventCreateSchema.safeParse(festivalWithoutLocation);
+  assert.equal(result.success, true, 'Festival without temple or host community must pass validation');
 });

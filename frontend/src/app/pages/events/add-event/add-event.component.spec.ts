@@ -59,6 +59,31 @@ describe('AddEventComponent', () => {
     expect(router.navigate).toHaveBeenCalledWith(['/events']);
   });
 
+  it('creates a regular event with selected Host Community Group and passes communityId and communityName', () => {
+    component.event = {
+      title: 'Youth Vedic Discussion',
+      category: 'Youth Event',
+      description: 'Engaging discussion on Vedic heritage, values, and mindfulness for young devotees.',
+      imageUrl: '', status: 'Published', date: '2026-10-15', startTime: '15:00', endTime: '17:00',
+      multiDay: false, endDate: '', recurring: false, frequency: 'Daily', registrationOpens: '', registrationCloses: '',
+      templeId: 1, templeName: 'Sanatan Mandir', communityId: null, communityName: '', hallName: '', address: 'Auckland', mapsLink: '', onlineLink: '',
+    };
+    component.onCommunitySelected(10);
+    component.termsAccepted = true;
+
+    expect(component.selectedCommunityId).toBe(10);
+    expect(component.event.communityName).toBe('Auckland Sanatan Mandal');
+
+    component.createEvent();
+
+    const req = http.expectOne(r => r.url.endsWith('/event') && r.method === 'POST');
+    expect(req.request.body.communityId).toBe(10);
+    expect(req.request.body.communityName).toBe('Auckland Sanatan Mandal');
+    expect(req.request.body.templeName).toBe('Sanatan Mandir');
+    req.flush({ data: { id: 3 } });
+    expect(router.navigate).toHaveBeenCalledWith(['/events']);
+  });
+
   it('allows festival event creation with community without requiring a temple, navigating to /festival', () => {
     component.event = {
       title: 'Grand Diwali Celebration 2026',

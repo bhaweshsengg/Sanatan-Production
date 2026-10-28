@@ -34,7 +34,7 @@ describe('HomeComponent', () => {
     expect(addEventBtn).toBeTruthy();
     expect(addServiceBtn).toBeTruthy();
 
-    expect(addTempleBtn?.textContent).toContain('Add Temple');
+    expect(addTempleBtn?.textContent).toContain('Add New Temple');
     expect(addEventBtn?.textContent).toContain('Add Event');
     expect(addServiceBtn?.textContent).toContain('Add Service');
   });

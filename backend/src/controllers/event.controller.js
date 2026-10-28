@@ -61,7 +61,8 @@ const uploadNewImage = async (file, folder = 'events') => {
 const toEventData = (body) => {
   const isFestival = body.category && (
     body.category.toLowerCase().includes('festival') ||
-    body.category === 'Religious Observance'
+    body.category === 'Religious Observance' ||
+    ['hindu', 'jain', 'sikh', 'baudh'].includes(body.category.toLowerCase().trim())
   );
 
   let resolvedTempleName = (body.templeName || '').trim();
@@ -85,6 +86,8 @@ const toEventData = (body) => {
     registrationCloses: body.registrationCloses || null,
     templeId: body.templeId ? Number(body.templeId) : null,
     templeName: resolvedTempleName,
+    communityId: body.communityId ? Number(body.communityId) : null,
+    communityName: body.communityName ? body.communityName.trim() : null,
     hallName: body.hallName || null,
     address: body.address || null,
     mapsLink: body.mapsLink || null,
@@ -96,12 +99,14 @@ const publicEventInclude = {
   organizer: { select: { id: true, username: true } },
   reviewer: { select: { id: true, username: true } },
   temple: { select: { id: true, mandir_name: true, full_address: true } },
+  communityGroup: { select: { id: true, name: true, slug: true, cityName: true } },
 };
 
 const eventInclude = {
   organizer: { select: { id: true, username: true, email: true } },
   reviewer: { select: { id: true, username: true } },
   temple: { select: { id: true, mandir_name: true, full_address: true } },
+  communityGroup: { select: { id: true, name: true, slug: true, cityName: true } },
 };
 
 export const listApprovedEvents = async (req, res) => {
@@ -126,6 +131,10 @@ export const listApprovedEvents = async (req, res) => {
           { category: 'Religious Observance' },
           { category: { contains: 'Festival' } },
           { category: { contains: 'festival' } },
+          { category: 'Hindu' },
+          { category: 'Jain' },
+          { category: 'Sikh' },
+          { category: 'Baudh' },
         ];
       } else {
         where.category = catTrim;

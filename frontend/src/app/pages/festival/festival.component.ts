@@ -86,7 +86,11 @@ export interface FestivalItem {
                 [(ngModel)]="selectedCategory"
                 (change)="filterFestivals()"
               >
-                <option value="All">All Categories</option>
+                <option value="All">All Categories / Traditions</option>
+                <option value="Hindu">Hindu</option>
+                <option value="Jain">Jain</option>
+                <option value="Sikh">Sikh</option>
+                <option value="Baudh">Baudh</option>
                 <option value="Festival">Community Festivals</option>
                 <option value="Major Festival">Major Festivals</option>
                 <option value="Religious Observance">Religious Observances</option>

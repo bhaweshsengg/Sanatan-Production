@@ -4,26 +4,12 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../../environments/environment';
-import { TempleSearchSelectComponent, TempleSelectItem } from '../../../shared/components/temple-search-select/temple-search-select.component';
 import { TermsConditionsModalComponent } from '../../../shared/components/terms-conditions-modal/terms-conditions-modal.component';
-
-interface TempleOption {
-  id: number;
-  mandir_name: string;
-  city?: { name: string };
-  full_address?: string;
-}
-
-interface CommunityOption {
-  id: number;
-  name: string;
-  cityName?: string;
-}
 
 @Component({
   selector: 'app-add-festival',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, TempleSearchSelectComponent, TermsConditionsModalComponent],
+  imports: [CommonModule, FormsModule, RouterLink, TermsConditionsModalComponent],
   template: `
     <!-- Terms & Conditions Modal -->
     <app-terms-conditions-modal
@@ -58,7 +44,7 @@ interface CommunityOption {
             </h1>
           </div>
           <p class="text-sm sm:text-base text-orange-100 max-w-2xl font-light">
-            List a sacred festival, deepotsav, pooja, or cultural observance. You can host festivals through a community group or temple.
+            List a sacred festival, deepotsav, pooja, or cultural observance across New Zealand.
           </p>
         </div>
 
@@ -94,38 +80,27 @@ interface CommunityOption {
                   />
                 </div>
 
-                <div class="grid gap-6 sm:grid-cols-2">
-                  <div>
-                    <label class="block text-sm font-semibold text-gray-700 mb-1" for="category">
-                      Festival Category *
-                    </label>
-                    <select
-                      class="w-full h-11 rounded-lg border border-gray-300 px-3.5 text-sm bg-white focus:border-orange-500 focus:outline-none focus:ring-1 focus:ring-orange-500"
-                      id="category"
-                      name="category"
-                      [(ngModel)]="festival.category"
-                      required
-                    >
-                      <option value="Festival">Community Festival</option>
-                      <option value="Major Festival">Major Festival</option>
-                      <option value="Religious Observance">Religious Observance</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label class="block text-sm font-semibold text-gray-700 mb-1" for="status">
-                      Submission Status
-                    </label>
-                    <select
-                      class="w-full h-11 rounded-lg border border-gray-300 px-3.5 text-sm bg-white focus:border-orange-500 focus:outline-none focus:ring-1 focus:ring-orange-500"
-                      id="status"
-                      name="status"
-                      [(ngModel)]="festival.status"
-                    >
-                      <option value="Draft">Draft</option>
-                      <option value="Published">Published (Submitted for approval)</option>
-                    </select>
-                  </div>
+                <div>
+                  <label class="block text-sm font-semibold text-gray-700 mb-1" for="category">
+                    Festival Sanatan Dharma *
+                  </label>
+                  <select
+                    class="w-full h-11 rounded-lg border border-gray-300 px-3.5 text-sm bg-white focus:border-orange-500 focus:outline-none focus:ring-1 focus:ring-orange-500"
+                    id="category"
+                    name="category"
+                    [(ngModel)]="festival.category"
+                    required
+                  >
+                    <option value="" disabled>Select Sanatan Dharma tradition</option>
+                    <option value="Hindu">Hindu</option>
+                    <option value="Jain">Jain</option>
+                    <option value="Sikh">Sikh</option>
+                    <option value="Baudh">Baudh</option>
+                    <!-- Fallback for legacy categories so editing existing records retains value safely -->
+                    <option *ngIf="isLegacyCategory(festival.category)" [value]="festival.category">
+                      {{ festival.category }} (Legacy)
+                    </option>
+                  </select>
                 </div>
 
                 <!-- Significance / Description -->
@@ -146,23 +121,6 @@ interface CommunityOption {
                     <span [ngClass]="{'text-green-600': festival.description.trim().length >= 50, 'text-gray-400': festival.description.trim().length < 50}">
                       {{ festival.description.trim().length }}/50 minimum
                     </span>
-                  </div>
-                </div>
-
-                <!-- Quick Deity & Ritual Tag Helpers -->
-                <div class="rounded-xl bg-orange-50/50 border border-orange-100 p-4 space-y-3">
-                  <div class="text-xs font-semibold text-orange-950 uppercase tracking-wide">
-                    Suggested Rituals &amp; Practices (Click to append):
-                  </div>
-                  <div class="flex flex-wrap gap-2">
-                    <button
-                      type="button"
-                      *ngFor="let ritual of commonRituals"
-                      (click)="appendRitual(ritual)"
-                      class="text-xs px-2.5 py-1 rounded-full bg-white border border-orange-200 text-orange-800 hover:bg-orange-100 transition shadow-2xs"
-                    >
-                      + {{ ritual }}
-                    </button>
                   </div>
                 </div>
 
@@ -229,148 +187,7 @@ interface CommunityOption {
                 </div>
               </section>
 
-              <!-- Host & Location Section -->
-              <section class="space-y-6">
-                <div class="border-b border-gray-200 pb-3">
-                  <h3 class="text-lg font-bold text-gray-900 flex items-center gap-2">
-                    <span>📍</span>
-                    <span>Host Community &amp; Location</span>
-                  </h3>
-                  <p class="text-xs text-gray-500 mt-0.5">
-                    Select a community group or temple as the host. Temple selection is optional for festivals.
-                  </p>
-                </div>
-
-                <div class="grid gap-6 sm:grid-cols-2">
-                  <!-- Community Selection -->
-                  <div class="rounded-xl border border-orange-200 bg-orange-50/50 p-4 space-y-2">
-                    <div class="flex items-center justify-between">
-                      <label class="text-xs font-bold text-orange-950 uppercase tracking-wide flex items-center gap-1.5" for="communityId">
-                        <span>👥</span>
-                        <span>Host Community Group</span>
-                      </label>
-                      <span class="text-[11px] bg-orange-100 text-orange-800 font-semibold px-2 py-0.5 rounded-full">Community Host</span>
-                    </div>
-                    <p class="text-xs text-gray-600">
-                      Select the community celebrating this festival. Temple selection is optional.
-                    </p>
-                    <select
-                      id="communityId"
-                      name="communityId"
-                      class="flex h-10 w-full rounded-lg border border-gray-300 bg-white px-3 text-xs text-gray-800 focus:border-orange-500 focus:outline-none focus:ring-1 focus:ring-orange-500"
-                      [(ngModel)]="selectedCommunityId"
-                      (change)="onCommunitySelected(selectedCommunityId)"
-                    >
-                      <option [ngValue]="null">-- Select Community Group (Optional) --</option>
-                      <option *ngFor="let group of communityGroups" [ngValue]="group.id">
-                        {{ group.name }} {{ group.cityName ? '(' + group.cityName + ')' : '' }}
-                      </option>
-                    </select>
-
-                    <div *ngIf="!selectedCommunityId" class="pt-1">
-                      <input
-                        type="text"
-                        placeholder="Or enter custom community/society name..."
-                        class="flex h-9 w-full rounded-lg border border-gray-300 bg-white px-3 text-xs focus:border-orange-500 focus:outline-none focus:ring-1 focus:ring-orange-500"
-                        [(ngModel)]="customCommunityName"
-                        name="customCommunityName"
-                        (input)="onCustomCommunityChange()"
-                      />
-                    </div>
-
-                    <p *ngIf="festival.communityName" class="text-xs text-green-700 font-medium">
-                      ✓ Associated with: <strong>{{ festival.communityName }}</strong>
-                    </p>
-                  </div>
-
-                  <!-- Temple Selection (Optional) -->
-                  <div class="rounded-xl border border-gray-200 bg-gray-50/50 p-4 space-y-2">
-                    <div class="flex items-center justify-between">
-                      <label class="text-xs font-bold text-gray-900 uppercase tracking-wide flex items-center gap-1.5">
-                        <span>🛕</span>
-                        <span>Temple Venue (Optional)</span>
-                      </label>
-                      <span class="text-[11px] bg-gray-200 text-gray-700 font-medium px-2 py-0.5 rounded-full">Optional</span>
-                    </div>
-                    <p class="text-xs text-gray-600">
-                      If held at a mandir, select the temple below. Otherwise leave as No Temple.
-                    </p>
-                    <app-temple-search-select
-                      [(ngModel)]="festival.templeId"
-                      name="templeId"
-                      label=""
-                      helperText=""
-                      [allowNone]="true"
-                      noneLabel="-- No Temple (Community / Outdoor Festival) --"
-                      [temples]="temples"
-                      (templeSelected)="onTempleSelected($event)"
-                    ></app-temple-search-select>
-
-                    <p *ngIf="festival.templeId" class="text-xs text-green-700 font-medium">
-                      ✓ Temple: <strong>{{ festival.templeName }}</strong>
-                    </p>
-                  </div>
-                </div>
-
-                <!-- Venue & Address Details -->
-                <div class="grid gap-4 sm:grid-cols-2">
-                  <div>
-                    <label class="block text-sm font-semibold text-gray-700 mb-1" for="hallName">
-                      Hall / Grounds / Venue Name
-                    </label>
-                    <input
-                      class="w-full h-10 rounded-lg border border-gray-300 px-3 text-sm focus:border-orange-500 focus:outline-none focus:ring-1 focus:ring-orange-500"
-                      id="hallName"
-                      name="hallName"
-                      placeholder="e.g. Main Mandir Hall, Event Pavilion, Waterfront Park"
-                      [(ngModel)]="festival.hallName"
-                    />
-                  </div>
-                  <div>
-                    <label class="block text-sm font-semibold text-gray-700 mb-1" for="address">
-                      Street Address / City
-                    </label>
-                    <input
-                      class="w-full h-10 rounded-lg border border-gray-300 px-3 text-sm focus:border-orange-500 focus:outline-none focus:ring-1 focus:ring-orange-500"
-                      id="address"
-                      name="address"
-                      placeholder="e.g. 11 Brick St, Henderson, Auckland"
-                      [(ngModel)]="festival.address"
-                    />
-                  </div>
-                </div>
-
-                <div class="grid gap-4 sm:grid-cols-2">
-                  <div>
-                    <label class="block text-sm font-semibold text-gray-700 mb-1" for="mapsLink">
-                      Google Maps Link
-                    </label>
-                    <input
-                      class="w-full h-10 rounded-lg border border-gray-300 px-3 text-sm focus:border-orange-500 focus:outline-none focus:ring-1 focus:ring-orange-500"
-                      id="mapsLink"
-                      name="mapsLink"
-                      type="url"
-                      placeholder="https://maps.google.com/?q=..."
-                      [(ngModel)]="festival.mapsLink"
-                    />
-                  </div>
-                  <div>
-                    <label class="block text-sm font-semibold text-gray-700 mb-1" for="onlineLink">
-                      Live Stream / Online Link
-                    </label>
-                    <input
-                      class="w-full h-10 rounded-lg border border-gray-300 px-3 text-sm focus:border-orange-500 focus:outline-none focus:ring-1 focus:ring-orange-500"
-                      id="onlineLink"
-                      name="onlineLink"
-                      type="url"
-                      placeholder="https://youtube.com/live/... or zoom"
-                      [(ngModel)]="festival.onlineLink"
-                    />
-                  </div>
-                </div>
-              </section>
-
-              <!-- Date & Time Section -->
+              <!-- Date & Schedule Section -->
               <section class="space-y-6">
                 <div class="border-b border-gray-200 pb-3">
                   <h3 class="text-lg font-bold text-gray-900 flex items-center gap-2">
@@ -417,36 +234,6 @@ interface CommunityOption {
                       type="time"
                       [(ngModel)]="festival.endTime"
                       required
-                    />
-                  </div>
-                </div>
-
-                <div class="grid gap-4 sm:grid-cols-2">
-                  <div>
-                    <label class="block text-sm font-semibold text-gray-700 mb-1" for="multiDay">
-                      Multi-Day Festival Celebration
-                    </label>
-                    <select
-                      class="w-full h-10 rounded-lg border border-gray-300 bg-white px-3 text-sm focus:border-orange-500 focus:outline-none focus:ring-1 focus:ring-orange-500"
-                      id="multiDay"
-                      name="multiDay"
-                      [(ngModel)]="festival.multiDay"
-                    >
-                      <option [ngValue]="false">No (Single Day)</option>
-                      <option [ngValue]="true">Yes (Multi-Day)</option>
-                    </select>
-                  </div>
-                  <div *ngIf="festival.multiDay">
-                    <label class="block text-sm font-semibold text-gray-700 mb-1" for="endDate">
-                      End Date *
-                    </label>
-                    <input
-                      class="w-full h-10 rounded-lg border border-gray-300 px-3 text-sm focus:border-orange-500 focus:outline-none focus:ring-1 focus:ring-orange-500"
-                      id="endDate"
-                      name="endDate"
-                      type="date"
-                      [(ngModel)]="festival.endDate"
-                      [required]="festival.multiDay"
                     />
                   </div>
                 </div>
@@ -517,31 +304,13 @@ export class AddFestivalComponent implements OnInit {
   isTermsModalOpen = false;
   submittedAttempt = false;
 
-  // Temple selection
-  temples: TempleOption[] = [];
-
-  // Community selection
-  communityGroups: CommunityOption[] = [];
-  selectedCommunityId: number | null = null;
-  customCommunityName = '';
-
   // Image upload
   isUploadingImage = false;
   imageUploadError = '';
 
-  // Suggested rituals helper
-  readonly commonRituals = [
-    'Maha Aarti & Deepotsav',
-    'Special Puja & Abhishek',
-    'Bhajan & Kirtan',
-    'Community Mahaprasad',
-    'Cultural Performances',
-    'Sacred Havan / Yajna',
-  ];
-
   festival = {
     title: '',
-    category: 'Festival',
+    category: 'Hindu',
     description: '',
     imageUrl: '',
     status: 'Published',
@@ -577,85 +346,8 @@ export class AddFestivalComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.loadTemples();
-    this.loadCommunities();
     if (this.editMode && this.festivalId) {
       this.loadFestival(this.festivalId);
-    }
-  }
-
-  loadTemples(): void {
-    this.http.get<any>(`${this.apiUrl}/temple?status=Approved&limit=all`).subscribe({
-      next: (res) => {
-        const list = res?.data ?? (Array.isArray(res) ? res : []);
-        this.temples = Array.isArray(list) ? list : [];
-      },
-      error: () => {
-        this.temples = [];
-      },
-    });
-  }
-
-  loadCommunities(): void {
-    this.http.get<any>(`${this.apiUrl}/community/groups?limit=100`).subscribe({
-      next: (res) => {
-        const list = res?.data ?? (Array.isArray(res) ? res : []);
-        this.communityGroups = Array.isArray(list) ? list : [];
-      },
-      error: () => {
-        this.communityGroups = [];
-      },
-    });
-  }
-
-  onCommunitySelected(groupId: number | null): void {
-    if (!groupId) {
-      this.selectedCommunityId = null;
-      this.festival.communityId = null;
-      this.festival.communityName = '';
-      return;
-    }
-    const match = this.communityGroups.find((g) => g.id === Number(groupId));
-    if (match) {
-      this.selectedCommunityId = match.id;
-      this.festival.communityId = match.id;
-      this.festival.communityName = match.name;
-      this.customCommunityName = '';
-      if (!this.festival.address && match.cityName) {
-        this.festival.address = match.cityName;
-      }
-    }
-  }
-
-  onCustomCommunityChange(): void {
-    const val = this.customCommunityName.trim();
-    if (val) {
-      this.selectedCommunityId = null;
-      this.festival.communityId = null;
-      this.festival.communityName = val;
-    } else {
-      this.festival.communityName = '';
-    }
-  }
-
-  onTempleSelected(temple: TempleSelectItem | null): void {
-    if (temple) {
-      this.festival.templeId = temple.id;
-      this.festival.templeName = temple.mandir_name;
-      if (!this.festival.address && temple.full_address) {
-        this.festival.address = temple.full_address;
-      }
-    } else {
-      this.festival.templeId = null;
-      this.festival.templeName = '';
-    }
-  }
-
-  appendRitual(ritual: string): void {
-    if (!this.festival.description.includes(ritual)) {
-      this.festival.description = this.festival.description
-        ? `${this.festival.description.trim()}\n• ${ritual}`
-        : `• ${ritual}`;
     }
   }
 
@@ -720,13 +412,7 @@ export class AddFestivalComponent implements OnInit {
     if (!this.festival.title.trim() || !this.festival.category) return true;
     if (this.festival.description.trim().length < 50) return true;
     if (!this.festival.eventDate || !this.festival.startTime || !this.festival.endTime) return true;
-    if (this.festival.multiDay && !this.festival.endDate) return true;
-
-    // Must have at least a Temple, a Community, or an Address
-    const hasTemple = Boolean(this.festival.templeName.trim());
-    const hasCommunity = Boolean(this.festival.communityName.trim() || this.customCommunityName.trim());
-    const hasAddress = Boolean(this.festival.address?.trim());
-    return !hasTemple && !hasCommunity && !hasAddress;
+    return false;
   }
 
   createFestival(): void {
@@ -736,22 +422,13 @@ export class AddFestivalComponent implements OnInit {
       return;
     }
 
-    const effectiveCommunity = this.festival.communityName?.trim() || this.customCommunityName?.trim() || '';
-    const effectiveTemple = this.festival.templeName?.trim() || '';
-
-    if (!effectiveTemple && !effectiveCommunity && !this.festival.address?.trim()) {
-      this.errorMessage = 'Please select a Community or Temple, or provide a venue location for this festival.';
-      return;
-    }
-
     if (
       !this.festival.title.trim() ||
       !this.festival.category ||
       this.festival.description.trim().length < 50 ||
       !this.festival.eventDate ||
       !this.festival.startTime ||
-      !this.festival.endTime ||
-      (this.festival.multiDay && !this.festival.endDate)
+      !this.festival.endTime
     ) {
       return;
     }
@@ -777,9 +454,6 @@ export class AddFestivalComponent implements OnInit {
   }
 
   private toApiPayload() {
-    const effectiveCommunity = this.festival.communityName?.trim() || this.customCommunityName?.trim() || '';
-    const effectiveTemple = this.festival.templeName.trim() || effectiveCommunity || this.festival.address?.trim() || 'Sanatan Community';
-
     return {
       title: this.festival.title.trim(),
       category: this.festival.category,
@@ -788,23 +462,28 @@ export class AddFestivalComponent implements OnInit {
       eventDate: this.festival.eventDate,
       startTime: this.festival.startTime,
       endTime: this.festival.endTime,
-      multiDay: this.festival.multiDay,
-      endDate: this.festival.endDate,
-      recurring: this.festival.recurring,
-      frequency: this.festival.recurring ? this.festival.frequency : '',
-      registrationOpens: this.festival.registrationOpens,
-      registrationCloses: this.festival.registrationCloses,
-      templeId: this.festival.templeId ? Number(this.festival.templeId) : null,
-      templeName: effectiveTemple,
-      communityId: this.selectedCommunityId ? Number(this.selectedCommunityId) : null,
-      communityName: effectiveCommunity || null,
-      hallName: this.festival.hallName,
-      address: this.festival.address,
-      mapsLink: this.festival.mapsLink,
-      onlineLink: this.festival.onlineLink,
+      multiDay: false,
+      endDate: null,
+      recurring: false,
+      frequency: '',
+      registrationOpens: null,
+      registrationCloses: null,
+      templeId: null,
+      templeName: 'Sanatan Community',
+      communityId: null,
+      communityName: null,
+      hallName: null,
+      address: null,
+      mapsLink: null,
+      onlineLink: null,
       termsAccepted: true,
       termsAcceptedAt: new Date().toISOString(),
     };
+  }
+
+  isLegacyCategory(cat: string | null | undefined): boolean {
+    if (!cat) return false;
+    return !['Hindu', 'Jain', 'Sikh', 'Baudh'].includes(cat);
   }
 
   private loadFestival(id: number): void {
@@ -816,13 +495,9 @@ export class AddFestivalComponent implements OnInit {
           this.festival = {
             ...this.festival,
             ...ev,
+            category: ev.category || 'Hindu',
             eventDate: ev.eventDate,
-            templeId: ev.templeId ?? ev.temple?.id ?? null,
-            templeName: ev.templeName || '',
           };
-          if (ev.communityName) {
-            this.customCommunityName = ev.communityName;
-          }
         }
         this.isLoading = false;
       },

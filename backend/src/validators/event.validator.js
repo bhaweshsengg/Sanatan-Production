@@ -1,9 +1,15 @@
 import { z } from 'zod';
 
+export const SANATAN_DHARMA_CATEGORIES = ['Hindu', 'Jain', 'Sikh', 'Baudh'];
+
 export const isFestivalCategory = (category) => {
   if (!category || typeof category !== 'string') return false;
   const c = category.toLowerCase().trim();
-  return c.includes('festival') || c === 'religious observance';
+  return (
+    c.includes('festival') ||
+    c === 'religious observance' ||
+    ['hindu', 'jain', 'sikh', 'baudh'].includes(c)
+  );
 };
 
 const eventFields = {
@@ -56,14 +62,6 @@ export const eventCreateSchema = eventObjectSchema.extend({
       code: z.ZodIssueCode.custom,
       path: ['templeName'],
       message: 'Temple Name is required for regular events',
-    });
-  }
-
-  if (isFestival && !hasTemple && !hasCommunity && !hasAddress) {
-    context.addIssue({
-      code: z.ZodIssueCode.custom,
-      path: ['templeName'],
-      message: 'Please select a Community or Temple, or provide a location for the festival',
     });
   }
 });

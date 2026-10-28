@@ -103,7 +103,7 @@ interface Deity {
               class="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-white text-orange-600 font-bold text-sm sm:text-base shadow-lg hover:shadow-xl hover:bg-orange-50 transform hover:scale-105 transition-all duration-200 cursor-pointer"
             >
               <span class="text-lg">🛕</span>
-              <span>Add Temple</span>
+              <span>Add New Temple</span>
             </a>
           </div>
 
@@ -265,7 +265,7 @@ interface Deity {
                 routerLink="/temples/add-temple"
                 class="bg-orange-600 text-white px-6 py-3 rounded-md hover:bg-orange-700"
               >
-                + Add Temple
+                + Add New Temple
               </button>
             </div>
           </section>

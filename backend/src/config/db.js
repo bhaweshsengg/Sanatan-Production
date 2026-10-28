@@ -123,6 +123,8 @@ export const ensureRequiredTables = async () => {
           \`registrationOpens\` VARCHAR(191) NULL,
           \`registrationCloses\` VARCHAR(191) NULL,
           \`templeName\` VARCHAR(191) NOT NULL,
+          \`community_id\` INT NULL,
+          \`community_name\` VARCHAR(191) NULL,
           \`hallName\` VARCHAR(191) NULL,
           \`address\` VARCHAR(191) NULL,
           \`mapsLink\` VARCHAR(2048) NULL,
@@ -136,7 +138,8 @@ export const ensureRequiredTables = async () => {
           PRIMARY KEY (\`id\`),
           INDEX \`community_event_status_idx\` (\`status\`),
           INDEX \`community_event_organizer_id_idx\` (\`organizer_id\`),
-          INDEX \`community_event_temple_id_idx\` (\`temple_id\`)
+          INDEX \`community_event_temple_id_idx\` (\`temple_id\`),
+          INDEX \`community_event_community_id_idx\` (\`community_id\`)
         ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
       `);
 
@@ -631,6 +634,21 @@ export const ensureRequiredTables = async () => {
         }
       }
 
+      // Ensure User.role enum includes all application roles
+      try {
+        await prisma.$executeRawUnsafe(`
+          ALTER TABLE \`User\` MODIFY COLUMN \`role\` ENUM('Admin', 'TempleManager', 'BusinessManager', 'User', 'Devotee', 'Priest') NOT NULL DEFAULT 'Admin';
+        `);
+      } catch {
+        try {
+          await prisma.$executeRawUnsafe(`
+            ALTER TABLE \`user\` MODIFY COLUMN \`role\` ENUM('Admin', 'TempleManager', 'BusinessManager', 'User', 'Devotee', 'Priest') NOT NULL DEFAULT 'Admin';
+          `);
+        } catch {
+          // Safe to ignore
+        }
+      }
+
       try {
         await prisma.$executeRawUnsafe(`
           ALTER TABLE \`TempleDevotee_registration\` ADD COLUMN \`terms_accepted\` TINYINT(1) NOT NULL DEFAULT 1;
@@ -707,6 +725,23 @@ export const ensureRequiredTables = async () => {
       try {
         await prisma.$executeRawUnsafe(`
           ALTER TABLE \`community_event\` ADD COLUMN \`terms_accepted_at\` DATETIME(3) NULL;
+        `);
+      } catch {
+        // Safe to ignore if column already exists
+      }
+
+      // Event community group migrations
+      try {
+        await prisma.$executeRawUnsafe(`
+          ALTER TABLE \`community_event\` ADD COLUMN \`community_id\` INT NULL;
+        `);
+      } catch {
+        // Safe to ignore if column already exists
+      }
+
+      try {
+        await prisma.$executeRawUnsafe(`
+          ALTER TABLE \`community_event\` ADD COLUMN \`community_name\` VARCHAR(191) NULL;
         `);
       } catch {
         // Safe to ignore if column already exists

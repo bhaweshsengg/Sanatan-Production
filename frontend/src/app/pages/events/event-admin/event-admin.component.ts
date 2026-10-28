@@ -13,6 +13,9 @@ interface AdminEvent {
   startTime: string;
   endTime: string;
   templeName: string;
+  communityId?: number | null;
+  communityName?: string | null;
+  communityGroup?: { id: number; name: string };
   attendees?: number;
   status: 'Pending' | 'Approved' | 'Rejected' | 'Cancelled' | 'Completed';
   organizer?: { username: string; email?: string };
@@ -105,7 +108,12 @@ interface EventAttendeeDetail {
                 <tr *ngFor="let event of filteredEvents">
                   <td class="px-6 py-4">
                     <div class="font-semibold text-gray-900">{{ event.title }}</div>
-                    <div class="text-sm text-gray-500">{{ event.category }} · {{ event.templeName }}</div>
+                    <div class="text-sm text-gray-500">
+                      {{ event.category }} · {{ event.templeName }}
+                      <span *ngIf="event.communityName || event.communityGroup?.name" class="text-orange-700 font-medium">
+                        · 👥 {{ event.communityName || event.communityGroup?.name }}
+                      </span>
+                    </div>
                   </td>
                   <td class="px-6 py-4 text-sm text-gray-700">{{ event.organizer?.username || 'Unknown' }}</td>
                   <td class="px-6 py-4 text-sm text-gray-700">{{ event.eventDate }}<br>{{ event.startTime }} - {{ event.endTime }}</td>
@@ -320,7 +328,11 @@ export class EventAdminComponent implements OnInit {
   isFestival(event: AdminEvent): boolean {
     if (!event.category) return false;
     const cat = event.category.toLowerCase().trim();
-    return cat.includes('festival') || cat === 'religious observance';
+    return (
+      cat.includes('festival') ||
+      cat === 'religious observance' ||
+      ['hindu', 'jain', 'sikh', 'baudh'].includes(cat)
+    );
   }
 
   setFilter(filter: 'All' | 'Festival' | 'Regular'): void {

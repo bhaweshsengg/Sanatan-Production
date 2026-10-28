@@ -29,24 +29,25 @@ describe('AddFestivalComponent', () => {
     component = fixture.componentInstance;
     http = TestBed.inject(HttpTestingController);
     fixture.detectChanges();
-
-    const templeReq = http.expectOne(req => req.url.includes('/temple') && req.method === 'GET');
-    templeReq.flush({ data: [{ id: 1, name: 'Sanatan Mandir' }] });
-    const commReq = http.expectOne(req => req.url.includes('/community/groups') && req.method === 'GET');
-    commReq.flush({ data: [{ id: 5, name: 'NZ Hindu Community' }] });
   });
 
-  it('should create AddFestivalComponent', () => {
+  it('should create AddFestivalComponent and default category to Hindu', () => {
     expect(component).toBeTruthy();
-    expect(component.festival.category).toBe('Festival');
+    expect(component.festival.category).toBe('Hindu');
+    expect(component.isLegacyCategory('Hindu')).toBeFalse();
+    expect(component.isLegacyCategory('Jain')).toBeFalse();
+    expect(component.isLegacyCategory('Sikh')).toBeFalse();
+    expect(component.isLegacyCategory('Baudh')).toBeFalse();
+    expect(component.isLegacyCategory('Festival')).toBeTrue();
   });
 
-  it('allows festival creation with community selection and without a temple', () => {
+  it('allows festival creation with Sanatan Dharma tradition and navigates to /festival', () => {
     component.festival.title = 'Maha Shivaratri 2026';
+    component.festival.category = 'Hindu';
     component.festival.description = 'Grand Shivaratri celebrations with Maha Abhishek and all-night bhajan with community prasad and arati.';
     component.festival.eventDate = '2026-03-08';
-    component.festival.address = 'Waitakere Indian Association Centre';
-    component.onCommunitySelected(5);
+    component.festival.startTime = '18:00';
+    component.festival.endTime = '06:00';
     component.termsAccepted = true;
 
     expect(component.isSubmitDisabled()).toBeFalse();
@@ -55,31 +56,32 @@ describe('AddFestivalComponent', () => {
 
     const req = http.expectOne(r => r.url.endsWith('/event') && r.method === 'POST');
     expect(req.request.body.title).toBe('Maha Shivaratri 2026');
-    expect(req.request.body.category).toBe('Festival');
-    expect(req.request.body.communityId).toBe(5);
-    expect(req.request.body.communityName).toBe('NZ Hindu Community');
-    expect(req.request.body.templeName).toBe('NZ Hindu Community');
+    expect(req.request.body.category).toBe('Hindu');
+    expect(req.request.body.eventDate).toBe('2026-03-08');
+    expect(req.request.body.templeName).toBe('Sanatan Community');
 
     req.flush({ data: { id: 101, title: 'Maha Shivaratri 2026' } });
     expect(router.navigate).toHaveBeenCalledWith(['/festival']);
   });
 
-  it('allows festival creation with temple selection', () => {
-    component.festival.title = 'Janmashtami Celebration';
-    component.festival.description = 'Celebrate Krishna Janmashtami with midnight aarti and cultural plays.';
-    component.festival.eventDate = '2026-09-04';
-    component.onTempleSelected({ id: 1, mandir_name: 'Sanatan Mandir' });
-    component.termsAccepted = true;
+  it('supports creating festivals with Jain, Sikh, or Baudh traditions', () => {
+    for (const tradition of ['Jain', 'Sikh', 'Baudh']) {
+      component.festival.title = `${tradition} Sacred Gathering`;
+      component.festival.category = tradition;
+      component.festival.description = 'Sacred spiritual assembly celebrating traditions, values, community prayers, and mahaprasad.';
+      component.festival.eventDate = '2026-04-14';
+      component.festival.startTime = '10:00';
+      component.festival.endTime = '14:00';
+      component.termsAccepted = true;
 
-    expect(component.isSubmitDisabled()).toBeFalse();
+      expect(component.isSubmitDisabled()).toBeFalse();
 
-    component.createFestival();
+      component.createFestival();
 
-    const req = http.expectOne(r => r.url.endsWith('/event') && r.method === 'POST');
-    expect(req.request.body.templeId).toBe(1);
-    expect(req.request.body.templeName).toBe('Sanatan Mandir');
-    req.flush({ data: { id: 102 } });
-    expect(router.navigate).toHaveBeenCalledWith(['/festival']);
+      const req = http.expectOne(r => r.url.endsWith('/event') && r.method === 'POST');
+      expect(req.request.body.category).toBe(tradition);
+      req.flush({ data: { id: 200, title: `${tradition} Sacred Gathering` } });
+    }
   });
 
   it('disables submit when required basic fields are missing or terms are not accepted', () => {
@@ -97,9 +99,8 @@ describe('AddFestivalComponent', () => {
     component.termsAccepted = true;
     expect(component.isSubmitDisabled()).toBeTrue();
 
-    // Fill valid description >= 50 chars and valid host
+    // Fill valid description >= 50 chars
     component.festival.description = 'A joyful festival of colors celebrated with devotion, joy, sweets, and community bhajans across Auckland.';
-    component.festival.address = 'Auckland';
     expect(component.isSubmitDisabled()).toBeFalse();
   });
 

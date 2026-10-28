@@ -15,6 +15,7 @@ interface CommunityEvent {
   time: string;
   attendees: number;
   joined: boolean;
+  communityName?: string;
   isCreated?: boolean;
 }
 
@@ -88,13 +89,6 @@ interface CommunityEvent {
               <span class="text-lg">📅</span>
               <span>Create Event</span>
             </a>
-            <a
-              routerLink="/festival/create"
-              class="inline-flex items-center gap-2 px-5 py-3 rounded-full bg-orange-50 text-orange-700 font-semibold text-sm border border-orange-200 shadow-sm hover:bg-orange-100 transition-all cursor-pointer"
-            >
-              <span class="text-lg">🪔</span>
-              <span>Create Festival</span>
-            </a>
           </div>
         </div>
 
@@ -110,7 +104,11 @@ interface CommunityEvent {
                   <h3 class="text-xl font-bold text-gray-900">{{ event.title }}</h3>
                   <span [class]="event.categoryClass">{{ event.category }}</span>
                 </div>
-                <p class="text-black-700 mb-4">{{ event.venue }}</p>
+                <p class="text-black-700 mb-2">{{ event.venue }}</p>
+                <p *ngIf="event.communityName" class="text-xs text-orange-700 font-medium flex items-center gap-1 mb-3">
+                  <span>👥</span>
+                  <span>Host: {{ event.communityName }}</span>
+                </p>
 
                 <div class="space-y-2 mb-6">
                   <div class="flex items-center text-black-700">
@@ -182,7 +180,11 @@ interface CommunityEvent {
                   <h3 class="text-xl font-bold text-gray-900">{{ event.title }}</h3>
                   <span [class]="event.categoryClass">{{ event.category }}</span>
                 </div>
-                <p class="text-black-700 mb-4">{{ event.venue }}</p>
+                <p class="text-black-700 mb-2">{{ event.venue }}</p>
+                <p *ngIf="event.communityName" class="text-xs text-orange-700 font-medium flex items-center gap-1 mb-3">
+                  <span>👥</span>
+                  <span>Host: {{ event.communityName }}</span>
+                </p>
                 <div class="space-y-2 text-black-700">
                   <div>📅 {{ event.date }}</div>
                   <div>🕐 {{ event.time }}</div>
@@ -594,6 +596,7 @@ export class EventsComponent implements OnInit {
 
   private mapApiEvent(event: any): CommunityEvent {
     const idStr = String(event.id);
+    const commName = event.communityName || event.communityGroup?.name || '';
     return {
       id: idStr,
       title: event.title,
@@ -604,6 +607,7 @@ export class EventsComponent implements OnInit {
       time: `${event.startTime} - ${event.endTime}`,
       attendees: event.attendees ?? 0,
       joined: this.joinedEventIds.has(idStr),
+      communityName: commName || undefined,
     };
   }
 

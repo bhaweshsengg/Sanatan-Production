@@ -162,6 +162,8 @@ model Event {
   registrationCloses  String?
   templeId            Int?         @map("temple_id")
   templeName          String
+  communityId         Int?         @map("community_id")
+  communityName       String?      @map("community_name")
   hallName            String?
   address             String?
   mapsLink            String?      @db.VarChar(2048)
@@ -174,14 +176,16 @@ model Event {
   createdAt           DateTime     @default(now()) @map("created_at")
   updatedAt           DateTime     @updatedAt @map("updated_at")
 
-  temple    Temple? @relation(fields: [templeId], references: [id], onDelete: SetNull)
-  organizer User?   @relation("EventOrganizer", fields: [organizerId], references: [id], onDelete: SetNull)
-  reviewer  User?   @relation("EventReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
-  attendeesList EventAttendee[]
+  temple         Temple?         @relation(fields: [templeId], references: [id], onDelete: SetNull)
+  communityGroup CommunityGroup? @relation(fields: [communityId], references: [id], onDelete: SetNull)
+  organizer      User?           @relation("EventOrganizer", fields: [organizerId], references: [id], onDelete: SetNull)
+  reviewer       User?           @relation("EventReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+  attendeesList  EventAttendee[]
 
   @@index([status])
   @@index([organizerId])
   @@index([templeId])
+  @@index([communityId])
   @@map("community_event")
 }
 
@@ -335,6 +339,7 @@ model CommunityGroup {
   city         City?       @relation(fields: [cityId], references: [id], onDelete: SetNull)
   creator      User?       @relation("GroupCreator", fields: [creatorId], references: [id], onDelete: SetNull)
   members      CommunityGroupMember[]
+  events       Event[]
 
   @@index([status])
   @@index([category])
