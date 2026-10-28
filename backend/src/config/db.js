@@ -99,6 +99,80 @@ export const ensureTemplePublicIdColumn = async () => {
 // Immediately invoke in background so it self-heals as soon as db module loads
 ensureTemplePublicIdColumn().catch(() => {});
 
+let eventCommunityColumnsPromise;
+
+export const ensureEventCommunityColumns = async () => {
+  if (!eventCommunityColumnsPromise) {
+    eventCommunityColumnsPromise = (async () => {
+      // 1. Ensure community_group table exists (needed for Event relation)
+      try {
+        await prisma.$executeRawUnsafe(`
+          CREATE TABLE IF NOT EXISTS \`community_group\` (
+            \`id\` INT NOT NULL AUTO_INCREMENT,
+            \`name\` VARCHAR(191) NOT NULL,
+            \`slug\` VARCHAR(191) NULL,
+            \`category\` VARCHAR(191) NOT NULL,
+            \`description\` TEXT NOT NULL,
+            \`city_id\` INT NULL,
+            \`city_name\` VARCHAR(191) NULL,
+            \`meeting_info\` VARCHAR(191) NULL,
+            \`contact_email\` VARCHAR(191) NULL,
+            \`contact_phone\` VARCHAR(191) NULL,
+            \`image_url\` VARCHAR(2048) NULL,
+            \`creator_id\` INT NULL,
+            \`creator_name\` VARCHAR(191) NULL,
+            \`status\` ENUM('Active','Pending','Archived') NOT NULL DEFAULT 'Active',
+            \`created_at\` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+            \`updated_at\` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+            PRIMARY KEY (\`id\`),
+            UNIQUE KEY \`community_group_slug_key\` (\`slug\`),
+            INDEX \`community_group_status_idx\` (\`status\`),
+            INDEX \`community_group_category_idx\` (\`category\`),
+            INDEX \`community_group_city_id_idx\` (\`city_id\`)
+          ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+        `);
+      } catch {
+        // Safe to ignore
+      }
+
+      // 2. Ensure community_id column exists on community_event
+      try {
+        await prisma.$executeRawUnsafe(
+          'ALTER TABLE `community_event` ADD COLUMN `community_id` INT NULL;'
+        );
+      } catch {
+        // Safe to ignore if column already exists
+      }
+
+      // 3. Ensure community_name column exists on community_event
+      try {
+        await prisma.$executeRawUnsafe(
+          'ALTER TABLE `community_event` ADD COLUMN `community_name` VARCHAR(191) NULL;'
+        );
+      } catch {
+        // Safe to ignore if column already exists
+      }
+
+      // 4. Ensure index exists
+      try {
+        await prisma.$executeRawUnsafe(
+          'ALTER TABLE `community_event` ADD INDEX `community_event_community_id_idx` (`community_id`);'
+        );
+      } catch {
+        // Safe to ignore if index already exists
+      }
+    })().catch((error) => {
+      eventCommunityColumnsPromise = undefined;
+      throw error;
+    });
+  }
+
+  return eventCommunityColumnsPromise;
+};
+
+// Immediately invoke in background so it self-heals as soon as db module loads
+ensureEventCommunityColumns().catch(() => {});
+
 let requiredTablesPromise;
 
 export const ensureRequiredTables = async () => {

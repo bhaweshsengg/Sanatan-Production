@@ -3,7 +3,7 @@ import fs from 'node:fs/promises';
 import { put, del } from '@vercel/blob';
 import { env } from '../config/env.js';
 import { logger } from '../utils/logger.js';
-import { prisma, ensureEventAttendeeTable } from '../config/db.js';
+import { prisma, ensureEventAttendeeTable, ensureEventCommunityColumns } from '../config/db.js';
 import { sendError, sendSuccess } from '../utils/response.js';
 
 const normalizeUploadedImagePath = (value) => {
@@ -159,16 +159,75 @@ export const listApprovedEvents = async (req, res) => {
       }
     }
 
-    const [events, total] = await Promise.all([
-      prisma.event.findMany({ 
-        where, 
-        include: publicEventInclude, 
-        orderBy: { eventDate: 'asc' },
-        ...(skip !== undefined ? { skip } : {}),
-        ...(limitNum !== undefined ? { take: limitNum } : {}),
-      }),
-      prisma.event.count({ where })
-    ]);
+    await ensureEventCommunityColumns().catch(() => {});
+
+    let events;
+    let total;
+
+    try {
+      [events, total] = await Promise.all([
+        prisma.event.findMany({ 
+          where, 
+          include: publicEventInclude, 
+          orderBy: { eventDate: 'asc' },
+          ...(skip !== undefined ? { skip } : {}),
+          ...(limitNum !== undefined ? { take: limitNum } : {}),
+        }),
+        prisma.event.count({ where })
+      ]);
+    } catch (queryError) {
+      if (
+        queryError.message &&
+        (queryError.message.includes('community_id') ||
+          queryError.message.includes('community_name') ||
+          queryError.message.includes('communityGroup') ||
+          queryError.message.includes('Unknown column'))
+      ) {
+        logger.warn('listApprovedEvents: community column missing, executing emergency schema fix...', {
+          error: queryError.message,
+        });
+        try {
+          await prisma.$executeRawUnsafe('ALTER TABLE `community_event` ADD COLUMN `community_id` INT NULL;');
+        } catch {}
+        try {
+          await prisma.$executeRawUnsafe('ALTER TABLE `community_event` ADD COLUMN `community_name` VARCHAR(191) NULL;');
+        } catch {}
+
+        try {
+          [events, total] = await Promise.all([
+            prisma.event.findMany({
+              where,
+              include: publicEventInclude,
+              orderBy: { eventDate: 'asc' },
+              ...(skip !== undefined ? { skip } : {}),
+              ...(limitNum !== undefined ? { take: limitNum } : {}),
+            }),
+            prisma.event.count({ where }),
+          ]);
+        } catch (retryError) {
+          logger.warn('listApprovedEvents: falling back to safe include without communityGroup...', {
+            error: retryError.message,
+          });
+          const safeInclude = {
+            organizer: { select: { id: true, username: true } },
+            reviewer: { select: { id: true, username: true } },
+            temple: { select: { id: true, mandir_name: true, full_address: true } },
+          };
+          [events, total] = await Promise.all([
+            prisma.event.findMany({
+              where,
+              include: safeInclude,
+              orderBy: { eventDate: 'asc' },
+              ...(skip !== undefined ? { skip } : {}),
+              ...(limitNum !== undefined ? { take: limitNum } : {}),
+            }),
+            prisma.event.count({ where }),
+          ]);
+        }
+      } else {
+        throw queryError;
+      }
+    }
     
     return sendSuccess(res, 200, { 
       data: events,
@@ -186,6 +245,7 @@ export const listApprovedEvents = async (req, res) => {
 
 export const getAdminEvents = async (req, res) => {
   try {
+    await ensureEventCommunityColumns().catch(() => {});
     const { page = 1, limit = 20 } = req.query;
     const pageNum = Math.max(1, Number(page));
     const limitNum = Math.max(1, Number(limit));
@@ -217,6 +277,7 @@ export const getAdminEvents = async (req, res) => {
 
 export const getAdminEvent = async (req, res) => {
   try {
+    await ensureEventCommunityColumns().catch(() => {});
     const event = await prisma.event.findUnique({ where: { id: Number(req.params.id) }, include: eventInclude });
     if (!event) return sendError(res, 404, 'Event not found', {});
     return sendSuccess(res, 200, { data: event });
@@ -227,6 +288,7 @@ export const getAdminEvent = async (req, res) => {
 
 export const createEvent = async (req, res) => {
   try {
+    await ensureEventCommunityColumns().catch(() => {});
     const event = await prisma.event.create({
       data: {
         ...toEventData(req.body),
@@ -246,6 +308,7 @@ export const updateEvent = async (req, res) => {
     if (!req.user || req.user.role !== 'Admin') {
       return sendError(res, 403, 'Forbidden: Only administrators can update events', {});
     }
+    await ensureEventCommunityColumns().catch(() => {});
     const event = await prisma.event.update({ where: { id: Number(req.params.id) }, data: toEventData(req.body), include: eventInclude });
     return sendSuccess(res, 200, { data: event, message: 'Event updated successfully' });
   } catch (error) {

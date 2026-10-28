@@ -8,7 +8,7 @@ import path from 'node:path';
 import morgan from 'morgan';
 
 import { env } from './config/env.js';
-import { prisma, ensureRequiredTables, ensureTemplePublicIdColumn } from './config/db.js';
+import { prisma, ensureRequiredTables, ensureTemplePublicIdColumn, ensureEventCommunityColumns } from './config/db.js';
 import { logger } from './utils/logger.js';
 
 import authRoutes from './routes/auth.routes.js';
@@ -211,6 +211,7 @@ app.use(errorHandler);
 
 // Trigger self-healing migrations asynchronously for serverless & traditional hosts
 ensureTemplePublicIdColumn().catch((err) => logger.warn('Startup ensureTemplePublicIdColumn warning:', err?.message));
+ensureEventCommunityColumns().catch((err) => logger.warn('Startup ensureEventCommunityColumns warning:', err?.message));
 ensureRequiredTables().catch((err) => logger.warn('Startup ensureRequiredTables warning:', err?.message));
 
 if (!process.env.VERCEL) {
@@ -219,6 +220,7 @@ if (!process.env.VERCEL) {
     .then(async () => {
       logger.info('Database connected successfully');
       await ensureTemplePublicIdColumn().catch((err) => logger.warn('Startup ensureTemplePublicIdColumn warning:', err?.message));
+      await ensureEventCommunityColumns().catch((err) => logger.warn('Startup ensureEventCommunityColumns warning:', err?.message));
       await ensureRequiredTables().catch((err) => logger.warn('Startup ensureRequiredTables warning:', err?.message));
       app.listen(env.port, '0.0.0.0', () => {
         logger.info(`Server running on port ${env.port}`);
