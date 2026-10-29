@@ -214,13 +214,20 @@ interface Deity {
                   </div> -->
                 </div>
 
-                <div class="flex gap-3">
-                  <button
-                    [routerLink]="['/temples/view-temple', temple.publicId || temple.id]"
-                    class="flex-1 bg-orange-600 text-white py-2 px-4 rounded-lg text-sm font-medium hover:bg-orange-700 transition-colors"
+                <div class="flex gap-2">
+                  <a
+                    [routerLink]="['/user-registration']"
+                    [queryParams]="{ mandirId: temple.id }"
+                    class="flex-1 inline-flex items-center justify-center bg-gradient-to-r from-orange-600 to-red-600 text-white py-2 px-3 rounded-lg text-sm font-semibold hover:from-orange-700 hover:to-red-700 transition-all shadow-sm"
                   >
-                    Visit Temple
-                  </button>
+                    Join
+                  </a>
+                  <a
+                    [routerLink]="['/temples/view-temple', temple.publicId || temple.id]"
+                    class="flex-1 inline-flex items-center justify-center border border-orange-500 bg-orange-50/40 text-orange-700 py-2 px-3 rounded-lg text-sm font-semibold hover:bg-orange-100 transition-colors"
+                  >
+                    View
+                  </a>
                   <a
                     *ngIf="isAdmin"
                     [routerLink]="['/temples/edit-temple', temple.id]"

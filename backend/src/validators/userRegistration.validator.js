@@ -1,10 +1,16 @@
 import { z } from 'zod';
 
 export const registrationSchema = z.object({
-  firstName: z.string().trim().min(2, 'First name is required').max(80),
-  lastName: z.string().trim().min(1, 'Last name is required').max(80),
+  firstName: z.string().trim().min(1, 'First name is required').max(80),
+  lastName: z.preprocess(
+    (val) => (val === null || val === undefined ? '' : String(val).trim()),
+    z.string().max(80).default('')
+  ),
   email: z.string().trim().email('Please enter a valid email address'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
+  password: z.preprocess(
+    (val) => (val === '' || val === null || val === undefined ? undefined : val),
+    z.string().min(6, 'Password must be at least 6 characters').optional()
+  ),
   mobile: z.string().trim().min(8, 'Mobile number is required').max(25, 'Mobile number is too long').regex(/^[+()\d\s-]+$/, 'Mobile number contains invalid characters'),
   mandirId: z.coerce.number().int('Temple is required').positive('Temple is required'),
   subscription: z.enum(['Yes', 'No']).default('No'),

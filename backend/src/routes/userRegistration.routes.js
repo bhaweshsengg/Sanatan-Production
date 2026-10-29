@@ -7,20 +7,15 @@ import {
   getDevoteeRegistrationStatus,
   rejectUserRegistration,
 } from '../controllers/userRegistration.controller.js';
-import { authenticate, authorize } from '../middleware/auth.js';
+import { authenticate, authorize, optionalAuthenticate } from '../middleware/auth.js';
 import { validate } from '../middleware/validate.js';
 import { registrationSchema, registrationStatusSchema } from '../validators/userRegistration.validator.js';
 
 const router = Router();
 
 router.get('/relations', listRelationOptions);
-router.get('/status', (req, res, next) => {
-  if (req.headers.authorization) {
-    return authenticate(req, res, next);
-  }
-  next();
-}, getDevoteeRegistrationStatus);
-router.post('/', validate(registrationSchema), createUserRegistration);
+router.get('/status', optionalAuthenticate, getDevoteeRegistrationStatus);
+router.post('/', optionalAuthenticate, validate(registrationSchema), createUserRegistration);
 
 router.get('/pending', authenticate, authorize('Admin'), listPendingRegistrations);
 router.patch('/:id/approve', authenticate, authorize('Admin'), validate(registrationStatusSchema), approveUserRegistration);

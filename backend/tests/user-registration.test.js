@@ -190,6 +190,84 @@ test('Temple Devotee registration database workflow: store in TempleDevotee_regi
   }
 });
 
+test('registrationSchema permits omitting password for already logged-in users', () => {
+  const loggedInPayload = {
+    firstName: 'Pooja',
+    lastName: 'Sharma',
+    email: 'pooja.sharma@example.com',
+    mobile: '+64 21 000 1111',
+    mandirId: 1,
+    subscription: 'Yes',
+    termsAccepted: true,
+  };
+
+  const parsedWithoutPassword = registrationSchema.safeParse(loggedInPayload);
+  assert.equal(parsedWithoutPassword.success, true, 'Logged in devotee registration should succeed without password');
+  assert.equal(parsedWithoutPassword.data.password, undefined);
+
+  // Single name without last name
+  const singleName = registrationSchema.safeParse({
+    ...loggedInPayload,
+    lastName: '',
+  });
+  assert.equal(singleName.success, true, 'Single name applicant should succeed');
+});
+
+test('Duplicate devotee registration prevention: detect existing approved and pending registrations', async () => {
+  await ensureRequiredTables();
+  const model = prisma.templeDevoteeRegistration || prisma.userMandirRegistration;
+  const unique = Date.now();
+  const dupEmail = `dup_devotee_${unique}@example.com`;
+
+  const temple = await prisma.temple.findFirst();
+  assert.ok(temple);
+  const devoteeRel = await getOrCreateDevoteeRelation();
+  assert.ok(devoteeRel);
+
+  // Create initial registration
+  const reg1 = await model.create({
+    data: {
+      firstName: 'Duplicate',
+      lastName: 'Tester',
+      email: dupEmail,
+      mobile: '+6421999888',
+      mandirId: temple.id,
+      relationId: devoteeRel.id,
+      status: 'Pending',
+      subscription: 'No',
+    },
+  });
+
+  try {
+    // Attempting to find pending duplicate
+    const existingPending = await model.findFirst({
+      where: {
+        email: dupEmail,
+        mandirId: temple.id,
+        status: 'Pending',
+      },
+    });
+    assert.ok(existingPending, 'Must detect existing pending devotee registration to prevent duplicate');
+
+    // Update to approved
+    await model.update({
+      where: { id: reg1.id },
+      data: { status: 'Approved' },
+    });
+
+    const existingApproved = await model.findFirst({
+      where: {
+        email: dupEmail,
+        mandirId: temple.id,
+        status: 'Approved',
+      },
+    });
+    assert.ok(existingApproved, 'Must detect existing approved devotee registration to prevent duplicate');
+  } finally {
+    await model.deleteMany({ where: { email: dupEmail } });
+  }
+});
+
 test('getOrCreateDevoteeRelation guarantees an active devotee relation exists and self-heals', async () => {
   await ensureRequiredTables();
 
@@ -199,4 +277,5 @@ test('getOrCreateDevoteeRelation guarantees an active devotee relation exists an
   assert.equal(rel.isActive, true, 'Devotee relation must be active');
   assert.ok(rel.relationshipName.toLowerCase().includes('devotee'), 'Relation name should reflect devotee');
 });
+
 

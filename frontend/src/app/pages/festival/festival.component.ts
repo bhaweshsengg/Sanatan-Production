@@ -726,15 +726,25 @@ export class FestivalComponent implements OnInit {
   isAdmin: boolean = false;
 
   get upcomingFestivals(): FestivalItem[] {
+    const nzToday = this.getNzTodayDateString();
     return this.filteredFestivals
-      .filter((f) => f.isUpcoming)
-      .sort((a, b) => String(a.rawDate || '').localeCompare(String(b.rawDate || '')));
+      .filter((f) => this.isFestivalUpcoming(f, nzToday))
+      .sort((a, b) => {
+        const dateA = this.normalizeDateStringToYmd(a.rawDate);
+        const dateB = this.normalizeDateStringToYmd(b.rawDate);
+        return dateA.localeCompare(dateB);
+      });
   }
 
   get pastFestivals(): FestivalItem[] {
+    const nzToday = this.getNzTodayDateString();
     return this.filteredFestivals
-      .filter((f) => !f.isUpcoming)
-      .sort((a, b) => String(b.rawDate || '').localeCompare(String(a.rawDate || '')));
+      .filter((f) => !this.isFestivalUpcoming(f, nzToday))
+      .sort((a, b) => {
+        const dateA = this.normalizeDateStringToYmd(a.endDate || a.rawDate);
+        const dateB = this.normalizeDateStringToYmd(b.endDate || b.rawDate);
+        return dateB.localeCompare(dateA);
+      });
   }
 
   constructor(
@@ -790,7 +800,7 @@ export class FestivalComponent implements OnInit {
       onlineLink: event.onlineLink,
       attendees: event.attendees ?? 0,
       isCommunityEvent: true,
-      isUpcoming: this.checkIsUpcoming(event.eventDate, event.endDate),
+      isUpcoming: this.isFestivalUpcoming({ rawDate: event.eventDate, endDate: event.endDate }),
     };
   }
 
@@ -891,15 +901,32 @@ export class FestivalComponent implements OnInit {
     }).format(new Date());
   }
 
-  private checkIsUpcoming(dateStr: string | null | undefined, endDateStr?: string | null | undefined): boolean {
-    if (!dateStr) return false;
-    try {
-      const nzToday = this.getNzTodayDateString();
-      const targetDate = String(endDateStr || dateStr).slice(0, 10);
-      return targetDate >= nzToday;
-    } catch {
-      return false;
+  normalizeDateStringToYmd(dateVal: any): string {
+    if (!dateVal) return '';
+    if (typeof dateVal === 'string') {
+      const match = dateVal.match(/^(\d{4}-\d{2}-\d{2})/);
+      if (match) return match[1];
     }
+    try {
+      const d = new Date(dateVal);
+      if (!isNaN(d.getTime())) {
+        return new Intl.DateTimeFormat('en-CA', {
+          timeZone: 'Pacific/Auckland',
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+        }).format(d);
+      }
+    } catch {}
+    return String(dateVal).slice(0, 10);
+  }
+
+  isFestivalUpcoming(festival: { rawDate?: string; endDate?: string | null } | null | undefined, nzToday?: string): boolean {
+    if (!festival) return false;
+    const today = nzToday || this.getNzTodayDateString();
+    const targetDate = this.normalizeDateStringToYmd(festival.endDate || festival.rawDate);
+    if (!targetDate) return false;
+    return targetDate >= today;
   }
 
   private extractRituals(event: any): string[] {

@@ -31,4 +31,58 @@ describe('FestivalComponent', () => {
     expect(createBtn).toBeTruthy();
     expect(createBtn?.textContent).toContain('Create Festival');
   });
+
+  it('should categorize festivals into upcoming and past based on NZ timezone date', () => {
+    const nzToday = component.getNzTodayDateString();
+    
+    // Create dates: pastDate, todayDate, futureDate
+    const today = new Date();
+    const past = new Date(today);
+    past.setDate(today.getDate() - 5);
+    const pastDateStr = past.toISOString().slice(0, 10);
+
+    const future = new Date(today);
+    future.setDate(today.getDate() + 5);
+    const futureDateStr = future.toISOString().slice(0, 10);
+
+    component.festivals = [
+      {
+        id: 1,
+        name: 'Past Festival',
+        date: pastDateStr,
+        rawDate: pastDateStr,
+        significance: 'Past festival test',
+        rituals: [],
+        deities: [],
+        category: 'Hindu',
+      },
+      {
+        id: 2,
+        name: 'Today Festival',
+        date: nzToday,
+        rawDate: nzToday,
+        significance: 'Today festival test',
+        rituals: [],
+        deities: [],
+        category: 'Hindu',
+      },
+      {
+        id: 3,
+        name: 'Future Festival',
+        date: futureDateStr,
+        rawDate: futureDateStr,
+        significance: 'Future festival test',
+        rituals: [],
+        deities: [],
+        category: 'Hindu',
+      },
+    ];
+    component.filteredFestivals = [...component.festivals];
+
+    expect(component.upcomingFestivals.some((f) => f.name === 'Today Festival')).toBeTrue();
+    expect(component.upcomingFestivals.some((f) => f.name === 'Future Festival')).toBeTrue();
+    expect(component.pastFestivals.some((f) => f.name === 'Past Festival')).toBeTrue();
+    expect(component.pastFestivals.some((f) => f.name === 'Today Festival')).toBeFalse();
+    expect(component.pastFestivals.some((f) => f.name === 'Future Festival')).toBeFalse();
+  });
 });

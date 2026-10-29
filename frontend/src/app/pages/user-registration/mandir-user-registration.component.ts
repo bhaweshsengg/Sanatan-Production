@@ -212,9 +212,31 @@ interface TempleOption {
             </div>
           </div>
 
+          <!-- Auto-Populated Devotee Profile Card (Logged-in User) -->
+          <div *ngIf="isLoggedIn" class="rounded-xl bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-200/90 p-4 sm:p-5 flex items-start gap-3.5 shadow-sm">
+            <div class="w-11 h-11 rounded-full bg-gradient-to-r from-orange-500 to-red-500 text-white flex items-center justify-center font-bold text-base shadow-sm shrink-0">
+              {{ userInitials }}
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-2 flex-wrap">
+                <span class="inline-flex items-center rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-bold text-emerald-800 ring-1 ring-inset ring-emerald-600/20">
+                  ✓ Profile Auto-Populated
+                </span>
+                <span class="text-xs text-slate-500">Linked to your registered account</span>
+              </div>
+              <h3 class="text-base font-bold text-slate-900 mt-1 truncate">{{ loggedInFullName }}</h3>
+              <p class="text-xs sm:text-sm text-slate-600 truncate mt-0.5">
+                ✉️ {{ loggedInEmail }}
+              </p>
+              <p class="text-xs text-orange-800/90 mt-2 font-medium">
+                Your profile details are automatically linked. Please provide your contact number and select your temple below to complete your devotee registration.
+              </p>
+            </div>
+          </div>
+
           <div class="grid gap-5 md:grid-cols-2">
-            <!-- First Name -->
-            <div>
+            <!-- First Name (Shown only for unauthenticated guest applicants) -->
+            <div *ngIf="!isLoggedIn">
               <label class="mb-1.5 block text-sm font-semibold text-slate-700">
                 First Name <span class="text-red-500">*</span>
               </label>
@@ -230,8 +252,8 @@ interface TempleOption {
               </div>
             </div>
 
-            <!-- Last Name -->
-            <div>
+            <!-- Last Name (Shown only for unauthenticated guest applicants) -->
+            <div *ngIf="!isLoggedIn">
               <label class="mb-1.5 block text-sm font-semibold text-slate-700">
                 Last Name <span class="text-red-500">*</span>
               </label>
@@ -247,8 +269,8 @@ interface TempleOption {
               </div>
             </div>
 
-            <!-- Email -->
-            <div>
+            <!-- Email (Shown only for unauthenticated guest applicants) -->
+            <div *ngIf="!isLoggedIn">
               <label class="mb-1.5 block text-sm font-semibold text-slate-700">
                 Email Address <span class="text-red-500">*</span>
               </label>
@@ -264,26 +286,8 @@ interface TempleOption {
               </div>
             </div>
 
-            <!-- Mobile -->
-            <div>
-              <label class="mb-1.5 block text-sm font-semibold text-slate-700">
-                Mobile Number <span class="text-red-500">*</span>
-              </label>
-              <input
-                type="tel"
-                formControlName="mobile"
-                [class.border-red-500]="form.get('mobile')?.touched && form.get('mobile')?.invalid"
-                class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-200 transition"
-                placeholder="+64 21 000 0000"
-              />
-              <p class="mt-1 text-xs text-slate-500">Include your country code (e.g. +64 for NZ).</p>
-              <div *ngIf="form.get('mobile')?.touched && form.get('mobile')?.invalid" class="mt-1 text-xs text-red-600 font-medium">
-                A valid mobile number is required (8-25 characters).
-              </div>
-            </div>
-
-            <!-- Password -->
-            <div>
+            <!-- Password (Shown only for unauthenticated guest applicants) -->
+            <div *ngIf="!isLoggedIn">
               <label class="mb-1.5 block text-sm font-semibold text-slate-700">
                 Create Password <span class="text-red-500">*</span>
               </label>
@@ -316,8 +320,26 @@ interface TempleOption {
               </div>
             </div>
 
+            <!-- Mobile Number -->
+            <div [class.md:col-span-1]="isLoggedIn">
+              <label class="mb-1.5 block text-sm font-semibold text-slate-700">
+                Mobile Number <span class="text-red-500">*</span>
+              </label>
+              <input
+                type="tel"
+                formControlName="mobile"
+                [class.border-red-500]="form.get('mobile')?.touched && form.get('mobile')?.invalid"
+                class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-200 transition"
+                placeholder="+64 21 000 0000"
+              />
+              <p class="mt-1 text-xs text-slate-500">Include your country code (e.g. +64 for NZ).</p>
+              <div *ngIf="form.get('mobile')?.touched && form.get('mobile')?.invalid" class="mt-1 text-xs text-red-600 font-medium">
+                A valid mobile number is required (8-25 characters).
+              </div>
+            </div>
+
             <!-- Temple Selection (Searchable) -->
-            <div>
+            <div [class.md:col-span-1]="isLoggedIn">
               <app-temple-search-select
                 formControlName="mandirId"
                 label="Select Temple"
@@ -379,10 +401,15 @@ interface TempleOption {
           <!-- Bottom Action Buttons -->
           <div class="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-3 border-t border-slate-200 pt-6">
             <div class="text-xs text-slate-500 text-center sm:text-left">
-              Already registered?
-              <a routerLink="/auth/login-registeration-forget" class="text-orange-600 font-bold hover:underline">
-                Log in here &rarr;
-              </a>
+              <ng-container *ngIf="isLoggedIn">
+                Signed in as <strong class="text-slate-800">{{ loggedInFullName }}</strong> (<span class="text-slate-600">{{ loggedInEmail }}</span>)
+              </ng-container>
+              <ng-container *ngIf="!isLoggedIn">
+                Already registered?
+                <a routerLink="/auth/login-registeration-forget" class="text-orange-600 font-bold hover:underline">
+                  Log in here &rarr;
+                </a>
+              </ng-container>
             </div>
 
             <div class="flex items-center justify-end gap-3">
@@ -476,6 +503,33 @@ export class MandirUserRegistrationComponent implements OnInit {
   message = '';
   messageType: 'success' | 'error' = 'success';
 
+  get isLoggedIn(): boolean {
+    return this.authService.isLoggedIn();
+  }
+
+  get loggedInUser(): any {
+    return this.authService.getUserData();
+  }
+
+  get loggedInFullName(): string {
+    const u = this.loggedInUser;
+    const name = (u?.fullName || u?.username || `${this.form?.get('firstName')?.value || ''} ${this.form?.get('lastName')?.value || ''}`).trim();
+    return name || 'Registered Devotee';
+  }
+
+  get loggedInEmail(): string {
+    return (this.loggedInUser?.email || this.form?.get('email')?.value || '').trim();
+  }
+
+  get userInitials(): string {
+    const name = this.loggedInFullName.replace(/[^a-zA-Z\s]/g, '').trim();
+    const parts = name.split(/\s+/).filter(Boolean);
+    if (parts.length >= 2) {
+      return (parts[0][0] + parts[1][0]).toUpperCase();
+    }
+    return (name.slice(0, 2) || 'ॐ').toUpperCase();
+  }
+
   constructor(
     private fb: FormBuilder,
     private http: HttpClient,
@@ -485,7 +539,7 @@ export class MandirUserRegistrationComponent implements OnInit {
   ) {
     this.form = this.fb.group({
       firstName: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(80)]],
-      lastName: ['', [Validators.required, Validators.maxLength(80)]],
+      lastName: ['', [Validators.maxLength(80)]],
       email: ['', [Validators.required, Validators.email]],
       password: ['', [Validators.required, Validators.minLength(6)]],
       mobile: ['', [Validators.required, Validators.minLength(8), Validators.maxLength(25), Validators.pattern(/^[+()\d\s-]+$/)]],
@@ -496,18 +550,7 @@ export class MandirUserRegistrationComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    const currentUser = this.authService.getUserData();
-    if (currentUser) {
-      const names = (currentUser.fullName || currentUser.username || '').trim().split(' ');
-      const firstName = names[0] || '';
-      const lastName = names.slice(1).join(' ') || '';
-      const email = currentUser.email || '';
-      this.form.patchValue({
-        firstName: this.form.get('firstName')?.value || firstName,
-        lastName: this.form.get('lastName')?.value || lastName,
-        email: this.form.get('email')?.value || email,
-      });
-    }
+    this.syncProfileData();
 
     // Read pre-selected temple from route query parameters if provided
     this.route.queryParams.subscribe((params) => {
@@ -533,6 +576,34 @@ export class MandirUserRegistrationComponent implements OnInit {
     this.loadMandirs();
   }
 
+  syncProfileData(): void {
+    if (this.isLoggedIn) {
+      const user = this.loggedInUser;
+      if (user) {
+        const names = (user.fullName || user.username || '').trim().split(/\s+/);
+        const firstName = names[0] || user.username || 'Devotee';
+        const lastName = names.slice(1).join(' ') || '';
+        const email = (user.email || '').trim().toLowerCase();
+        const mobile = (user.mobile || user.phone || '').trim();
+
+        this.form.patchValue({
+          firstName: this.form.get('firstName')?.value || firstName,
+          lastName: this.form.get('lastName')?.value || lastName,
+          email: this.form.get('email')?.value || email,
+          ...(mobile && !this.form.get('mobile')?.value ? { mobile } : {}),
+        });
+
+        // Clear password validation since user is already registered & logged in
+        this.form.get('password')?.clearValidators();
+        this.form.get('password')?.updateValueAndValidity();
+      }
+    } else {
+      // Restore password validators if not logged in
+      this.form.get('password')?.setValidators([Validators.required, Validators.minLength(6)]);
+      this.form.get('password')?.updateValueAndValidity();
+    }
+  }
+
   get selectedTemple(): TempleOption | undefined {
     const id = Number(this.form.get('mandirId')?.value);
     return id ? this.temples.find((t) => t.id === id) : undefined;
@@ -544,14 +615,17 @@ export class MandirUserRegistrationComponent implements OnInit {
       return;
     }
 
-    const cleanEmail = (email || this.form.get('email')?.value || this.authService.getUserData()?.email || '').trim().toLowerCase();
+    const cleanEmail = (email || this.loggedInEmail || this.form.get('email')?.value || '').trim().toLowerCase();
     if (!cleanEmail) {
       this.existingRegistration = null;
       return;
     }
 
     this.checkingStatus = true;
-    this.http.get<any>(`${this.apiUrl}/public/user-registration/status?mandirId=${mandirId}&email=${encodeURIComponent(cleanEmail)}`).subscribe({
+    const token = localStorage.getItem('authToken');
+    const headers = token ? new HttpHeaders({ Authorization: `Bearer ${token}` }) : new HttpHeaders();
+
+    this.http.get<any>(`${this.apiUrl}/public/user-registration/status?mandirId=${mandirId}&email=${encodeURIComponent(cleanEmail)}`, { headers }).subscribe({
       next: (res) => {
         this.checkingStatus = false;
         const data = res?.data;
@@ -627,6 +701,7 @@ export class MandirUserRegistrationComponent implements OnInit {
       mandirId: this.preselectedMandirId || '',
       termsAccepted: false,
     });
+    this.syncProfileData();
     if (this.preselectedMandirId) {
       this.checkDevoteeRegistration(this.preselectedMandirId);
     }
@@ -640,6 +715,7 @@ export class MandirUserRegistrationComponent implements OnInit {
       mandirId: '',
       termsAccepted: false,
     });
+    this.syncProfileData();
   }
 
   submit(): void {
@@ -652,6 +728,8 @@ export class MandirUserRegistrationComponent implements OnInit {
       return;
     }
 
+    this.syncProfileData();
+
     if (this.form.invalid) {
       this.form.markAllAsTouched();
       this.showMessage('Please complete all required fields correctly before submitting.', 'error');
@@ -663,11 +741,16 @@ export class MandirUserRegistrationComponent implements OnInit {
     const templeObj = this.temples.find((t) => t.id === Number(formVal.mandirId));
     const templeName = templeObj?.mandir_name || 'Selected Mandir';
 
-    const payload = {
-      firstName: formVal.firstName.trim(),
-      lastName: formVal.lastName.trim(),
-      email: formVal.email.trim(),
-      password: formVal.password,
+    const user = this.loggedInUser;
+    const names = ((user?.fullName || user?.username || '') as string).trim().split(/\s+/);
+    const resolvedFirstName = (formVal.firstName || names[0] || user?.username || 'Devotee').trim();
+    const resolvedLastName = (formVal.lastName || names.slice(1).join(' ') || '').trim();
+    const resolvedEmail = (this.isLoggedIn ? (user?.email || formVal.email) : formVal.email).trim().toLowerCase();
+
+    const payload: any = {
+      firstName: resolvedFirstName,
+      lastName: resolvedLastName,
+      email: resolvedEmail,
       mobile: formVal.mobile.trim(),
       mandirId: Number(formVal.mandirId),
       subscription: formVal.subscription || 'No',
@@ -675,15 +758,23 @@ export class MandirUserRegistrationComponent implements OnInit {
       termsAcceptedAt: new Date().toISOString(),
     };
 
+    if (!this.isLoggedIn && formVal.password) {
+      payload.password = formVal.password;
+    }
+
+    const token = localStorage.getItem('authToken');
+    let headers = new HttpHeaders({ 'Content-Type': 'application/json' });
+    if (token) {
+      headers = headers.set('Authorization', `Bearer ${token}`);
+    }
+
     this.http
-      .post<any>(`${this.apiUrl}/public/user-registration`, payload, {
-        headers: new HttpHeaders({ 'Content-Type': 'application/json' }),
-      })
+      .post<any>(`${this.apiUrl}/public/user-registration`, payload, { headers })
       .subscribe({
         next: (response) => {
           this.submitting = false;
           this.isSubmitted = true;
-          this.submittedDevoteeName = `${payload.firstName} ${payload.lastName}`;
+          this.submittedDevoteeName = `${payload.firstName} ${payload.lastName}`.trim();
           this.submittedTempleName = templeName;
           this.submittedEmail = payload.email;
           this.submittedMobile = payload.mobile;
@@ -701,6 +792,11 @@ export class MandirUserRegistrationComponent implements OnInit {
             error?.error?.message ||
             error?.error?.error ||
             'Could not submit your devotee registration. Please try again.';
+
+          if (error?.status === 409) {
+            // Re-check registration status immediately to show the duplicate banner
+            this.checkDevoteeRegistration(Number(formVal.mandirId), payload.email);
+          }
 
           // Extract granular field-level validation errors if present
           if (error?.error?.data?.fieldErrors) {

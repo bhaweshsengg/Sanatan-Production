@@ -95,7 +95,10 @@ export const listRelationOptions = async (_req, res) => {
 export const createUserRegistration = async (req, res) => {
   try {
     await ensureRequiredTables();
-    const email = req.body.email.toLowerCase().trim();
+    const resolvedEmail = (req.user?.email || req.body.email || '').toLowerCase().trim();
+    if (!resolvedEmail) {
+      return sendError(res, 400, 'Valid email is required', {});
+    }
     const mandirId = Number(req.body.mandirId);
     const subscription = req.body.subscription === 'Yes' ? 'Yes' : 'No';
 
@@ -141,19 +144,19 @@ export const createUserRegistration = async (req, res) => {
     const model = getDevoteeModel();
     const existingApproved = await model.findFirst({
       where: {
-        email,
+        email: resolvedEmail,
         mandirId,
         status: 'Approved',
       },
     });
 
     if (existingApproved) {
-      return sendError(res, 409, 'You are already registered and approved as a Devotee for this Temple. You can log in directly.', {});
+      return sendError(res, 409, 'You are already registered and approved as a Devotee for this Temple.', {});
     }
 
     const existingPending = await model.findFirst({
       where: {
-        email,
+        email: resolvedEmail,
         mandirId,
         status: 'Pending',
       },
@@ -161,6 +164,16 @@ export const createUserRegistration = async (req, res) => {
 
     if (existingPending) {
       return sendError(res, 409, 'A pending registration with this email already exists for the selected Temple.', {});
+    }
+
+    // If unauthenticated and no password provided, check if user exists
+    if (!req.user && !req.body.password) {
+      const existingAccount = await prisma.user.findFirst({
+        where: { OR: [{ email: resolvedEmail }, { username: resolvedEmail }] },
+      });
+      if (!existingAccount) {
+        return sendError(res, 400, 'Password is required to create your devotee account.');
+      }
     }
 
     // Hash password if provided
@@ -172,9 +185,9 @@ export const createUserRegistration = async (req, res) => {
 
     const registration = await model.create({
       data: {
-        firstName: req.body.firstName.trim(),
-        lastName: req.body.lastName.trim(),
-        email,
+        firstName: (req.body.firstName || req.user?.username || 'Devotee').trim(),
+        lastName: (req.body.lastName || '').trim(),
+        email: resolvedEmail,
         mobile: req.body.mobile.trim(),
         password: passwordHash,
         subscription,
@@ -347,8 +360,8 @@ const updateRegistrationStatus = async (req, res, targetStatus) => {
         include: { relation: true, mandir: true },
       });
 
-      // If approved and password was set, ensure a Devotee user account exists
-      if (targetStatus === 'Approved' && updated.password) {
+      // If approved, ensure a Devotee user account exists or user's role is upgraded to Devotee
+      if (targetStatus === 'Approved') {
         const existingUser = await tx.user.findFirst({
           where: {
             OR: [
@@ -358,7 +371,7 @@ const updateRegistrationStatus = async (req, res, targetStatus) => {
           },
         });
 
-        if (!existingUser) {
+        if (!existingUser && updated.password) {
           await tx.user.create({
             data: {
               username: updated.email,
@@ -368,12 +381,12 @@ const updateRegistrationStatus = async (req, res, targetStatus) => {
               isActive: true,
             },
           });
-        } else if (existingUser.role === 'User') {
+        } else if (existingUser && existingUser.role === 'User') {
           await tx.user.update({
             where: { id: existingUser.id },
             data: {
               role: 'Devotee',
-              ...(existingUser.passwordHash ? {} : { passwordHash: updated.password }),
+              ...(existingUser.passwordHash ? {} : (updated.password ? { passwordHash: updated.password } : {})),
             },
           });
         }
