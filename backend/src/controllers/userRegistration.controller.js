@@ -203,6 +203,70 @@ export const createUserRegistration = async (req, res) => {
   }
 };
 
+export const getDevoteeRegistrationStatus = async (req, res) => {
+  try {
+    await ensureRequiredTables().catch(() => {});
+    const mandirId = Number(req.query.mandirId || req.params.mandirId);
+    const email = (req.query.email || req.user?.email || '').toLowerCase().trim();
+
+    if (!mandirId || isNaN(mandirId) || mandirId <= 0) {
+      return sendError(res, 400, 'mandirId query parameter is required');
+    }
+
+    if (!email) {
+      return sendSuccess(res, 200, {
+        data: {
+          isRegistered: false,
+          isApproved: false,
+          isPending: false,
+          status: null,
+          mandirId,
+        },
+      });
+    }
+
+    const model = getDevoteeModel();
+    const registration = await model.findFirst({
+      where: {
+        email,
+        mandirId,
+      },
+      include: {
+        mandir: { select: { id: true, mandir_name: true } },
+        relation: true,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    if (!registration) {
+      return sendSuccess(res, 200, {
+        data: {
+          isRegistered: false,
+          isApproved: false,
+          isPending: false,
+          status: null,
+          mandirId,
+        },
+      });
+    }
+
+    return sendSuccess(res, 200, {
+      data: {
+        isRegistered: true,
+        isApproved: registration.status === 'Approved',
+        isPending: registration.status === 'Pending',
+        status: registration.status,
+        mandirId,
+        templeName: registration.mandir?.mandir_name || '',
+        registration: normalizeRegistration(registration),
+      },
+    });
+  } catch (error) {
+    logger.error('getDevoteeRegistrationStatus error', { message: error.message });
+    return sendError(res, 500, 'Could not check devotee registration status', { details: error.message });
+  }
+};
+
 export const listPendingRegistrations = async (req, res) => {
   try {
     if (!req.user || req.user.role !== 'Admin') {

@@ -294,10 +294,10 @@ formatOpeningHours(hours: string): string {
 
   getEventsByTemple(templeId: number): Observable<any[]> {
     return this.http
-      .get<any>(`${this.apiUrl}/event?templeId=${templeId}`)
+      .get<any>(`${this.apiUrl}/event?templeId=${templeId}&limit=all`)
       .pipe(
         map((response: any) => {
-          const data = response?.data ?? response;
+          const data = response?.data?.data ?? response?.data ?? response;
           return Array.isArray(data) ? data : [];
         }),
         catchError(this.handleError<any[]>('getEventsByTemple', []))

@@ -4,6 +4,7 @@ import {
   createUserRegistration,
   listPendingRegistrations,
   listRelationOptions,
+  getDevoteeRegistrationStatus,
   rejectUserRegistration,
 } from '../controllers/userRegistration.controller.js';
 import { authenticate, authorize } from '../middleware/auth.js';
@@ -13,6 +14,12 @@ import { registrationSchema, registrationStatusSchema } from '../validators/user
 const router = Router();
 
 router.get('/relations', listRelationOptions);
+router.get('/status', (req, res, next) => {
+  if (req.headers.authorization) {
+    return authenticate(req, res, next);
+  }
+  next();
+}, getDevoteeRegistrationStatus);
 router.post('/', validate(registrationSchema), createUserRegistration);
 
 router.get('/pending', authenticate, authorize('Admin'), listPendingRegistrations);

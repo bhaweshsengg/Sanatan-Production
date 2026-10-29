@@ -4,6 +4,7 @@ import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { environment } from '../../../environments/environment';
+import { AuthService } from 'src/app/Auth/auth.service';
 import { TempleSearchSelectComponent } from '../../shared/components/temple-search-select/temple-search-select.component';
 import { TermsConditionsModalComponent } from '../../shared/components/terms-conditions-modal/terms-conditions-modal.component';
 
@@ -138,6 +139,76 @@ interface TempleOption {
               <p class="text-xs font-semibold text-orange-700 uppercase tracking-wider">Joining Community</p>
               <h2 class="text-base font-bold text-slate-900 truncate">{{ selectedTemple.mandir_name }}</h2>
               <p *ngIf="selectedTemple.full_address" class="text-xs text-slate-600 truncate mt-0.5">{{ selectedTemple.full_address }}</p>
+            </div>
+          </div>
+
+          <!-- Existing Devotee Status Banner (Approved) -->
+          <div *ngIf="existingRegistration?.isApproved" class="rounded-xl bg-emerald-50 border border-emerald-300 p-4 sm:p-5 flex items-start gap-3.5 shadow-sm">
+            <div class="w-10 h-10 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-lg shrink-0 ring-4 ring-emerald-50">
+              ✓
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-2 flex-wrap">
+                <span class="inline-flex items-center rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-bold text-emerald-800">
+                  Already Registered &amp; Approved
+                </span>
+              </div>
+              <h3 class="text-base font-bold text-emerald-950 mt-1">
+                You are already an approved Devotee for {{ existingRegistration?.templeName }}
+              </h3>
+              <p class="text-xs sm:text-sm text-emerald-800 mt-0.5 leading-relaxed">
+                Your devotee registration for this mandir is active and approved. You do not need to register again for the same temple.
+              </p>
+              <div class="mt-3 flex flex-wrap gap-2.5">
+                <a
+                  [routerLink]="['/temples/view-temple', existingRegistration?.mandirId]"
+                  class="rounded-lg bg-emerald-700 px-3.5 py-2 text-xs font-bold text-white hover:bg-emerald-800 shadow-sm transition"
+                >
+                  View Mandir Details &rarr;
+                </a>
+                <button
+                  type="button"
+                  (click)="clearSelectedTemple()"
+                  class="rounded-lg border border-emerald-300 bg-white px-3.5 py-2 text-xs font-semibold text-emerald-800 hover:bg-emerald-50 transition"
+                >
+                  Join a Different Mandir
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Existing Devotee Status Banner (Pending) -->
+          <div *ngIf="existingRegistration?.isPending" class="rounded-xl bg-amber-50 border border-amber-300 p-4 sm:p-5 flex items-start gap-3.5 shadow-sm">
+            <div class="w-10 h-10 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center font-bold text-lg shrink-0 ring-4 ring-amber-50">
+              ⏳
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-2 flex-wrap">
+                <span class="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-bold text-amber-800">
+                  Application Under Review
+                </span>
+              </div>
+              <h3 class="text-base font-bold text-amber-950 mt-1">
+                Application Pending for {{ existingRegistration?.templeName }}
+              </h3>
+              <p class="text-xs sm:text-sm text-amber-800 mt-0.5 leading-relaxed">
+                Your devotee application for this mandir has been submitted and is currently pending review by the Mandir administration. Duplicate registrations are not permitted.
+              </p>
+              <div class="mt-3 flex flex-wrap gap-2.5">
+                <a
+                  [routerLink]="['/temples/view-temple', existingRegistration?.mandirId]"
+                  class="rounded-lg bg-amber-700 px-3.5 py-2 text-xs font-bold text-white hover:bg-amber-800 shadow-sm transition"
+                >
+                  View Mandir Details &rarr;
+                </a>
+                <button
+                  type="button"
+                  (click)="clearSelectedTemple()"
+                  class="rounded-lg border border-amber-300 bg-white px-3.5 py-2 text-xs font-semibold text-amber-800 hover:bg-amber-50 transition"
+                >
+                  Join a Different Mandir
+                </button>
+              </div>
             </div>
           </div>
 
@@ -325,14 +396,24 @@ interface TempleOption {
               </button>
               <button
                 type="submit"
-                [disabled]="submitting"
+                [disabled]="submitting || checkingStatus || existingRegistration?.isApproved || existingRegistration?.isPending"
                 class="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-orange-600 to-red-600 px-6 py-2.5 text-sm font-bold text-white shadow-md hover:from-orange-700 hover:to-red-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed transform active:scale-95"
               >
                 <svg *ngIf="submitting" class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
                   <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                   <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
                 </svg>
-                <span>{{ submitting ? 'Submitting Registration...' : 'Register as Devotee' }}</span>
+                <span>
+                  {{
+                    submitting
+                      ? 'Submitting Application...'
+                      : existingRegistration?.isApproved
+                      ? 'Already Joined as Devotee'
+                      : existingRegistration?.isPending
+                      ? 'Application Pending Review'
+                      : 'Join Mandir as Devotee'
+                  }}
+                </span>
               </button>
             </div>
           </div>
@@ -371,6 +452,17 @@ export class MandirUserRegistrationComponent implements OnInit {
   preselectedMandirId: number | null = null;
   isTermsModalOpen = false;
 
+  // Existing devotee registration status
+  existingRegistration: {
+    isRegistered: boolean;
+    isApproved: boolean;
+    isPending: boolean;
+    status: string | null;
+    templeName: string;
+    mandirId: number;
+  } | null = null;
+  checkingStatus = false;
+
   // Success State
   isSubmitted = false;
   submittedDevoteeName = '';
@@ -388,7 +480,8 @@ export class MandirUserRegistrationComponent implements OnInit {
     private fb: FormBuilder,
     private http: HttpClient,
     private route: ActivatedRoute,
-    private router: Router
+    private router: Router,
+    private authService: AuthService
   ) {
     this.form = this.fb.group({
       firstName: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(80)]],
@@ -403,12 +496,37 @@ export class MandirUserRegistrationComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    const currentUser = this.authService.getUserData();
+    if (currentUser) {
+      const names = (currentUser.fullName || currentUser.username || '').trim().split(' ');
+      const firstName = names[0] || '';
+      const lastName = names.slice(1).join(' ') || '';
+      const email = currentUser.email || '';
+      this.form.patchValue({
+        firstName: this.form.get('firstName')?.value || firstName,
+        lastName: this.form.get('lastName')?.value || lastName,
+        email: this.form.get('email')?.value || email,
+      });
+    }
+
     // Read pre-selected temple from route query parameters if provided
     this.route.queryParams.subscribe((params) => {
       const mandirIdParam = params['mandirId'] || params['templeId'];
       if (mandirIdParam) {
         this.preselectedMandirId = Number(mandirIdParam);
         this.form.patchValue({ mandirId: this.preselectedMandirId });
+        this.checkDevoteeRegistration(this.preselectedMandirId);
+      }
+    });
+
+    this.form.get('mandirId')?.valueChanges.subscribe((mandirId) => {
+      this.checkDevoteeRegistration(Number(mandirId));
+    });
+
+    this.form.get('email')?.valueChanges.subscribe((email) => {
+      const mandirId = Number(this.form.get('mandirId')?.value);
+      if (mandirId) {
+        this.checkDevoteeRegistration(mandirId, email);
       }
     });
 
@@ -418,6 +536,49 @@ export class MandirUserRegistrationComponent implements OnInit {
   get selectedTemple(): TempleOption | undefined {
     const id = Number(this.form.get('mandirId')?.value);
     return id ? this.temples.find((t) => t.id === id) : undefined;
+  }
+
+  checkDevoteeRegistration(mandirId: number, email?: string): void {
+    if (!mandirId || isNaN(mandirId) || mandirId <= 0) {
+      this.existingRegistration = null;
+      return;
+    }
+
+    const cleanEmail = (email || this.form.get('email')?.value || this.authService.getUserData()?.email || '').trim().toLowerCase();
+    if (!cleanEmail) {
+      this.existingRegistration = null;
+      return;
+    }
+
+    this.checkingStatus = true;
+    this.http.get<any>(`${this.apiUrl}/public/user-registration/status?mandirId=${mandirId}&email=${encodeURIComponent(cleanEmail)}`).subscribe({
+      next: (res) => {
+        this.checkingStatus = false;
+        const data = res?.data;
+        if (data && data.isRegistered) {
+          const templeObj = this.temples.find((t) => t.id === mandirId);
+          this.existingRegistration = {
+            isRegistered: true,
+            isApproved: !!data.isApproved,
+            isPending: !!data.isPending,
+            status: data.status,
+            templeName: data.templeName || templeObj?.mandir_name || 'Selected Mandir',
+            mandirId,
+          };
+        } else {
+          this.existingRegistration = null;
+        }
+      },
+      error: () => {
+        this.checkingStatus = false;
+        this.existingRegistration = null;
+      }
+    });
+  }
+
+  clearSelectedTemple(): void {
+    this.form.patchValue({ mandirId: '' });
+    this.existingRegistration = null;
   }
 
   togglePasswordVisibility(): void {
@@ -448,6 +609,7 @@ export class MandirUserRegistrationComponent implements OnInit {
           const matched = this.temples.find((t) => t.id === this.preselectedMandirId);
           if (matched) {
             this.form.patchValue({ mandirId: this.preselectedMandirId });
+            this.checkDevoteeRegistration(this.preselectedMandirId);
           }
         }
       },
@@ -459,23 +621,37 @@ export class MandirUserRegistrationComponent implements OnInit {
   }
 
   cancel(): void {
+    this.existingRegistration = null;
     this.form.reset({
       subscription: 'Yes',
       mandirId: this.preselectedMandirId || '',
       termsAccepted: false,
     });
+    if (this.preselectedMandirId) {
+      this.checkDevoteeRegistration(this.preselectedMandirId);
+    }
   }
 
   resetForNewRegistration(): void {
     this.isSubmitted = false;
+    this.existingRegistration = null;
     this.form.reset({
       subscription: 'Yes',
-      mandirId: this.preselectedMandirId || '',
+      mandirId: '',
       termsAccepted: false,
     });
   }
 
   submit(): void {
+    if (this.existingRegistration?.isApproved) {
+      this.showMessage(`You are already an approved devotee for ${this.existingRegistration.templeName}. Duplicate registration is not permitted.`, 'error');
+      return;
+    }
+    if (this.existingRegistration?.isPending) {
+      this.showMessage(`Your devotee application for ${this.existingRegistration.templeName} is already pending approval.`, 'error');
+      return;
+    }
+
     if (this.form.invalid) {
       this.form.markAllAsTouched();
       this.showMessage('Please complete all required fields correctly before submitting.', 'error');

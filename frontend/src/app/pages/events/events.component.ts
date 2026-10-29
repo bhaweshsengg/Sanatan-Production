@@ -17,6 +17,15 @@ interface CommunityEvent {
   joined: boolean;
   communityName?: string;
   isCreated?: boolean;
+  description?: string;
+  imageUrl?: string | null;
+  status?: string;
+  templeId?: number | null;
+  templeName?: string;
+  hallName?: string | null;
+  address?: string | null;
+  mapsLink?: string | null;
+  onlineLink?: string | null;
 }
 
 @Component({
@@ -150,6 +159,12 @@ interface CommunityEvent {
                   </svg>
                   <span>Scan to Join / QR Code</span>
                 </button>
+                <a
+                  [routerLink]="['/events', event.id]"
+                  class="w-full mt-2 border border-orange-300 bg-orange-50/50 hover:bg-orange-100 text-orange-800 py-2 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer text-center"
+                >
+                  <span>View Details →</span>
+                </a>
                 <button
                   *ngIf="isAdmin"
                   type="button"
@@ -202,6 +217,12 @@ interface CommunityEvent {
                   </svg>
                   <span>Event QR Code</span>
                 </button>
+                <a
+                  [routerLink]="['/events', event.id]"
+                  class="w-full border border-gray-300 bg-white hover:bg-gray-100 text-gray-700 py-2 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer text-center"
+                >
+                  <span>View Details →</span>
+                </a>
                 <button
                   *ngIf="isAdmin"
                   type="button"
@@ -600,7 +621,16 @@ export class EventsComponent implements OnInit {
     return {
       id: idStr,
       title: event.title,
+      description: event.description,
+      imageUrl: event.imageUrl,
+      status: event.status || 'Approved',
       venue: event.hallName ? `${event.templeName} - ${event.hallName}` : event.templeName,
+      templeId: event.templeId,
+      templeName: event.templeName,
+      hallName: event.hallName,
+      address: event.address,
+      mapsLink: event.mapsLink,
+      onlineLink: event.onlineLink,
       category: event.category,
       categoryClass: 'bg-orange-100 text-orange-800 px-2 py-1 rounded text-sm font-medium',
       date: event.multiDay ? `${event.eventDate} - ${event.endDate}` : event.eventDate,

@@ -12,6 +12,7 @@ import { ReligiousContentsComponent } from './pages/religious-contents/religious
 import { NotFoundComponent } from './pages/not-found/not-found.component';
 import { AdddiscussionComponent } from './pages/community/adddiscussion/adddiscussion.component';
 import { AddEventComponent } from './pages/events/add-event/add-event.component';
+import { EventDetailComponent } from './pages/events/event-detail/event-detail.component';
 import { EventAdminComponent } from './pages/events/event-admin/event-admin.component';
 import { AddTempleComponent } from './pages/temples/add-temple/add-temple.component';
 import { DashboardComponent } from './pages/dashboard/dashboard.component';
@@ -43,6 +44,9 @@ export const routes: Routes = [
   { path: 'temples/edit-temple/:id', component: AddTempleComponent, canActivate: [adminGuard] },
   { path: 'events', component: EventsComponent },
   { path: 'events/add-event', component: AddEventComponent },
+  { path: 'events/:id', component: EventDetailComponent },
+  { path: 'events/view/:id', redirectTo: '/events/:id' },
+  { path: 'events/view-event/:id', redirectTo: '/events/:id' },
   { path: 'admin/events', component: EventAdminComponent, canActivate: [adminGuard] },
   { path: 'admin/events/edit/:id', component: AddEventComponent, canActivate: [adminGuard] },
   { path: 'community', component: CommunityComponent },

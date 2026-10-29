@@ -5,6 +5,7 @@ import { env } from '../config/env.js';
 import { logger } from '../utils/logger.js';
 import { prisma, ensureEventAttendeeTable, ensureEventCommunityColumns } from '../config/db.js';
 import { sendError, sendSuccess } from '../utils/response.js';
+import { sendEmail } from '../utils/email.js';
 
 const normalizeUploadedImagePath = (value) => {
   if (!value || typeof value !== 'string') return '';
@@ -286,6 +287,171 @@ export const getAdminEvent = async (req, res) => {
   }
 };
 
+export const getPublicEvent = async (req, res) => {
+  try {
+    await ensureEventCommunityColumns().catch(() => {});
+    const eventId = Number(req.params.id);
+    if (!Number.isInteger(eventId) || eventId <= 0) {
+      return sendError(res, 400, 'Invalid event id');
+    }
+
+    let event;
+    try {
+      event = await prisma.event.findUnique({
+        where: { id: eventId },
+        include: {
+          organizer: { select: { id: true, username: true, email: true } },
+          reviewer: { select: { id: true, username: true } },
+          temple: { select: { id: true, mandir_name: true, full_address: true, phone_no: true, email: true, website: true, publicId: true } },
+          communityGroup: { select: { id: true, name: true, slug: true, cityName: true } },
+        },
+      });
+    } catch {
+      event = await prisma.event.findUnique({
+        where: { id: eventId },
+        include: {
+          organizer: { select: { id: true, username: true, email: true } },
+          reviewer: { select: { id: true, username: true } },
+          temple: { select: { id: true, mandir_name: true, full_address: true, phone_no: true, email: true, website: true, publicId: true } },
+        },
+      });
+    }
+
+    if (!event) {
+      return sendError(res, 404, 'Event not found');
+    }
+
+    return sendSuccess(res, 200, { data: event });
+  } catch (error) {
+    logger.error('getPublicEvent error', { message: error.message });
+    return sendError(res, 500, 'Could not fetch event', { details: error.message });
+  }
+};
+
+export const notifyDevoteesForTempleEvent = async (event) => {
+  if (!event || !event.templeId) {
+    return;
+  }
+
+  try {
+    const templeId = Number(event.templeId);
+    if (!Number.isInteger(templeId) || templeId <= 0) return;
+
+    // 1. Fetch the temple details
+    const temple = await prisma.temple.findUnique({
+      where: { id: templeId },
+      select: { id: true, mandir_name: true, full_address: true, email: true },
+    });
+
+    const templeName = temple?.mandir_name || event.templeName || 'Mandir';
+
+    // 2. Fetch approved devotees for this temple
+    const devotees = await prisma.templeDevoteeRegistration.findMany({
+      where: {
+        mandirId: templeId,
+        status: 'Approved',
+      },
+      select: {
+        email: true,
+        firstName: true,
+        lastName: true,
+      },
+    });
+
+    if (!Array.isArray(devotees) || devotees.length === 0) {
+      logger.info('notifyDevoteesForTempleEvent: No approved devotees found for temple', { templeId });
+      return;
+    }
+
+    // 3. Deduplicate devotee recipients by email (case-insensitive)
+    const uniqueRecipients = new Map();
+    for (const d of devotees) {
+      const email = (d.email || '').toLowerCase().trim();
+      if (email && email.includes('@') && !uniqueRecipients.has(email)) {
+        uniqueRecipients.set(email, d);
+      }
+    }
+
+    if (uniqueRecipients.size === 0) return;
+
+    const eventDateStr = event.multiDay && event.endDate
+      ? `${event.eventDate} to ${event.endDate}`
+      : event.eventDate || 'Upcoming Date';
+    const eventTimeStr = event.startTime && event.endTime
+      ? `${event.startTime} - ${event.endTime}`
+      : (event.startTime || 'Scheduled Time');
+    const venueStr = event.hallName
+      ? `${templeName} (${event.hallName})`
+      : (event.address || temple?.full_address || templeName);
+
+    // 4. Send email notification safely to each devotee
+    for (const [recipientEmail, devotee] of uniqueRecipients) {
+      try {
+        const devoteeName = devotee.firstName ? `${devotee.firstName} ${devotee.lastName || ''}`.trim() : 'Devotee';
+        await sendEmail({
+          to: recipientEmail,
+          subject: `🕉️ New Event Notification: "${event.title}" at ${templeName}`,
+          html: `
+            <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 620px; margin: 0 auto; padding: 24px; border: 1px solid #fed7aa; border-radius: 16px; background-color: #fffbf5;">
+              <div style="text-align: center; margin-bottom: 20px;">
+                <span style="font-size: 36px;">🕉️</span>
+                <h1 style="color: #c2410c; margin: 8px 0 4px 0; font-size: 22px;">Sanatan New Zealand</h1>
+                <p style="color: #9a3412; font-size: 13px; margin: 0; text-transform: uppercase; letter-spacing: 1px; font-weight: 600;">Temple Devotee Community Notice</p>
+              </div>
+
+              <div style="background: #ffffff; border: 1px solid #fed7aa; border-radius: 12px; padding: 20px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+                <p style="color: #374151; font-size: 15px; margin-top: 0;">Namaste <strong>${devoteeName}</strong>,</p>
+                <p style="color: #4b5563; font-size: 14px; line-height: 1.6;">
+                  A new community gathering and sacred event has been announced for <strong>${templeName}</strong>:
+                </p>
+
+                <div style="border-left: 4px solid #ea580c; background: #fff7ed; padding: 14px 16px; border-radius: 0 8px 8px 0; margin: 16px 0;">
+                  <h2 style="color: #9a3412; margin: 0 0 10px 0; font-size: 18px;">${event.title}</h2>
+                  <p style="margin: 4px 0; color: #4b5563; font-size: 13px;"><strong>🏷️ Category:</strong> ${event.category || 'Community Event'}</p>
+                  <p style="margin: 4px 0; color: #4b5563; font-size: 13px;"><strong>📅 Date:</strong> ${eventDateStr}</p>
+                  <p style="margin: 4px 0; color: #4b5563; font-size: 13px;"><strong>🕐 Time:</strong> ${eventTimeStr}</p>
+                  <p style="margin: 4px 0; color: #4b5563; font-size: 13px;"><strong>📍 Venue:</strong> ${venueStr}</p>
+                  ${event.communityName ? `<p style="margin: 4px 0; color: #4b5563; font-size: 13px;"><strong>👥 Host Group:</strong> ${event.communityName}</p>` : ''}
+                </div>
+
+                ${event.description ? `
+                  <div style="margin: 16px 0;">
+                    <h3 style="color: #374151; font-size: 13px; text-transform: uppercase; margin-bottom: 6px;">Event Details:</h3>
+                    <p style="color: #4b5563; font-size: 13px; line-height: 1.6; white-space: pre-line; margin-top: 0;">${event.description}</p>
+                  </div>
+                ` : ''}
+
+                <div style="text-align: center; margin-top: 24px;">
+                  <a href="${env.frontendUrl || 'https://sanatan.org.nz'}/events/${event.id}"
+                     style="display: inline-block; background: linear-gradient(to right, #ea580c, #dc2626); color: #ffffff; text-decoration: none; font-weight: bold; font-size: 14px; padding: 12px 28px; border-radius: 9999px; box-shadow: 0 2px 4px rgba(234, 88, 12, 0.3);">
+                    View Event &amp; Join
+                  </a>
+                </div>
+              </div>
+
+              <div style="text-align: center; color: #9ca3af; font-size: 12px;">
+                <p style="margin: 4px 0;">You are receiving this notice because you are a registered and approved Devotee of ${templeName}.</p>
+                <p style="margin: 4px 0;">© Sanatan New Zealand. Preserving and promoting Dharma in Aotearoa.</p>
+              </div>
+            </div>
+          `,
+        });
+      } catch (singleMailErr) {
+        logger.warn('Failed to send event notification email to devotee', {
+          recipientEmail,
+          eventId: event.id,
+          error: singleMailErr.message,
+        });
+      }
+    }
+  } catch (err) {
+    logger.warn('notifyDevoteesForTempleEvent error', {
+      eventId: event.id,
+      error: err.message,
+    });
+  }
+};
+
 export const createEvent = async (req, res) => {
   try {
     await ensureEventCommunityColumns().catch(() => {});
@@ -297,6 +463,13 @@ export const createEvent = async (req, res) => {
         termsAcceptedAt: new Date(),
       },
     });
+
+    if (event.templeId) {
+      setImmediate(() => {
+        notifyDevoteesForTempleEvent(event).catch(() => {});
+      });
+    }
+
     return sendSuccess(res, 201, { data: event, message: 'Event submitted for admin approval' });
   } catch (error) {
     return sendError(res, 400, 'Could not create event', { details: error.message });
@@ -326,6 +499,13 @@ export const updateEventStatus = async (req, res) => {
       data: { status: req.body.status, reviewedById: req.user.id },
       include: eventInclude,
     });
+
+    if (event.status === 'Approved' && event.templeId) {
+      setImmediate(() => {
+        notifyDevoteesForTempleEvent(event).catch(() => {});
+      });
+    }
+
     return sendSuccess(res, 200, { data: event, message: `Event ${req.body.status.toLowerCase()} successfully` });
   } catch (error) {
     return sendError(res, 400, 'Could not update event status', { details: error.message });

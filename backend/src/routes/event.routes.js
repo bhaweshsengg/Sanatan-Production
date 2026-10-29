@@ -9,6 +9,7 @@ import {
   getAdminEvent,
   getAdminEvents,
   listApprovedEvents,
+  getPublicEvent,
   updateEvent,
   updateEventStatus,
   uploadEventImage,
@@ -62,6 +63,7 @@ router.post('/', validate(eventCreateSchema), (req, res, next) => {
   return authenticate(req, res, next);
 }, createEvent);
 router.get('/my-joined', authenticate, getMyJoinedEvents);
+router.get('/:id', getPublicEvent);
 router.post('/:id/join', authenticate, joinEvent);
 router.post('/:id/leave', authenticate, leaveEvent);
 router.get('/admin/:id/attendees', authenticate, authorize('Admin'), getEventAttendees);

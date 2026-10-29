@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { HttpClient } from '@angular/common/http';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { Title } from '@angular/platform-browser';
 import { CommonService, Temple } from 'src/app/shared/common.service';
@@ -348,16 +349,40 @@ interface ApiTemple {
                   </svg>
                   Call Mandir
                 </a>
-                <a
-                  [routerLink]="['/user-registration']"
-                  [queryParams]="{ mandirId: temple?.id }"
-                  class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-semibold transition-colors bg-gradient-to-r from-orange-600 to-red-600 text-white shadow-sm hover:from-orange-700 hover:to-red-700 h-10 px-4 py-2"
-                >
-                  <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-                  </svg>
-                  Register as Devotee
-                </a>
+                <ng-container *ngIf="isDevoteeApproved">
+                  <div
+                    class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-semibold bg-emerald-50 text-emerald-800 border border-emerald-300 h-10 px-4 py-2"
+                    title="You are a registered and approved Devotee for this Mandir"
+                  >
+                    <svg class="h-4 w-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span>Joined Mandir Devotee</span>
+                  </div>
+                </ng-container>
+                <ng-container *ngIf="isDevoteePending">
+                  <div
+                    class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-semibold bg-amber-50 text-amber-800 border border-amber-300 h-10 px-4 py-2"
+                    title="Your devotee registration is awaiting approval"
+                  >
+                    <svg class="h-4 w-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span>Application Pending</span>
+                  </div>
+                </ng-container>
+                <ng-container *ngIf="!isDevoteeApproved && !isDevoteePending">
+                  <a
+                    [routerLink]="['/user-registration']"
+                    [queryParams]="{ mandirId: temple?.id }"
+                    class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-semibold transition-colors bg-gradient-to-r from-orange-600 to-red-600 text-white shadow-sm hover:from-orange-700 hover:to-red-700 h-10 px-4 py-2"
+                  >
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                    </svg>
+                    Join as Devotee
+                  </a>
+                </ng-container>
                 <button
                   *ngIf="isAdmin"
                   type="button"
@@ -470,26 +495,35 @@ interface ApiTemple {
                     Loading upcoming events...
                   </div>
                   <div *ngIf="!isLoadingEvents && templeEvents.length > 0" class="space-y-3">
-                    <div *ngFor="let ev of templeEvents" class="p-3 bg-orange-50 rounded-lg border border-orange-100 flex gap-3 items-start">
+                    <div *ngFor="let ev of templeEvents" class="p-3 bg-orange-50 rounded-lg border border-orange-100 flex gap-3 items-start hover:border-orange-200 transition-colors">
                       <img *ngIf="ev.imageUrl" [src]="resolveImageUrl(ev.imageUrl)" [alt]="ev.title" class="w-12 h-12 rounded object-cover flex-shrink-0" />
                       <div class="flex-1 min-w-0">
                         <div class="flex items-center justify-between gap-1">
-                          <h4 class="font-medium text-gray-900 truncate">{{ ev.title }}</h4>
+                          <a [routerLink]="['/events', ev.id]" class="font-medium text-gray-900 truncate hover:text-orange-600 hover:underline">
+                            {{ ev.title }}
+                          </a>
                           <span class="text-xs font-semibold px-2 py-0.5 rounded bg-orange-200 text-orange-800 flex-shrink-0">{{ ev.category }}</span>
                         </div>
                         <p class="text-sm text-black-700 mt-0.5">
                           📅 {{ ev.eventDate }} · 🕐 {{ ev.startTime }}{{ ev.endTime ? ' - ' + ev.endTime : '' }}
                         </p>
                         <p *ngIf="ev.hallName" class="text-xs text-gray-600">📍 {{ ev.hallName }}</p>
+                        <div class="mt-1.5">
+                          <a [routerLink]="['/events', ev.id]" class="text-xs text-orange-600 font-semibold hover:underline">
+                            View Event Details &rarr;
+                          </a>
+                        </div>
                       </div>
                     </div>
                   </div>
-                  <div *ngIf="!isLoadingEvents && templeEvents.length === 0" class="p-4 bg-gray-50 rounded-lg border border-dashed border-gray-300 text-center">
-                    <p class="text-sm text-gray-500">No upcoming events scheduled for this mandir.</p>
+                  <div *ngIf="!isLoadingEvents && templeEvents.length === 0" class="p-6 bg-gray-50 rounded-lg border border-dashed border-gray-300 text-center">
+                    <span class="text-2xl block mb-1">📅</span>
+                    <p class="text-sm font-medium text-gray-600">No upcoming events scheduled for this mandir.</p>
+                    <p class="text-xs text-gray-400 mt-1">Check back soon for new temple programs and celebrations.</p>
                   </div>
                   <a
                     class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border border-input hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2 w-full bg-transparent"
-                    href="/events"
+                    routerLink="/events"
                     >View All Events</a
                   >
                 </div>
@@ -505,8 +539,11 @@ interface ApiTemple {
                   </div>
                 </div>
                 <div class="p-6 pt-0 space-y-3">
-                  <button
-                    class="inline-flex items-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border border-input hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2 w-full justify-start bg-transparent"
+                  <a
+                    *ngIf="!isDevoteeApproved && !isDevoteePending"
+                    [routerLink]="['/user-registration']"
+                    [queryParams]="{ mandirId: temple?.id }"
+                    class="inline-flex items-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors border border-input hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2 w-full justify-start bg-transparent"
                   >
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
@@ -528,7 +565,21 @@ interface ApiTemple {
                       <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
                     </svg>
                     Join Mandir Community
-                  </button>
+                  </a>
+                  <div
+                    *ngIf="isDevoteeApproved"
+                    class="inline-flex items-center gap-2 whitespace-nowrap rounded-md text-sm font-medium border border-emerald-200 bg-emerald-50 text-emerald-800 h-10 px-4 py-2 w-full justify-start"
+                  >
+                    <span class="text-emerald-600 font-bold">✓</span>
+                    <span>Active Mandir Devotee Member</span>
+                  </div>
+                  <div
+                    *ngIf="isDevoteePending"
+                    class="inline-flex items-center gap-2 whitespace-nowrap rounded-md text-sm font-medium border border-amber-200 bg-amber-50 text-amber-800 h-10 px-4 py-2 w-full justify-start"
+                  >
+                    <span class="text-amber-600 font-bold">⏳</span>
+                    <span>Devotee Application Under Review</span>
+                  </div>
                   <button
                     class="inline-flex items-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus:visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border border-input hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2 w-full justify-start bg-transparent"
                   >
@@ -639,12 +690,24 @@ export class ViewTempleComponent implements OnInit {
   shareToastMsg = '';
   isAdmin = false;
 
+  devoteeStatus: { isRegistered: boolean; isApproved: boolean; isPending: boolean; status: string | null } | null = null;
+  checkingDevoteeStatus = false;
+
+  get isDevoteeApproved(): boolean {
+    return !!this.devoteeStatus?.isApproved;
+  }
+
+  get isDevoteePending(): boolean {
+    return !!this.devoteeStatus?.isPending;
+  }
+
   constructor(
     private templeService: CommonService,
     private route: ActivatedRoute,
     private router: Router,
     private authService: AuthService,
-    private titleService: Title
+    private titleService: Title,
+    private http: HttpClient
   ) {
     this.isAdmin = this.authService.isAdmin();
   }
@@ -662,6 +725,15 @@ export class ViewTempleComponent implements OnInit {
     } else {
       this.isLoadingTemple = false;
     }
+  }
+
+  getNzToday(): string {
+    return new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Pacific/Auckland',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).format(new Date());
   }
 
   getTemple(identifier: string | number): void {
@@ -686,11 +758,9 @@ export class ViewTempleComponent implements OnInit {
         const favs: (string | number)[] = JSON.parse(localStorage.getItem('favouriteTemples') || '[]');
         this.isFavourite = favs.includes(temple.publicId || '') || favs.includes(temple.id || 0);
 
-        if ((temple as any).events && (temple as any).events.length > 0) {
-          this.templeEvents = (temple as any).events;
-        }
         if (temple.id) {
           this.loadTempleEvents(temple.id);
+          this.checkDevoteeStatus(temple.id);
         }
       },
       error: (error) => {
@@ -700,14 +770,52 @@ export class ViewTempleComponent implements OnInit {
     });
   }
 
+  checkDevoteeStatus(templeId: number): void {
+    if (!templeId) return;
+    const userData = this.authService.getUserData();
+    const email = userData?.email;
+    const query = email ? `?mandirId=${templeId}&email=${encodeURIComponent(email)}` : `?mandirId=${templeId}`;
+
+    this.checkingDevoteeStatus = true;
+    this.http.get<any>(`${environment.apiBaseUrl}/public/user-registration/status${query}`).subscribe({
+      next: (res) => {
+        this.checkingDevoteeStatus = false;
+        const data = res?.data;
+        if (data && data.isRegistered) {
+          this.devoteeStatus = {
+            isRegistered: true,
+            isApproved: !!data.isApproved,
+            isPending: !!data.isPending,
+            status: data.status || null,
+          };
+        } else {
+          this.devoteeStatus = null;
+        }
+      },
+      error: () => {
+        this.checkingDevoteeStatus = false;
+        this.devoteeStatus = null;
+      }
+    });
+  }
+
   loadTempleEvents(templeId: number): void {
     this.isLoadingEvents = true;
     this.templeService.getEventsByTemple(templeId).subscribe({
       next: (events) => {
-        this.templeEvents = events || [];
+        const nzToday = this.getNzToday();
+        const list = Array.isArray(events) ? events : [];
+        this.templeEvents = list
+          .filter((ev: any) => {
+            const matchesTemple = Number(ev.templeId) === Number(templeId);
+            const dateStr = (ev.endDate || ev.eventDate || '').slice(0, 10);
+            return matchesTemple && dateStr >= nzToday;
+          })
+          .sort((a: any, b: any) => (a.eventDate || '').localeCompare(b.eventDate || ''));
         this.isLoadingEvents = false;
       },
       error: () => {
+        this.templeEvents = [];
         this.isLoadingEvents = false;
       }
     });

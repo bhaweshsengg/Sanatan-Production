@@ -118,7 +118,7 @@ import { TermsConditionsModalComponent } from '../../shared/components/terms-con
           <div class="rounded-lg bg-orange-50 p-3 border border-orange-200 text-center">
             <p class="text-xs text-slate-700">Looking to join a temple community?</p>
             <a routerLink="/user-registration" class="text-xs font-bold text-orange-600 hover:text-orange-700 underline mt-0.5 inline-block">
-              Register as a Temple Devotee &rarr;
+              Join as a Temple Devotee &rarr;
             </a>
           </div>
 

@@ -12,6 +12,7 @@ export interface FestivalItem {
   name: string;
   date: string;
   rawDate?: string;
+  endDate?: string | null;
   time?: string;
   significance: string;
   rituals: string[];
@@ -155,15 +156,15 @@ export interface FestivalItem {
             <button (click)="loadFestivals()" class="underline font-semibold text-xs hover:text-red-900">Retry</button>
           </div>
 
-          <!-- Empty State -->
-          <div *ngIf="!isLoading && filteredFestivals.length === 0" class="py-20 text-center bg-white rounded-2xl border border-gray-200 shadow-sm p-8 max-w-xl mx-auto">
+          <!-- Overall Empty State (both upcoming and past empty) -->
+          <div *ngIf="!isLoading && filteredFestivals.length === 0" class="py-20 text-center bg-white rounded-2xl border border-gray-200 shadow-sm p-8 max-w-xl mx-auto mb-12">
             <div class="text-5xl mb-4">🪔</div>
             <h3 class="text-xl font-bold text-gray-800 mb-2">
               {{ festivals.length === 0 ? 'No Festivals Listed Yet' : 'No Matching Festivals' }}
             </h3>
             <p class="text-gray-500 mb-6 text-sm">
               {{ festivals.length === 0 
-                ? 'There are currently no festival events listed. You can submit a festival celebration through the Events section to have it displayed here.' 
+                ? 'There are currently no festival events listed. You can submit a festival celebration to have it displayed here.' 
                 : 'We could not find any festivals matching your search or category filter. Try clearing your search filters.' }}
             </p>
             <div class="flex flex-wrap items-center justify-center gap-3">
@@ -190,146 +191,382 @@ export interface FestivalItem {
             </div>
           </div>
 
-          <!-- Festival Cards Grid -->
-          <div *ngIf="!isLoading && filteredFestivals.length > 0" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-8">
-            <div
-              *ngFor="let festival of filteredFestivals"
-              class="group bg-white rounded-2xl shadow-sm hover:shadow-xl border border-gray-200 transition-all duration-300 overflow-hidden flex flex-col justify-between"
+          <!-- Filter Tabs for Upcoming & Past Festivals -->
+          <div *ngIf="!isLoading && filteredFestivals.length > 0" class="flex items-center gap-2 mb-8 overflow-x-auto pb-2 border-b border-gray-200">
+            <button
+              type="button"
+              (click)="activeTab = 'all'"
+              class="px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all whitespace-nowrap cursor-pointer"
+              [ngClass]="{
+                'bg-orange-600 text-white shadow-sm': activeTab === 'all',
+                'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200': activeTab !== 'all'
+              }"
             >
+              All Festivals ({{ filteredFestivals.length }})
+            </button>
+            <button
+              type="button"
+              (click)="activeTab = 'upcoming'"
+              class="px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all whitespace-nowrap cursor-pointer inline-flex items-center gap-1.5"
+              [ngClass]="{
+                'bg-emerald-600 text-white shadow-sm': activeTab === 'upcoming',
+                'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200': activeTab !== 'upcoming'
+              }"
+            >
+              <span>✨</span>
+              <span>Upcoming Festivals ({{ upcomingFestivals.length }})</span>
+            </button>
+            <button
+              type="button"
+              (click)="activeTab = 'past'"
+              class="px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all whitespace-nowrap cursor-pointer inline-flex items-center gap-1.5"
+              [ngClass]="{
+                'bg-gray-800 text-white shadow-sm': activeTab === 'past',
+                'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200': activeTab !== 'past'
+              }"
+            >
+              <span>📜</span>
+              <span>Past Festivals ({{ pastFestivals.length }})</span>
+            </button>
+          </div>
+
+          <!-- 1. UPCOMING FESTIVALS SECTION -->
+          <section
+            *ngIf="!isLoading && filteredFestivals.length > 0 && (activeTab === 'all' || activeTab === 'upcoming')"
+            class="mb-14"
+            aria-labelledby="upcoming-festivals-heading"
+          >
+            <div class="flex items-center justify-between mb-6">
               <div>
-                <!-- Festival Image / Banner -->
-                <div class="relative w-full aspect-[16/10] bg-gradient-to-br from-orange-100 via-amber-50 to-orange-50 overflow-hidden">
-                  <img
-                    *ngIf="festival.imageUrl && !festival.imageFailed"
-                    [src]="resolveImageUrl(festival.imageUrl)"
-                    [alt]="festival.name"
-                    class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    (error)="onImageError(festival)"
-                  />
-                  <!-- Fallback Decorative Icon -->
-                  <div
-                    *ngIf="!festival.imageUrl || festival.imageFailed"
-                    class="w-full h-full flex flex-col items-center justify-center text-orange-400 p-4"
-                  >
-                    <span class="text-5xl mb-1 filter drop-shadow">🪔</span>
-                    <span class="text-xs font-semibold text-orange-700 tracking-wider uppercase">Sanatan Festival</span>
-                  </div>
-
-                  <!-- Category Badge -->
-                  <span class="absolute top-3 right-3 bg-orange-600/95 backdrop-blur-sm text-white text-xs font-semibold px-3 py-1 rounded-full shadow-md">
-                    {{ festival.category }}
+                <h2 id="upcoming-festivals-heading" class="text-2xl font-bold text-gray-900 flex items-center gap-2">
+                  <span>✨</span>
+                  <span>Upcoming Festivals</span>
+                  <span class="bg-emerald-100 text-emerald-800 text-xs px-2.5 py-0.5 rounded-full font-semibold">
+                    {{ upcomingFestivals.length }}
                   </span>
+                </h2>
+                <p class="text-xs sm:text-sm text-gray-500 mt-1">
+                  Sacred celebrations and observances scheduled in New Zealand (Pacific/Auckland timezone)
+                </p>
+              </div>
+            </div>
 
-                  <!-- Upcoming Badge -->
-                  <span
-                    *ngIf="festival.isUpcoming"
-                    class="absolute top-3 left-3 bg-emerald-600/95 backdrop-blur-sm text-white text-xs font-semibold px-2.5 py-1 rounded-full shadow-md flex items-center gap-1"
-                  >
-                    <span>✨</span>
-                    <span>Upcoming</span>
-                  </span>
-                </div>
+            <!-- Upcoming Grid -->
+            <div *ngIf="upcomingFestivals.length > 0" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-8">
+              <div
+                *ngFor="let festival of upcomingFestivals"
+                class="group bg-white rounded-2xl shadow-sm hover:shadow-xl border border-gray-200 transition-all duration-300 overflow-hidden flex flex-col justify-between"
+              >
+                <div>
+                  <!-- Festival Image / Banner -->
+                  <div class="relative w-full aspect-[16/10] bg-gradient-to-br from-orange-100 via-amber-50 to-orange-50 overflow-hidden">
+                    <img
+                      *ngIf="festival.imageUrl && !festival.imageFailed"
+                      [src]="resolveImageUrl(festival.imageUrl)"
+                      [alt]="festival.name"
+                      class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      (error)="onImageError(festival)"
+                    />
+                    <div
+                      *ngIf="!festival.imageUrl || festival.imageFailed"
+                      class="w-full h-full flex flex-col items-center justify-center text-orange-400 p-4"
+                    >
+                      <span class="text-5xl mb-1 filter drop-shadow">🪔</span>
+                      <span class="text-xs font-semibold text-orange-700 tracking-wider uppercase">Sanatan Festival</span>
+                    </div>
 
-                <!-- Card Body -->
-                <div class="p-6">
-                  <!-- Title -->
-                  <h3 class="font-bold text-xl text-gray-900 mb-2 line-clamp-1 group-hover:text-orange-600 transition-colors">
-                    {{ festival.name }}
-                  </h3>
+                    <!-- Category Badge -->
+                    <span class="absolute top-3 right-3 bg-orange-600/95 backdrop-blur-sm text-white text-xs font-semibold px-3 py-1 rounded-full shadow-md">
+                      {{ festival.category }}
+                    </span>
 
-                  <!-- Date & Time -->
-                  <div class="space-y-1.5 mb-4 text-sm text-gray-600">
-                    <div class="flex items-center gap-2 font-medium text-orange-700">
-                      <span>📅</span>
-                      <span>{{ festival.date }}</span>
-                    </div>
-                    <div *ngIf="festival.time" class="flex items-center gap-2 text-xs text-gray-500">
-                      <span>🕐</span>
-                      <span>{{ festival.time }}</span>
-                    </div>
-                    <div *ngIf="festival.location" class="flex items-center gap-2 text-xs text-gray-600 line-clamp-1">
-                      <span>📍</span>
-                      <span class="font-medium">{{ festival.location }}</span>
-                    </div>
+                    <!-- Upcoming Badge -->
+                    <span class="absolute top-3 left-3 bg-emerald-600/95 backdrop-blur-sm text-white text-xs font-semibold px-2.5 py-1 rounded-full shadow-md flex items-center gap-1">
+                      <span>✨</span>
+                      <span>Upcoming</span>
+                    </span>
                   </div>
 
-                  <hr class="border-gray-100 my-4" />
+                  <!-- Card Body -->
+                  <div class="p-6">
+                    <h3 class="font-bold text-xl text-gray-900 mb-2 line-clamp-1 group-hover:text-orange-600 transition-colors">
+                      {{ festival.name }}
+                    </h3>
 
-                  <!-- Significance / Description -->
-                  <div class="mb-4" *ngIf="festival.significance">
-                    <h4 class="font-semibold text-gray-800 text-xs uppercase tracking-wider mb-1">Significance &amp; Details:</h4>
-                    <p class="text-sm text-gray-600 line-clamp-3 leading-relaxed">
-                      {{ festival.significance }}
-                    </p>
-                  </div>
+                    <!-- Date & Time -->
+                    <div class="space-y-1.5 mb-4 text-sm text-gray-600">
+                      <div class="flex items-center gap-2 font-medium text-orange-700">
+                        <span>📅</span>
+                        <span>{{ festival.date }}</span>
+                      </div>
+                      <div *ngIf="festival.time" class="flex items-center gap-2 text-xs text-gray-500">
+                        <span>🕐</span>
+                        <span>{{ festival.time }}</span>
+                      </div>
+                      <div *ngIf="festival.location" class="flex items-center gap-2 text-xs text-gray-600 line-clamp-1">
+                        <span>📍</span>
+                        <span class="font-medium">{{ festival.location }}</span>
+                      </div>
+                    </div>
 
-                  <!-- Key Rituals (if any) -->
-                  <div *ngIf="festival.rituals && festival.rituals.length > 0" class="mb-4">
-                    <h4 class="font-semibold text-gray-800 text-xs uppercase tracking-wider mb-1.5">Key Rituals:</h4>
-                    <ul class="text-xs text-gray-600 space-y-1 ml-4 list-disc">
-                      <li *ngFor="let ritual of festival.rituals.slice(0, 3)" class="line-clamp-1">
-                        {{ ritual }}
-                      </li>
-                    </ul>
-                  </div>
+                    <hr class="border-gray-100 my-4" />
 
-                  <!-- Associated Deities / Temple info -->
-                  <div *ngIf="festival.deities && festival.deities.length > 0" class="mb-2">
-                    <h4 class="font-semibold text-gray-800 text-xs uppercase tracking-wider mb-1.5">Associated Deities:</h4>
-                    <div class="flex flex-wrap gap-1.5">
-                      <span
-                        *ngFor="let deity of festival.deities"
-                        class="bg-orange-50 text-orange-800 border border-orange-200/60 px-2.5 py-0.5 rounded-full text-xs font-medium"
-                      >
-                        {{ deity }}
+                    <!-- Significance / Description -->
+                    <div class="mb-4" *ngIf="festival.significance">
+                      <h4 class="font-semibold text-gray-800 text-xs uppercase tracking-wider mb-1">Significance &amp; Details:</h4>
+                      <p class="text-sm text-gray-600 line-clamp-3 leading-relaxed">
+                        {{ festival.significance }}
+                      </p>
+                    </div>
+
+                    <!-- Key Rituals -->
+                    <div *ngIf="festival.rituals && festival.rituals.length > 0" class="mb-4">
+                      <h4 class="font-semibold text-gray-800 text-xs uppercase tracking-wider mb-1.5">Key Rituals:</h4>
+                      <ul class="text-xs text-gray-600 space-y-1 ml-4 list-disc">
+                        <li *ngFor="let ritual of festival.rituals.slice(0, 3)" class="line-clamp-1">
+                          {{ ritual }}
+                        </li>
+                      </ul>
+                    </div>
+
+                    <!-- Associated Deities -->
+                    <div *ngIf="festival.deities && festival.deities.length > 0" class="mb-2">
+                      <h4 class="font-semibold text-gray-800 text-xs uppercase tracking-wider mb-1.5">Associated Deities:</h4>
+                      <div class="flex flex-wrap gap-1.5">
+                        <span
+                          *ngFor="let deity of festival.deities"
+                          class="bg-orange-50 text-orange-800 border border-orange-200/60 px-2.5 py-0.5 rounded-full text-xs font-medium"
+                        >
+                          {{ deity }}
+                        </span>
+                      </div>
+                    </div>
+
+                    <!-- Devotee Count / Temple -->
+                    <div *ngIf="(festival.attendees !== undefined && festival.attendees > 0) || festival.templeName" class="mt-4 pt-3 border-t border-gray-100 flex items-center justify-between text-xs text-gray-500">
+                      <span *ngIf="festival.attendees !== undefined && festival.attendees > 0" class="inline-flex items-center gap-1 font-medium text-gray-700">
+                        <span>👥</span>
+                        <span>{{ festival.attendees }} {{ festival.attendees === 1 ? 'devotee' : 'devotees' }} joined</span>
+                      </span>
+                      <span *ngIf="!festival.attendees" class="text-gray-400 text-[11px]">
+                        Sanatan Community
+                      </span>
+                      <span *ngIf="festival.templeName" class="text-orange-600 font-medium truncate max-w-[160px]" [title]="festival.templeName">
+                        {{ festival.templeName }}
                       </span>
                     </div>
                   </div>
+                </div>
 
-                  <!-- Attendees / Temple footer -->
-                  <div *ngIf="(festival.attendees !== undefined && festival.attendees > 0) || festival.templeName" class="mt-4 pt-3 border-t border-gray-100 flex items-center justify-between text-xs text-gray-500">
-                    <span *ngIf="festival.attendees !== undefined && festival.attendees > 0" class="inline-flex items-center gap-1 font-medium text-gray-700">
-                      <span>👥</span>
-                      <span>{{ festival.attendees }} {{ festival.attendees === 1 ? 'devotee' : 'devotees' }} joined</span>
-                    </span>
-                    <span *ngIf="!festival.attendees" class="text-gray-400 text-[11px]">
-                      Sanatan Community
-                    </span>
-                    <span *ngIf="festival.templeName" class="text-orange-600 font-medium truncate max-w-[160px]" [title]="festival.templeName">
-                      {{ festival.templeName }}
-                    </span>
-                  </div>
+                <!-- Card Action Buttons -->
+                <div class="p-6 pt-0 border-t border-gray-100 flex flex-wrap items-center gap-2 mt-4">
+                  <button
+                    type="button"
+                    (click)="openFestivalModal(festival)"
+                    class="flex-1 inline-flex items-center justify-center gap-1.5 bg-orange-600 hover:bg-orange-700 text-white font-semibold text-xs py-2.5 px-3 rounded-lg transition shadow-sm cursor-pointer"
+                  >
+                    <span>📖</span>
+                    <span>Learn More</span>
+                  </button>
+                  <a
+                    [routerLink]="['/events', festival.id]"
+                    class="flex-1 inline-flex items-center justify-center gap-1.5 bg-orange-50 hover:bg-orange-100 text-orange-800 border border-orange-200 font-semibold text-xs py-2.5 px-3 rounded-lg transition cursor-pointer"
+                  >
+                    <span>📅</span>
+                    <span>View Event</span>
+                  </a>
+                  <a
+                    *ngIf="isAdmin"
+                    [routerLink]="['/admin/events/edit', festival.id]"
+                    class="inline-flex items-center justify-center gap-1 bg-white hover:bg-gray-100 border border-gray-300 text-gray-700 font-semibold text-xs py-2.5 px-2.5 rounded-lg transition shadow-2xs"
+                    title="Admin: Edit Festival Details"
+                  >
+                    <span>✏️</span>
+                  </a>
                 </div>
               </div>
+            </div>
 
-              <!-- Card Action Buttons -->
-              <div class="p-6 pt-0 border-t border-gray-100 flex items-center justify-between gap-2 mt-4">
-                <button
-                  type="button"
-                  (click)="openFestivalModal(festival)"
-                  class="flex-1 inline-flex items-center justify-center gap-1.5 bg-orange-600 hover:bg-orange-700 text-white font-semibold text-xs py-2.5 px-3 rounded-lg transition shadow-sm"
-                >
-                  <span>📖</span>
-                  <span>Learn More</span>
-                </button>
-                <a
-                  routerLink="/events"
-                  class="flex-1 inline-flex items-center justify-center gap-1.5 bg-gray-100 hover:bg-gray-200 text-gray-800 font-semibold text-xs py-2.5 px-3 rounded-lg transition"
-                >
-                  <span>📅</span>
-                  <span>Find Events</span>
-                </a>
-                <a
-                  *ngIf="isAdmin"
-                  [routerLink]="['/admin/events/edit', festival.id]"
-                  class="inline-flex items-center justify-center gap-1 bg-white hover:bg-gray-100 border border-gray-300 text-gray-700 font-semibold text-xs py-2.5 px-2.5 rounded-lg transition shadow-2xs"
-                  title="Admin: Edit Festival Details"
-                >
-                  <span>✏️</span>
-                </a>
+            <!-- Empty Upcoming State -->
+            <div *ngIf="upcomingFestivals.length === 0" class="py-12 text-center bg-white rounded-2xl border border-dashed border-gray-300 p-8">
+              <span class="text-4xl mb-2 block">🪔</span>
+              <h3 class="text-lg font-bold text-gray-800 mb-1">No Upcoming Festivals</h3>
+              <p class="text-gray-500 text-xs sm:text-sm mb-4">
+                There are currently no upcoming festivals matching your criteria. Check past celebrations below.
+              </p>
+              <a routerLink="/festival/create" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-orange-600 text-white font-medium text-xs hover:bg-orange-700 transition">
+                <span>🪔</span>
+                <span>Create Festival</span>
+              </a>
+            </div>
+          </section>
+
+          <!-- 2. PAST FESTIVALS SECTION -->
+          <section
+            *ngIf="!isLoading && filteredFestivals.length > 0 && (activeTab === 'all' || activeTab === 'past')"
+            class="pt-6 border-t border-gray-200 mb-14"
+            aria-labelledby="past-festivals-heading"
+          >
+            <div class="flex items-center justify-between mb-6">
+              <div>
+                <h2 id="past-festivals-heading" class="text-2xl font-bold text-gray-900 flex items-center gap-2">
+                  <span>📜</span>
+                  <span>Past Festivals</span>
+                  <span class="bg-gray-100 text-gray-700 text-xs px-2.5 py-0.5 rounded-full font-semibold">
+                    {{ pastFestivals.length }}
+                  </span>
+                </h2>
+                <p class="text-xs sm:text-sm text-gray-500 mt-1">
+                  Cherished celebrations and spiritual observances from past dates
+                </p>
               </div>
             </div>
-          </div>
+
+            <!-- Past Grid -->
+            <div *ngIf="pastFestivals.length > 0" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-8">
+              <div
+                *ngFor="let festival of pastFestivals"
+                class="group bg-gray-50/70 hover:bg-white rounded-2xl shadow-xs hover:shadow-lg border border-gray-200 transition-all duration-300 overflow-hidden flex flex-col justify-between opacity-95 hover:opacity-100"
+              >
+                <div>
+                  <!-- Festival Image / Banner -->
+                  <div class="relative w-full aspect-[16/10] bg-gradient-to-br from-gray-100 via-amber-50/30 to-orange-50/30 overflow-hidden">
+                    <img
+                      *ngIf="festival.imageUrl && !festival.imageFailed"
+                      [src]="resolveImageUrl(festival.imageUrl)"
+                      [alt]="festival.name"
+                      class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 grayscale-30 hover:grayscale-0"
+                      (error)="onImageError(festival)"
+                    />
+                    <div
+                      *ngIf="!festival.imageUrl || festival.imageFailed"
+                      class="w-full h-full flex flex-col items-center justify-center text-gray-400 p-4"
+                    >
+                      <span class="text-5xl mb-1 filter drop-shadow">📜</span>
+                      <span class="text-xs font-semibold text-gray-600 tracking-wider uppercase">Past Observance</span>
+                    </div>
+
+                    <!-- Category Badge -->
+                    <span class="absolute top-3 right-3 bg-gray-700/90 backdrop-blur-sm text-white text-xs font-semibold px-3 py-1 rounded-full shadow-md">
+                      {{ festival.category }}
+                    </span>
+
+                    <!-- Past Badge -->
+                    <span class="absolute top-3 left-3 bg-gray-600/90 backdrop-blur-sm text-white text-xs font-semibold px-2.5 py-1 rounded-full shadow-md flex items-center gap-1">
+                      <span>📜</span>
+                      <span>Past Festival</span>
+                    </span>
+                  </div>
+
+                  <!-- Card Body -->
+                  <div class="p-6">
+                    <h3 class="font-bold text-xl text-gray-900 mb-2 line-clamp-1 group-hover:text-orange-600 transition-colors">
+                      {{ festival.name }}
+                    </h3>
+
+                    <!-- Date & Time -->
+                    <div class="space-y-1.5 mb-4 text-sm text-gray-600">
+                      <div class="flex items-center gap-2 font-medium text-gray-700">
+                        <span>📅</span>
+                        <span>{{ festival.date }}</span>
+                      </div>
+                      <div *ngIf="festival.time" class="flex items-center gap-2 text-xs text-gray-500">
+                        <span>🕐</span>
+                        <span>{{ festival.time }}</span>
+                      </div>
+                      <div *ngIf="festival.location" class="flex items-center gap-2 text-xs text-gray-600 line-clamp-1">
+                        <span>📍</span>
+                        <span class="font-medium">{{ festival.location }}</span>
+                      </div>
+                    </div>
+
+                    <hr class="border-gray-200 my-4" />
+
+                    <!-- Significance / Description -->
+                    <div class="mb-4" *ngIf="festival.significance">
+                      <h4 class="font-semibold text-gray-800 text-xs uppercase tracking-wider mb-1">Significance:</h4>
+                      <p class="text-sm text-gray-600 line-clamp-3 leading-relaxed">
+                        {{ festival.significance }}
+                      </p>
+                    </div>
+
+                    <!-- Key Rituals -->
+                    <div *ngIf="festival.rituals && festival.rituals.length > 0" class="mb-4">
+                      <h4 class="font-semibold text-gray-800 text-xs uppercase tracking-wider mb-1.5">Key Rituals:</h4>
+                      <ul class="text-xs text-gray-600 space-y-1 ml-4 list-disc">
+                        <li *ngFor="let ritual of festival.rituals.slice(0, 3)" class="line-clamp-1">
+                          {{ ritual }}
+                        </li>
+                      </ul>
+                    </div>
+
+                    <!-- Associated Deities -->
+                    <div *ngIf="festival.deities && festival.deities.length > 0" class="mb-2">
+                      <h4 class="font-semibold text-gray-800 text-xs uppercase tracking-wider mb-1.5">Associated Deities:</h4>
+                      <div class="flex flex-wrap gap-1.5">
+                        <span
+                          *ngFor="let deity of festival.deities"
+                          class="bg-gray-100 text-gray-800 border border-gray-200 px-2.5 py-0.5 rounded-full text-xs font-medium"
+                        >
+                          {{ deity }}
+                        </span>
+                      </div>
+                    </div>
+
+                    <!-- Devotee Count / Temple -->
+                    <div *ngIf="(festival.attendees !== undefined && festival.attendees > 0) || festival.templeName" class="mt-4 pt-3 border-t border-gray-100 flex items-center justify-between text-xs text-gray-500">
+                      <span *ngIf="festival.attendees !== undefined && festival.attendees > 0" class="inline-flex items-center gap-1 font-medium text-gray-700">
+                        <span>👥</span>
+                        <span>{{ festival.attendees }} attended</span>
+                      </span>
+                      <span *ngIf="!festival.attendees" class="text-gray-400 text-[11px]">
+                        Sanatan Community
+                      </span>
+                      <span *ngIf="festival.templeName" class="text-orange-600 font-medium truncate max-w-[160px]" [title]="festival.templeName">
+                        {{ festival.templeName }}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Card Action Buttons -->
+                <div class="p-6 pt-0 border-t border-gray-100 flex flex-wrap items-center gap-2 mt-4">
+                  <button
+                    type="button"
+                    (click)="openFestivalModal(festival)"
+                    class="flex-1 inline-flex items-center justify-center gap-1.5 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold text-xs py-2.5 px-3 rounded-lg transition shadow-xs cursor-pointer"
+                  >
+                    <span>📖</span>
+                    <span>Learn More</span>
+                  </button>
+                  <a
+                    [routerLink]="['/events', festival.id]"
+                    class="flex-1 inline-flex items-center justify-center gap-1.5 bg-white hover:bg-gray-100 text-gray-700 border border-gray-300 font-semibold text-xs py-2.5 px-3 rounded-lg transition cursor-pointer"
+                  >
+                    <span>📅</span>
+                    <span>View Event</span>
+                  </a>
+                  <a
+                    *ngIf="isAdmin"
+                    [routerLink]="['/admin/events/edit', festival.id]"
+                    class="inline-flex items-center justify-center gap-1 bg-white hover:bg-gray-100 border border-gray-300 text-gray-700 font-semibold text-xs py-2.5 px-2.5 rounded-lg transition shadow-2xs"
+                    title="Admin: Edit Festival Details"
+                  >
+                    <span>✏️</span>
+                  </a>
+                </div>
+              </div>
+            </div>
+
+            <!-- Empty Past State -->
+            <div *ngIf="pastFestivals.length === 0" class="py-12 text-center bg-white rounded-2xl border border-dashed border-gray-300 p-8">
+              <span class="text-4xl mb-2 block">📜</span>
+              <h3 class="text-lg font-bold text-gray-800 mb-1">No Past Festivals Recorded</h3>
+              <p class="text-gray-500 text-xs sm:text-sm">
+                There are no past festival records matching your search or filters.
+              </p>
+            </div>
+          </section>
         </div>
       </main>
 
@@ -482,10 +719,23 @@ export class FestivalComponent implements OnInit {
   filteredFestivals: FestivalItem[] = [];
   selectedCategory: string = 'All';
   searchTerm: string = '';
+  activeTab: 'all' | 'upcoming' | 'past' = 'all';
   isLoading: boolean = false;
   errorMessage: string = '';
   selectedFestival: FestivalItem | null = null;
   isAdmin: boolean = false;
+
+  get upcomingFestivals(): FestivalItem[] {
+    return this.filteredFestivals
+      .filter((f) => f.isUpcoming)
+      .sort((a, b) => String(a.rawDate || '').localeCompare(String(b.rawDate || '')));
+  }
+
+  get pastFestivals(): FestivalItem[] {
+    return this.filteredFestivals
+      .filter((f) => !f.isUpcoming)
+      .sort((a, b) => String(b.rawDate || '').localeCompare(String(a.rawDate || '')));
+  }
 
   constructor(
     private readonly commonService: CommonService,
@@ -526,6 +776,7 @@ export class FestivalComponent implements OnInit {
       name: event.title,
       date: this.formatEventDate(event),
       rawDate: event.eventDate,
+      endDate: event.endDate || null,
       time: event.startTime && event.endTime ? `${event.startTime} - ${event.endTime}` : event.startTime || '',
       significance: event.description,
       rituals: this.extractRituals(event),
@@ -539,7 +790,7 @@ export class FestivalComponent implements OnInit {
       onlineLink: event.onlineLink,
       attendees: event.attendees ?? 0,
       isCommunityEvent: true,
-      isUpcoming: this.checkIsUpcoming(event.eventDate),
+      isUpcoming: this.checkIsUpcoming(event.eventDate, event.endDate),
     };
   }
 
@@ -631,13 +882,21 @@ export class FestivalComponent implements OnInit {
     return event.eventDate;
   }
 
-  private checkIsUpcoming(dateStr: string | null | undefined): boolean {
+  getNzTodayDateString(): string {
+    return new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Pacific/Auckland',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).format(new Date());
+  }
+
+  private checkIsUpcoming(dateStr: string | null | undefined, endDateStr?: string | null | undefined): boolean {
     if (!dateStr) return false;
     try {
-      const d = new Date(dateStr);
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      return d >= today;
+      const nzToday = this.getNzTodayDateString();
+      const targetDate = String(endDateStr || dateStr).slice(0, 10);
+      return targetDate >= nzToday;
     } catch {
       return false;
     }
